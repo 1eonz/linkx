@@ -1,0 +1,1 @@
+echo "upgrade_pre_handle_agent" >/home/test.txt

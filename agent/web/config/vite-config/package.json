@@ -1,0 +1,32 @@
+{
+  "name": "@cs/vite-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "stub": "pnpm unbuild --stub"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitejs/plugin-vue-jsx": "catalog:",
+    "rollup": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-svg-icons": "catalog:",
+    "vite-plugin-windicss": "catalog:",
+    "vite-plugin-html": "catalog:",
+    "rollup-plugin-gzip": "catalog:",
+    "rollup-plugin-visualizer": "catalog:"
+  }
+}

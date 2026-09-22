@@ -1,0 +1,5 @@
+drop:
+  - idx: idx_post_ids_multival
+    table: icp_collabs.tb_label_binding
+  - idx: idx_resources_type
+    table: icp_collabs.tb_ai_agent_submission

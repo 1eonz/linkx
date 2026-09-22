@@ -1,0 +1,151 @@
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    map-underscore-to-camel-case: true
+
+spring.main.web-application-type: servlet
+spring.application.name: cloudcmd-im-jingxin
+# 文件上传配置
+spring.servlet.multipart:
+  max-file-size: 100MB        # 单个文件最大大小
+  max-request-size: 200MB     # 总请求最大大小
+  enabled: true               # 启用文件上传
+
+spring.cloud.stream:
+  default-binder: kafka
+  function:
+    definition: asyncPostPick;collaborationMessage;collaborationGroupChangeMessage;onGlobalConfigChangeEvent;imTextMessage;im1p4BMessage;policeTicketResult;atCollaborationPostMessage;userStateNoticeMessage;departmentNoticeMessage;
+
+spring.cloud.stream.bindings:
+  #        从pwi收消息 并发消费
+  asyncPostPick-in-0:
+    destination: cloudcmd-jinxing-asyncpostpick
+    content-type: application/json
+    group: ${spring.application.name}-app
+  collaborationMessage-in-0:
+    destination: cloudcmd-im-jingxin-ws-coopImWsClient
+    content-type: application/json
+    group: ${spring.application.name}-wsm
+  collaborationGroupChangeMessage-in-0:
+    destination: cloudcmd-im-jingxin-ws-coopImWsClient
+    content-type: application/json
+    group: ${spring.application.name}-changeGroup
+  atCollaborationPostMessage-in-0:
+    destination: cloudcmd-im-jingxin-ws-coopImWsClient
+    content-type: application/json
+    group: ${spring.application.name}-atCollaborationPost
+  userStateNoticeMessage-in-0:
+    destination: cloudcmd-im-jingxin-ws-coopImWsClient
+    content-type: application/json
+    group: ${spring.application.name}-userStateNoticeMessage
+  departmentNoticeMessage-in-0:
+    destination: cloudcmd-im-jingxin-ws-coopImWsClient
+    content-type: application/json
+    group: ${spring.application.name}-departmentNoticeMessage
+  imTextMessage-in-0:
+    destination: cloudcmd-im-jingxin-ws-groupAIWsClient
+    content-type: application/json
+    group: ${spring.application.name}-im-text-msg
+  im1p4BMessage-in-0:
+    destination: cloudcmd-im-jingxin-ws-oneO1p4BWsClient
+    content-type: application/json
+    group: ${spring.application.name}-im1p4BMessage
+  onGlobalConfigChangeEvent-in-0:
+    destination: cloudcmd-base-global
+    content-type: application/json
+    group: ${spring.application.name}-global-config
+  policeTicketResult-in-0:
+    destination: cloudcmd-im-jingxin-polticket-result
+    content-type: application/json
+    group: ${spring.application.name}-policeTicketResult
+
+spring:
+  datasource:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://${cloudcmd.mysql.host}/icp_collabs?allowPublicKeyRetrieval=true&useSSL=false&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&autoCommit=true
+      username: ${cloudcmd.mysql.username}
+      password: ${cloudcmd.mysql.password}
+      type: com.zaxxer.hikari.HikariDataSource
+      hikari:
+        pool-name: mysql-collabs
+        connection-test-query: SELECT 1
+        connectionTimeout: 30000
+        idleTimeout: 600000
+        maxLifetime: 1800000
+        auto-commit: true
+        minimum-idle: 30
+        maximum-pool-size: 300
+
+
+spring.messages.basename: license,common_bean
+
+cloudcmd.im.jinxing:
+  coop:
+    httpclient:
+      enabled: true
+    wsclient:
+      enabled: true
+  groupai:
+    httpclient:
+      enabled: false
+    wsclient:
+      enabled: false
+  1o1p4B:
+    httpclient:
+      enabled: true
+    wsclient:
+      enabled: true
+  warning:
+    httpclient:
+      enabled: true
+
+dubbo:
+  provider:
+    timeout: 30000
+  metrics:
+    protocol: prometheus
+    enable: true
+
+# DTO解密配置
+encrypt:
+  dto:
+    mappings:
+      - className: "com.tdtech.cloudcmd.im.jingxin.server.entity.GroupExtendsVO"
+        fields:
+          - archiveUserName
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      system: true
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState

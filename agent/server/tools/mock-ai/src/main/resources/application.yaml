@@ -1,0 +1,5 @@
+server:
+  port: 48099
+spring:
+  application:
+    name: mock-ai

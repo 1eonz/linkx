@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.LabelMapper">
+    <select id="getLabelVOs" resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.group.LabelVO"
+            parameterType="java.lang.String">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, scope from tb_label
+        <where>
+            is_deleted = 0
+            <if test="name != null and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+            <if test="type != null">
+                and type = #{type}
+            </if>
+            <if test="scope != null">
+                and scope in (0, #{scope})
+            </if>
+            <if test="level == 1">
+                and parent_id = 0
+            </if>
+        </where>
+    </select>
+    <select id="getLabelPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label"
+            parameterType="java.lang.String">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, is_deleted, scope, gmt_created, gmt_modified from tb_label
+        <where>
+            is_deleted = 0
+            <if test="name != null and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
+    <select id="getLabelsByCollaborationPostId" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label"
+            parameterType="java.lang.Long">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, is_deleted, scope, gmt_created, gmt_modified from tb_label
+        <where>
+            is_deleted = 0
+            <if test="collaborationPostId != null ">
+                and collaboration_ids like concat('%', #{collaborationPostId}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="selectLabelById" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, is_deleted, scope, gmt_created, gmt_modified from tb_label where id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectBatchByIds" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, is_deleted, scope, gmt_created, gmt_modified from tb_label where id in
+        <foreach collection="ids" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and is_deleted = 0
+    </select>
+
+    <select id="getAllChildrenLabels" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, is_deleted, scope, gmt_created, gmt_modified from tb_label where parent_id in
+        <foreach collection="ids" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and is_deleted = 0
+    </select>
+
+    <update id="deleteBatchByIds">
+        update tb_label set is_deleted = 1 where id in
+        <foreach collection="ids" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </update>
+
+    <select id="selectAllByIds" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, is_deleted, scope, gmt_created, gmt_modified from tb_label where id in
+        <foreach collection="ids" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and is_deleted = 0
+    </select>
+
+    <update id="deleteLabelById">
+        update tb_label set is_deleted = 1 where id = #{id}
+    </update>
+
+    <select id="selectAllList" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label">
+        select id, name, parent_id, level, collaboration_ids, icon, color, type, is_deleted, scope, gmt_created, gmt_modified from tb_label
+        <where>
+            is_deleted = 0
+            <if test="scope != null">
+                and scope in (0, #{scope})
+            </if>
+        </where>
+        order by id asc
+    </select>
+    <select id="selectByDepartmentIds" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.Label">
+        select tl.id, tl.name, tl.is_deleted as isDeleted
+        from tb_label tl
+        left join tb_label_binding tlb on tl.id = tlb.label_id
+        <if test="departmentIds != null and departmentIds.size() > 0">
+            where tlb.department_id in
+            <foreach collection="departmentIds" item="item" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        order by tl.id asc
+    </select>
+</mapper>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.DutyTypeMapper">
+
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.DutyType">
+        <id column="type" property="type"/>
+        <result column="name" property="name"/>
+        <result column="create_user_id" property="createUserId"/>
+        <result column="gmt_created" property="gmtCreated"/>
+        <result column="deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 按名称分页查询排班类型。 -->
+    <select id="selectPageByKeywords" resultMap="BaseResultMap">
+        SELECT dt.type,
+               dt.name,
+               dt.create_user_id,
+               dt.gmt_created,
+               dt.deleted
+        FROM tb_duty_type dt
+        WHERE dt.deleted = 0
+        <if test="name != null and name != ''">
+            AND dt.name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        ORDER BY dt.type ASC
+    </select>
+
+    <!-- 排班类型名称唯一校验。 -->
+    <select id="countByName" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM tb_duty_type
+        WHERE name = #{name}
+        AND deleted = 0
+        <if test="excludeType != null">
+            AND type != #{excludeType}
+        </if>
+    </select>
+
+    <!-- 删除前确认当前及未来是否已有排班记录引用该类型。 -->
+    <select id="countCurrentOrFutureScheduleByType" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM tb_duty_schedule
+        WHERE duty_type = #{type}
+        AND duty_start_date >= CURDATE()
+    </select>
+
+    <select id="selectAllList" resultMap="BaseResultMap">
+        SELECT dt.type,
+               dt.name,
+               dt.create_user_id,
+               dt.gmt_created,
+               dt.deleted
+        FROM tb_duty_type dt
+        WHERE dt.deleted = 0
+        ORDER BY dt.type ASC
+    </select>
+</mapper>

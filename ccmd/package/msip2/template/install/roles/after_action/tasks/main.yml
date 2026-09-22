@@ -1,0 +1,27 @@
+- name: legacy upgrade | sync business vip bind for installed apps
+  include_tasks: sync_business_vip_bind_legacy.yml
+  when:
+    - phase == "upgrade" or phase == "install"
+    - inventory_hostname == first_kube_master
+
+- name: do update kube-vip
+  include_tasks: upgrade_kube-vip.yml
+  when:
+    - phase=="upgrade"
+    - inventory_hostname == first_kube_master
+
+- name: do upgrade post shell
+  include_tasks: upgrade_post_shell.yml
+  when:
+    - phase=="upgrade" or phase == "patch_install"
+    - inventory_hostname == first_kube_master
+
+- name: do degrade post shell
+  include_tasks: degrade_post_shell.yml
+  when:
+    - phase=="rollback" or phase == "patch_rollback"
+    - inventory_hostname == first_kube_master
+
+
+
+

@@ -1,0 +1,177 @@
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+# 先读配置：pim 等未配置 backup_tables 时直接跳过，不要求 sql.gz 备份存在
+- name: restore nacos | Check nacos backup config file exists
+  stat:
+    path: "{{ nacos_backup_config_path }}"
+  register: nacos_backup_cfg_stat
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | Fail if nacos backup config file not found
+  fail:
+    msg: "Nacos 备份配置文件不存在：{{ nacos_backup_config_path }}"
+  when: not nacos_backup_cfg_stat.stat.exists
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | Load nacos backup config
+  include_vars:
+    file: "{{ nacos_backup_config_path }}"
+    name: nacos_backup_cfg
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | Set backup tables/group_ids from config
+  set_fact:
+    nacos_backup_tables: "{{ nacos_backup_cfg.nacos_backup.backup_tables | default([]) }}"
+    nacos_backup_group_ids: "{{ nacos_backup_cfg.nacos_backup.backup_group_ids | default([]) }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | Skip when tables or group_ids empty
+  debug:
+    msg: "跳过 Nacos 恢复：backup_tables 或 backup_group_ids 为空（backup_tables={{ nacos_backup_tables | length }}, backup_group_ids={{ nacos_backup_group_ids | length }}）"
+  when: (nacos_backup_tables | length == 0) or (nacos_backup_group_ids | length == 0)
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | End play when config incomplete
+  meta: end_play
+  when: (nacos_backup_tables | length == 0) or (nacos_backup_group_ids | length == 0)
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | make sure restore file exist
+  ansible.builtin.find:
+    paths: "{{ nacos_backup_path }}/{{ namespace }}/nacos"
+    patterns: "*.sql.gz"
+    use_regex: no
+  register: tar_files
+  delegate_to: "{{ first_kube_master }}"
+  when: phase == "patch_rollback"
+
+
+
+- name: restore nacos | Debug result tar_files
+  ansible.builtin.debug:
+    msg: "Found {{ tar_files.files | length }} .sql.gz files"
+  delegate_to: "{{ first_kube_master }}"
+  when: tar_files.files | length == 1 and phase == "patch_rollback"
+
+
+- name: restore nacos | Fail *.sql.gz files not found
+  ansible.builtin.fail:
+    msg: "No *.sql.gz files found in {{ nacos_backup_path }}/{{ namespace }}/nacos"
+  delegate_to: "{{ first_kube_master }}"
+  when: tar_files.files | length == 0 and phase == "patch_rollback"
+
+- name: restore nacos | Decompress .gz files
+  ansible.builtin.shell:
+    cmd: "gunzip -c {{ item.path }} > {{ nacos_backup_path }}/{{ namespace }}/nacos/nacos_db.sql"
+  delegate_to: "{{ first_kube_master }}"
+  loop: "{{ tar_files.files }}"
+  when:
+    - tar_files.files | length == 1
+    - phase == "patch_rollback"
+    - item.path is match(".*\.sql\.gz$") # 确保是 sql.gz
+
+- name: Execute kubectl command to get leader node name
+  command: kubectl get pod -A -l role=LEADER --no-headers -o custom-columns='NODE:.spec.nodeName'
+  register: node_mysql_leader
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Convert node names to array
+  set_fact:
+    backupnode: "{{ node_mysql_leader.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Debug Node Names
+  debug:
+    var: backupnode
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | make sure greatsql data folder exist
+  file:
+    path: "{{ great_storage_data_path }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | Create restorejob manifests files
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ nacos_manifest_folder }}/{{ item.file }}"
+  loop:
+    - {name: greatsql, file: restore_nacos_job.yml, type: job}
+    - {name: greatsql, file: restore_nacos_db.yml, type: cm}
+  register: greatsql_manifests
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore nacos | Execute kubectl command to delete job
+  command: kubectl delete job restore-nacos-db-job -n platform
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: restore nacos | create configmap
+  command: "kubectl apply -f {{ nacos_manifest_folder }}/restore_nacos_db.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: false
+
+- name: restore nacos | start restore service
+  command: "kubectl apply -f {{ nacos_manifest_folder }}/restore_nacos_job.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: false
+
+- name: restore nacos | make sure restore complete
+  command: "kubectl wait --for=condition=complete job/restore-nacos-db-job -n platform"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: restore_result
+  until: restore_result.rc == 0
+  retries: 5
+  delay: 30
+
+
+- name: backup nacos | clean old backup data
+  shell: "rm -rf {{ nacos_backup_path }}/{{ namespace }}/nacos/*"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: phase == "patch_rollback"
+

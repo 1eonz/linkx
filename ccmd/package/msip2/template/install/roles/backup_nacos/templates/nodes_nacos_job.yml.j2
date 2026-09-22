@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backup-nacos-db-job
+  namespace: {{ platform_namespace }}
+  labels:
+    app.kubernetes.io/instance: backup-nacos-db-job
+    app.kubernetes.io/name: backup-nacos-db-job
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: backup-nacos-db-job
+        app.kubernetes.io/instance: backup-nacos-db-job
+        app.kubernetes.io/name: backup-nacos-db-job
+      annotations:
+        safebox/enable: "true"
+    spec:
+      serviceAccountName: greatsql-user
+      nodeSelector:
+        kubernetes.io/hostname: "{{ backupnode }}"
+      initContainers:
+        - name: wait-safebox-webhook
+          image:  {{ greatsql_repo }}/checkme:1.0.4
+          command: ["/usr/bin/checkme"]
+      containers:
+      - name: backup-nacos-db-job
+        command: ["/bin/sh",  "/backup_nacos_db.sh"]
+        env:
+          - name: HOST
+            value: "cnp-leader.platform.svc.cluster.local"
+          - name: PORT
+            value: "3306"
+          - name: BACKUPUSER
+            value: "cnp"
+          - name: USERPASSWD
+            value: "safebox:platform/platform-secret#mysql_password"
+          - name: COMPRESSALG
+            value: "zstd"
+          - name: DISK_MAX
+            value: "80"
+        image: "{{ greatsql_repo }}/xtrabackup:{{ greatsql_backup_version }}"
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: log
+            mountPath: /data/logs/crontab
+          - name: targetdir
+            mountPath: /backup
+          - name: datadir
+            mountPath: /var/lib/mysql
+          - name: localtime
+            mountPath: /etc/localtime
+          - name: mysql-bin
+            mountPath: /backup_nacos_db.sh
+            subPath: backup_nacos_db.sh
+            readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: log
+          hostPath:
+            path: /data/logs/crontab
+        - name: targetdir
+          hostPath:
+            path: {{ great_storage_backup_tmp1_path }}
+        - name: datadir
+          hostPath:
+            path: {{ mysql_storage_data_path }}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: mysql-bin
+          configMap:
+            name: mysql-saas-entrypoint
+            defaultMode: 0555

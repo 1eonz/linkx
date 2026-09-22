@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CollaborationTaskResponseMapper">
+
+    <select id="listPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationTaskResponse">
+        select ta.id, ta.task_id, ta.user_id, ta.post_id, ta.user_name, ta.content,
+               ta.department_id, ta.department_name, ta.user_nick, ta.seqid, ta.msg_file_id,
+               ta.is_deleted, ta.gmt_modified, ta.gmt_created
+        from tb_task_response ta
+
+        <where>
+            1=1
+            <if test="qo.userId!=null and qo.userId != ''">
+                and ta.user_id = #{qo.userId}
+            </if>
+
+        </where>
+        order by ta.gmt_modified desc
+    </select>
+
+    <select id="getCTaskResps" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationTaskResponse">
+        SELECT id, task_id, user_id, post_id, user_name, content,
+               department_id, department_name, user_nick, seqid, msg_file_id,
+               is_deleted, gmt_modified, gmt_created
+        FROM `tb_task_response`
+        <where>
+            <if test="taskId != null and taskId != ''">
+                and task_id = #{taskId}
+            </if>
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
+            <if test="postId != null and postId != ''">
+                and post_id = #{postId}
+            </if>
+        </where>
+
+
+        ORDER BY gmt_modified DESC
+    </select>
+
+    <select id="queryNumById" resultType="java.lang.Long">
+        SELECT
+            count( 1 )
+        FROM
+            tb_task tt
+            LEFT JOIN tb_collaboration_post tcp ON tt.post_id = tcp.id
+        WHERE
+            tcp.deleted = 0
+            AND tt.reply = 1
+            <if test="userId != null and userId != ''">
+                AND tt.user_id = #{userId}
+            </if>
+            <if test="postIdList != null and postIdList.size()>0">
+                and tt.post_id IN
+                <foreach collection="postIdList" open="(" separator="," close=")" item="postId">
+                    #{postId}
+                </foreach>
+            </if>
+            <if test="userIdList != null and userIdList.size()>0">
+                AND tt.user_id IN
+                <foreach collection="userIdList" open="(" separator="," close=")" item="id">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND tt.gmt_modified &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND tt.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+    </select>
+
+    <!--
+        游标分页拉取任务回复统计明细（一条 SQL 关联出全部聚合字段）。
+        关联：tb_collaboration_post（post_name，LEFT JOIN by post_id）。
+        双游标：(gmt_created, id) > (timeAfter, idAfter)，首次拉取 timeAfter/idAfter 传 null。
+        多查 1 条（pageSize+1）用于判断 hasMore。
+        依赖 map-underscore-to-camel-case 将列名映射到 StaticTaskResponseAggVO 字段。
+    -->
+    <select id="selectStaticTaskResponseAggByCursor"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.StaticTaskResponseAggVO">
+        SELECT
+            r.id,
+            r.task_id,
+            r.user_id,
+            r.user_name,
+            r.department_id,
+            r.department_name,
+            r.post_id,
+            r.gmt_created,
+            r.seqid,
+            p.post_name
+        FROM tb_task_response r
+        LEFT JOIN tb_collaboration_post p ON r.post_id = p.id
+        <where>
+            <!-- 双游标用行构造器比较，等价于 gmt_created > timeAfter OR (gmt_created = timeAfter AND id > idAfter)，且无 OR -->
+            <if test="timeAfter != null">
+                (r.gmt_created, r.id) &gt; (#{timeAfter}, #{idAfter})
+            </if>
+        </where>
+        ORDER BY r.gmt_created ASC, r.id ASC
+        LIMIT #{pageSize}
+    </select>
+
+
+</mapper>

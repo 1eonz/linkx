@@ -1,0 +1,15 @@
+FROM repo.rd.td-tech.com/docker-virtual/linkx/cnp/openeuler-openjre:21.0.2.2-x86
+
+# 复制 jar 和证书
+COPY ./linkx-encryptor-service.jar /app/app.jar
+COPY ./crts/sm.crt /app/sm.crt
+
+# 构建期以 root 身份把证书导入 JDK 全局信任库（运行时用户无写权限）
+USER root
+RUN keytool -import -cacerts -storepass changeit -noprompt -alias jx-ca -file /app/sm.crt
+
+# 设置工作目录
+WORKDIR /app
+
+# 启动命令
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app/app.jar"]

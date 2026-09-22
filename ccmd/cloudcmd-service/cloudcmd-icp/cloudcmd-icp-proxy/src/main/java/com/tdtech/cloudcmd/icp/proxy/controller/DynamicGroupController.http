@@ -1,0 +1,57 @@
+### 创建或更新动态群组
+POST {{baseUrl}}/icp/dynamic-group/upsert
+Content-Type: application/json
+
+{
+  "groupId": "group123",
+  "members": [
+    {
+      "userId": "user001",
+      "userName": "testUser1",
+      "isdn": "123456789"
+    },
+    {
+      "userId": "user002",
+      "userName": "testUser2",
+      "isdn": "987654321"
+    }
+  ]
+}
+
+### 添加群组成员
+PUT {{baseUrl}}/icp/dynamic-group/group123/add-member
+Content-Type: application/json
+
+[
+  {
+    "userId": "user003",
+    "userName": "newUser1",
+    "isdn": "111111111"
+  },
+  {
+    "userId": "user004",
+    "userName": "newUser2",
+    "isdn": "222222222"
+  }
+]
+
+### 删除群组成员
+PUT {{baseUrl}}/icp/dynamic-group/group123/del-members
+Content-Type: application/json
+
+["user001", "user002"]
+
+### 删除群组 (实际是删除群组下所有成员)
+DELETE {{baseUrl}}/icp/dynamic-group/group123
+
+### 获取群组信息
+GET {{baseUrl}}/icp/dynamic-group/group123/info
+
+### 获取群组列表
+GET {{baseUrl}}/icp/dynamic-group/list?pageNum=1&pageSize=10&userId=user003&userName=newUser1&isdn=111111111
+
+###
+PUT {{baseUrl}}/icp/dynamic-group/123456/button/abc
+
+###
+GET {{baseUrl}}/icp/dynamic-group/123456/button

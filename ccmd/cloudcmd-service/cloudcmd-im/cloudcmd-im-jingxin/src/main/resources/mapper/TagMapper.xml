@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.TagMapper">
+
+    <!-- Base result map for tag entity -->
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.Tag">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="icon" property="icon"/>
+        <result column="color" property="color"/>
+        <result column="create_user_id" property="createUserId"/>
+        <result column="deleted" property="deleted"/>
+        <result column="gmt_created" property="gmtCreated"/>
+    </resultMap>
+
+    <!-- Page query with keywords -->
+    <select id="selectPageByKeywords" resultMap="BaseResultMap">
+        SELECT id, name, icon, color, create_user_id, deleted, gmt_created
+        FROM tb_tags
+        WHERE deleted = 0
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        ORDER BY gmt_created DESC
+    </select>
+
+    <!-- Count tags by name (for uniqueness check) -->
+    <select id="countByName" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM tb_tags
+        WHERE name = #{name}
+        AND deleted = 0
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <select id="selectAllList" resultMap="BaseResultMap">
+        SELECT id, name, icon, color, create_user_id, deleted, gmt_created
+        FROM tb_tags
+        ORDER BY id asc
+    </select>
+
+    <select id="selectBatchByIds" resultMap="BaseResultMap">
+        SELECT id, name, icon, color, create_user_id, deleted, gmt_created
+        FROM tb_tags
+        WHERE id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and deleted = 0
+    </select>
+
+    <update id="deleteBatchByIds">
+        UPDATE tb_tags
+        SET deleted = 1, gmt_created = NOW()
+        WHERE id in
+        <foreach collection="tags" item="tag" open="(" separator="," close=")">
+            #{tag.id}
+        </foreach>
+    </update>
+</mapper>

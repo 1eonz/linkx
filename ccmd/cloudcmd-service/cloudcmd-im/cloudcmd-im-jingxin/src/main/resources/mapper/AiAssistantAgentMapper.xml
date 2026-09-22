@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.AiAssistantAgentMapper">
+  <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.AiAssistantAgent">
+    <!--@mbg.generated-->
+    <!--@Table `linkx_auth`.`tr_ai_assistant_agent`-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="virtual_user_id" jdbcType="BIGINT" property="virtualUserId" />
+    <result column="agent_id" jdbcType="BIGINT" property="agentId" />
+    <result column="created_user_id" jdbcType="BIGINT" property="createdUserId" />
+    <result column="gmt_created" jdbcType="TIMESTAMP" property="gmtCreated" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    `id`, `virtual_user_id`, `agent_id`, `created_user_id`, `gmt_created`
+  </sql>
+  <update id="updateByPrimaryKey" parameterType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.AiAssistantAgent">
+    <!--@mbg.generated-->
+    update `linkx_auth`.`tr_ai_assistant_agent`
+    set `virtual_user_id` = #{virtualUserId,jdbcType=BIGINT},
+      `agent_id` = #{agentId,jdbcType=BIGINT},
+      `created_user_id` = #{createdUserId,jdbcType=BIGINT},
+      `gmt_created` = #{gmtCreated,jdbcType=TIMESTAMP}
+    where `id` = #{id,jdbcType=BIGINT}
+  </update>
+  <insert id="batchInsert" parameterType="map">
+    <!--@mbg.generated-->
+    insert into `linkx_auth`.`tr_ai_assistant_agent`
+    (`id`, `virtual_user_id`, `agent_id`, `created_user_id`, `gmt_created`)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.id,jdbcType=BIGINT}, #{item.virtualUserId,jdbcType=BIGINT}, #{item.agentId,jdbcType=BIGINT}, 
+        #{item.createdUserId,jdbcType=BIGINT}, #{item.gmtCreated,jdbcType=TIMESTAMP})
+    </foreach>
+  </insert>
+  <delete id="deleteByPrimaryKeyIn">
+    <!--@mbg.generated-->
+    delete from `linkx_auth`.`tr_ai_assistant_agent` where `id` in 
+    <foreach close=")" collection="list" item="id" open="(" separator=", ">
+      #{id,jdbcType=BIGINT}
+    </foreach>
+  </delete>
+
+  <select id="selectAiVirtualUserByVirtualUserIds" resultType="com.tdtech.cloudcmd.im.jingxin.server.aiclient.entity.AiVirtualUser">
+    select u.app_id as clientId,
+           u.app_secret as clientSec,
+           ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    inner join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where u.deleted = 0
+      and u.id in
+    <foreach collection="ids" item="id" open="(" close=")" separator=",">
+      #{id,jdbcType=BIGINT}
+    </foreach>
+  </select>
+
+  <select id="selectBinsUser" resultType="com.tdtech.cloudcmd.im.jingxin.client.entity.ImUserVirtualRespVO">
+    select u.*, ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    inner join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where u.deleted = 0
+    and ta.agent_id in
+    <foreach collection="ids" item="id" open="(" close=")" separator=",">
+      #{id,jdbcType=BIGINT}
+    </foreach>
+  </select>
+
+  <delete id="deleteByVirtualUserId">
+    delete from `linkx_auth`.`tr_ai_assistant_agent` where
+    `virtual_user_id` = #{id,jdbcType=BIGINT}
+  </delete>
+
+  <delete id="deleteByVirtualUserIds">
+    delete from `linkx_auth`.`tr_ai_assistant_agent` where
+    `virtual_user_id` in
+    <foreach collection="ids" item="id" open="(" close=")" separator=",">
+      #{id,jdbcType=BIGINT}
+    </foreach>
+  </delete>
+</mapper>

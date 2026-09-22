@@ -1,0 +1,61 @@
+---
+- name: recover by service ======= | {{ svc_name }}
+  shell: >-
+    kubectl -n {{ svc_namespace }} get pod -l app={{ svc_name }} -o jsonpath='{.items[0].metadata.name}' || kubectl -n {{ svc_namespace }} get pod -l name={{ svc_name }} -o jsonpath='{.items[0].metadata.name}' ||
+    { echo "NOT_FOUND"; exit 1; }
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  register: pod_name
+  until: pod_name.stdout not in ["", "NOT_FOUND"]
+  retries: 30
+  delay: 20
+  failed_when: false          # 让 until 自己决定何时失败
+
+- name: makesure manifest exist | {{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/manifest.yml
+  stat:
+    path: "{{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/manifest.yml"
+  register: st
+  failed_when: not st.stat.exists
+
+- name: Read backup mapping
+  slurp:
+    src: "{{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/manifest.yml"
+  register: manifest_b64
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Parse the mapping file into a list
+  set_fact:
+    _restore_list: "{{ (manifest_b64.content | b64decode) | from_yaml }}"
+
+- name: Restore item by item according to the mapping file | {{ pod_name.stdout }}
+  vars:
+    _pkg: "{{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/{{ inner_item.archive }}"
+    _path: "{{ inner_item.containerPath }}"
+  shell: |
+    set -e
+    pod=$(kubectl -n {{ svc_namespace }} get pod -l app={{ svc_name }} -o jsonpath='{.items[0].metadata.name}' || kubectl -n {{ svc_namespace }} get pod -l name={{ svc_name }} -o jsonpath='{.items[0].metadata.name}')
+    
+    # 1. 临时目录直接放 /tmp（一定可写）
+    tmpdir="/tmp/restore_$$"
+    kubectl -n {{ svc_namespace }} exec "$pod" -- sh -c "mkdir -p ${tmpdir}"
+    
+    # 2. 拷包 & 解压
+    kubectl -n {{ svc_namespace }} cp "{{ _pkg }}" "$pod:/tmp/restore.tgz"
+    kubectl -n {{ svc_namespace }} exec "$pod" -- sh -c "tar -xzf /tmp/restore.tgz -C ${tmpdir}"
+    
+    # 3. 确保目标父目录存在
+    kubectl -n {{ svc_namespace }} exec "$pod" -- sh -c "mkdir -p $(dirname "{{ _path }}")"
+    
+    # 4. 整目录替换（先清再拷）
+    kubectl -n {{ svc_namespace }} exec "$pod" -- sh -c "if [ -f {{ _path }} ]; then rm -rf {{ _path }}; cp -rf ${tmpdir}/* {{ _path }}; fi"
+    kubectl -n {{ svc_namespace }} exec "$pod" -- sh -c "if [ -d {{ _path }} ]; then rm -rf {{ _path }}/*; cp -rf ${tmpdir}/* {{ _path }}; fi"
+    
+    # 5. 清理
+    kubectl -n {{ svc_namespace }} exec "$pod" -- rm -rf /tmp/restore.tgz "${tmpdir}"
+  loop: "{{ _restore_list }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  loop_control:
+    loop_var: inner_item
+  register: _restore_run

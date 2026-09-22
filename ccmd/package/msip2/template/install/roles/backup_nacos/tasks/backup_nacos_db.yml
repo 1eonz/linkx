@@ -1,0 +1,210 @@
+- name: backup nacos db | make sure greatsql deploy folder exist
+  file:
+    path: "{{ nacos_manifest_folder }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+- name: backup nacos db | make sure backup folder exist
+  file:
+    path: "{{ nacos_backup_path }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | make sure tmp1 folder exist
+  file:
+    path: "{{ great_storage_backup_tmp1_path }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Execute kubectl command to delete job
+  command: kubectl delete job backup-nacos-db-job -n platform
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: Execute kubectl command to get leader node name
+  command: kubectl get pod -A -l role=LEADER --no-headers -o custom-columns='NODE:.spec.nodeName'
+  register: node_mysql_leader
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  no_log: true
+
+- name: Convert node names to array
+  set_fact:
+    backupnode: "{{ node_mysql_leader.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Debug Node Names (safe)
+  debug:
+    msg: "backupnode 已获取"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | Check nacos backup config file exists
+  stat:
+    path: "{{ nacos_backup_config_path }}"
+  register: nacos_backup_cfg_stat
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | Fail if nacos backup config file not found
+  fail:
+    msg: "Nacos config file not found：{{ nacos_backup_config_path }}"
+  when: not nacos_backup_cfg_stat.stat.exists
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | Load nacos backup config
+  include_vars:
+    file: "{{ nacos_backup_config_path }}"
+    name: nacos_backup_cfg
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | Set backup tables/group_ids from config
+  set_fact:
+    nacos_backup_tables: "{{ nacos_backup_cfg.nacos_backup.backup_tables | default([]) }}"
+    nacos_backup_group_ids: "{{ nacos_backup_cfg.nacos_backup.backup_group_ids | default([]) }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | Skip when tables or group_ids empty
+  debug:
+    msg: "backup_tables or backup_group_ids is null (backup_tables={{ nacos_backup_tables | length }}, backup_group_ids={{ nacos_backup_group_ids | length }}）"
+  when: (nacos_backup_tables | length == 0) or (nacos_backup_group_ids | length == 0)
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | End play when config incomplete
+  meta: end_play
+  when: (nacos_backup_tables | length == 0) or (nacos_backup_group_ids | length == 0)
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | Create back manifests files
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ nacos_manifest_folder }}/{{ item.file }}"
+  loop:
+    - {name: greatsql, file: backup_nacos_job.yml, type: job}
+    - {name: greatsql, file: nodes_nacos_job.yml, type: job}
+    - {name: greatsql, file: backup_nacos_db.yml, type: cm}
+  register: greatsql_manifests
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | apply cm
+  command: "kubectl apply -f {{ nacos_manifest_folder }}/backup_nacos_db.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | execute backupdb_job
+  command: "kubectl apply -f {{ nacos_manifest_folder }}/backup_nacos_job.yml"
+  delegate_to: "{{ first_kube_master }}"
+  when:
+    - model=="standalone"
+  run_once: true
+
+- name: backup nacos db | execute nodes_job
+  command: "kubectl apply -f {{ nacos_manifest_folder }}/nodes_nacos_job.yml"
+  delegate_to: "{{ first_kube_master }}"
+  when:
+    - model=="cluster"
+  run_once: true
+
+- name: Wait for job setup
+  pause:
+    minutes: 1
+
+- name: backup nacos db | make sure backup complete
+  command: "kubectl wait --for=condition=complete job/backup-nacos-db-job -n platform"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: backup_result
+  until: backup_result.rc == 0
+  retries: 5
+  delay: 30
+  no_log: true
+
+- name: Debug backup result
+  debug:
+    msg: "backup job rc={{ backup_result.rc }}"
+  when: backup_result.rc == 0
+
+- name: Fail if backup job failed
+  fail:
+    msg: "Backup job failed with return code {{ backup_result.rc }}"
+  when: backup_result.rc != 0
+
+- name: Execute kubectl command to get leader node ip
+  command: kubectl get node {{ backupnode }} -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}'
+  register: node_mysql_leader_ip
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  no_log: true
+
+- name: Convert node ip to array
+  set_fact:
+    backupnodeip: "{{ node_mysql_leader_ip.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Debug Node Ip (safe)
+  debug:
+    msg: "backupnodeip 已获取"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup nacos db | make backup file dir
+  file:
+    path: "{{ nacos_backup_path }}/{{ namespace }}/nacos"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: backup nacos db | copy backup data
+  shell: "cp  {{ great_storage_backup_tmp1_path }}* {{ nacos_backup_path }}/{{ namespace }}/nacos/"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master == backupnodeip
+  run_once: true
+
+- name: backup nacos db | delete tmp backup data
+  shell: "rm -f {{ great_storage_backup_tmp1_path }}*"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master == backupnodeip
+  run_once: true
+
+- name: backup nacos db | copy backup data to master1
+  shell: "scp -P {{ ansible_ssh_port }} -r root@{{ backupnodeip }}:{{ great_storage_backup_tmp1_path }}/* {{ nacos_backup_path }}/{{ namespace }}/nacos/"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master != backupnodeip
+  run_once: true
+
+- name: backup nacos db | delete tmp backup data
+  shell: "ssh root@{{ backupnodeip }} 'rm -f {{ great_storage_backup_tmp1_path }}/*'"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master != backupnodeip
+  run_once: true

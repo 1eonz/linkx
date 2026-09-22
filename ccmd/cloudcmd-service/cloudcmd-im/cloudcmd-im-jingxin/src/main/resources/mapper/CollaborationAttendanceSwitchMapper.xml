@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CollaborationAttendanceSwitchMapper">
+    <resultMap id="switchMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationAttendanceSwitch">
+        <id column="id" property="id"/>
+        <result property="personId" column="person_id"/>
+        <result property="switchStatus" column="switch_status"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="getByPersonId" resultMap="switchMap">
+        SELECT id, person_id, switch_status, update_time
+        FROM tb_collaboration_attendance_switch
+        WHERE person_id = #{personId}
+    </select>
+
+    <select id="getByPersonIds" resultMap="switchMap">
+        SELECT id, person_id, switch_status, update_time
+        FROM tb_collaboration_attendance_switch
+        WHERE person_id in
+        <foreach collection="personIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="countOnDutyByPersonIds" resultType="int">
+        SELECT
+        count(*)
+        FROM
+        tb_collaboration_attendance_switch
+        WHERE
+        switch_status = 0
+        AND person_id in
+        <foreach collection="personIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="listOnDutyPeople" resultType="Long">
+        SELECT
+        person_id
+        FROM
+        tb_collaboration_attendance_switch
+        WHERE
+        switch_status = 0
+        AND person_id in
+        <foreach collection="personIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </select>
+
+    <insert id="insertBatch">
+        INSERT INTO tb_collaboration_attendance_switch
+        (id,person_id, switch_status, update_time, remark)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.personId}, #{item.switchStatus}, #{item.updateTime}, #{item.remark})
+        </foreach>
+    </insert>
+</mapper>

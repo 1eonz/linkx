@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-copy-ibd
+  namespace: platform
+data:
+  copy_ibd.sh: |-
+    #!/bin/bash
+    set -e
+    RESTORE_DIR="/restore"
+    DBFILE_LIST="$RESTORE_DIR/database_list.txt"
+    import_sql="$RESTORE_DIR/import_sql.sql"
+    discard_sql="$RESTORE_DIR/discard_sql.sql"
+
+    BACKUP_DIR=$RESTORE_DIR
+    DATADIR="/var/lib/mysql"
+    while IFS= read -r entry; do
+        [ -z "$entry" ] && continue
+        DB="$(echo "$entry" | cut -d'.' -f1)"
+        TABLE="$(echo "$entry" | cut -d'.' -f2)"
+        mkdir -p "$DATADIR/$DB"
+        echo "[INFO] Restoring $DB.$TABLE"
+        if [ -f "$BACKUP_DIR/$DB/$TABLE.ibd" ]; then
+            cp -f "$BACKUP_DIR/$DB/$TABLE.ibd" "$DATADIR/$DB/$TABLE.ibd"
+            cp -f "$BACKUP_DIR/$DB/$TABLE.cfg" "$DATADIR/$DB/$TABLE.cfg"
+            echo "cp $BACKUP_DIR/$DB/$TABLE.ibd $DATADIR/$DB/$TABLE.ibd"
+            chown 1001:1001 "$DATADIR/$DB/$TABLE.ibd"
+            chown 1001:1001 "$DATADIR/$DB/$TABLE.cfg"
+        else
+            echo "[WARN] Missing IBD file: $BACKUP_DIR/$DB/$TABLE.ibd"
+        fi
+    done < "$DBFILE_LIST"
+    echo "[INFO] Restore copy completed. $BACKUP_DIR contains $(ls -l $BACKUP_DIR)"
+

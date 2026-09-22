@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.TasksExpiredMapper">
+
+    <select id="findPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.TasksExpiredVO">
+        SELECT
+            tt.from_user_name AS senderName,
+            tt.text AS questionContent,
+            tt.msg_sent_time AS questionTime,
+            tt.group_name AS groupName,
+            tt.group_id AS groupId,
+            tt.ics_msg_id AS icsMsgId,
+            tcp.post_name AS postName,
+            tcp.org_name AS orgName,
+            tcp.related_user_names AS postUserNames,
+            tcp.related_user_ids as relatedUserIds,
+            tt.user_id as userId,
+            tte.create_time as overDueTime,
+            IF(tt.status = 8, false, true) as isHandle,
+            tt.gmt_modified as handleTime
+        FROM
+            tb_task_expired tte
+            LEFT JOIN tb_task tt ON tte.task_id = tt.id
+            LEFT JOIN tb_collaboration_post tcp ON tt.post_id = tcp.id
+            WHERE tcp.deleted = 0
+            <if test="orgCodeList != null and orgCodeList.size() > 0">
+                AND tcp.org_code in
+                <foreach collection="orgCodeList" item="code" open="(" close=")" separator=",">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND tte.create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND tte.create_time &lt;=CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+            <if test="keywords != null and keywords != ''">
+                AND tcp.post_name LIKE concat('%',#{keywords},'%')
+            </if>
+        ORDER BY tte.create_time DESC
+    </select>
+
+    <select id="countByCondition" resultType="java.lang.Long">
+        SELECT
+            count(1) AS ct
+        FROM
+            tb_task_expired tte
+        LEFT JOIN tb_task tt ON tte.task_id = tt.id
+        LEFT JOIN tb_collaboration_post tcp ON tt.post_id = tcp.id
+        WHERE tcp.deleted = 0
+        <if test="orgIdList != null and orgIdList.size() > 0">
+            AND tcp.org_id in
+            <foreach collection="orgIdList" item="id" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>
+        <if test="startTime != null and startTime != ''">
+            AND tte.create_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND tte.create_time &lt;=CONCAT(#{endTime}, ' 23:59:59')
+        </if>
+    </select>
+
+</mapper>

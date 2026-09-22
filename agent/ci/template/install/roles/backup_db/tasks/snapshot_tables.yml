@@ -1,0 +1,30 @@
+# 补丁安装前：记录当前库表清单，供补丁回滚时识别并删除新增表（方案2）
+---
+- name: snapshot tables | ensure backup db dir exists
+  file:
+    path: "{{ great_storage_backup_path }}patch/{{ namespace }}/db"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: snapshot tables | dump table list before patch
+  shell: |
+    kubectl exec -i -n platform $(kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].metadata.name}') -c {{ db_container }} -- \
+      mysql -uroot -N -e "
+        SELECT CONCAT(table_schema, '.', table_name)
+        FROM information_schema.tables
+        WHERE table_schema NOT IN ('information_schema','mysql','performance_schema','sys','sys_config')
+          AND table_type = 'BASE TABLE'
+        ORDER BY table_schema, table_name;
+      " > {{ great_storage_backup_path }}patch/{{ namespace }}/db/table_snapshot.list
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: table_snapshot_result
+  failed_when: table_snapshot_result.rc != 0
+
+- name: snapshot tables | debug
+  debug:
+    msg: "table snapshot saved to {{ great_storage_backup_path }}patch/{{ namespace }}/db/table_snapshot.list"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true

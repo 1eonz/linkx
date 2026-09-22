@@ -1,0 +1,166 @@
+---
+# Source: springboot-server/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-im-openapi
+  labels:
+    app.kubernetes.io/name: cloudcmd-im-openapi
+spec:
+  selector:
+    app: cloudcmd-im-openapi
+  ports:
+    - port: 9090
+      name: healthz
+      protocol: TCP
+      targetPort: 9090
+    - port: 8080
+      name: http
+      protocol: TCP
+      targetPort: 8080
+    - port: 18080
+      name: dubbo
+      protocol: TCP
+      targetPort: 18080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: actuator-prometheus-cloudcmd-im-openapi
+  namespace: linkx
+  annotations:
+    platform.prometheus: "/actuator/prometheus"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+  selector:
+    app: cloudcmd-im-openapi
+---
+# Source: springboot-server/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: cloudcmd-im-openapi
+  labels:
+    app: cloudcmd-im-openapi
+    app.kubernetes.io/name: cloudcmd-im-openapi
+    ha-service-stop/enable: "true"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cloudcmd-im-openapi
+      labels:
+        app: cloudcmd-im-openapi
+        app.kubernetes.io/name: cloudcmd-im-openapi
+        enableRestart: "true"
+      annotations:
+        helm.sh/chart: springboot-server-0.1.0
+        app.kubernetes.io/name: cloudcmd-im-openapi
+        app.kubernetes.io/instance: cloudcmd-im-openapi
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+        safebox/enable: "true"
+    spec:
+      volumes:
+        - name: cloudcmd-im-openapi-im-store
+          persistentVolumeClaim:
+            claimName: im-store-pvc-claim
+        - name: cloudcmd-im-openapi-openapi-store
+          persistentVolumeClaim:
+            claimName: openapi-store-pvc-claim
+        - name: oom-dump
+          persistentVolumeClaim:
+            claimName: oom-dump-pvc-claim
+
+      initContainers:
+        - name: wait-zookeeper
+          image: imagerepo.td-tech.com:5001/busybox:1.28.0
+          imagePullPolicy: Always
+          command: [ 'sh', '-c', "until nc -z -v -w 20 zookeeper-0.zookeeper 2181; do echo waiting for zookeeper-0.zookeeper 2181; sleep 6; done" ]
+      containers:
+        - name: cloudcmd-im-openapi
+          image: imagerepo.td-tech.com:5001/cloudcmd-im-openapi:{Version}.{Arch}.{BuildTime}
+          
+          command: [ 'java' ]
+          args:
+            - -jar
+            - -Dfile.encoding=UTF-8
+            - -Duser.timezone=Asia/Shanghai
+            - -Xmx2g
+            - -Xms1g
+            - -server
+            - -XX:+UseG1GC
+            - -XX:+UseStringDeduplication
+            - -XX:MaxGCPauseMillis=20
+            - -XX:InitiatingHeapOccupancyPercent=50
+            - -XX:G1HeapWastePercent=10
+            - -XX:+ExplicitGCInvokesConcurrent
+            - -XX:MaxInlineLevel=15
+            - -verbose:gc
+            - -XX:+PrintGCDetails
+            - -XX:+HeapDumpOnOutOfMemoryError
+            - -XX:HeapDumpPath=/opt/dump/cloudcmd-im-openapi.dump
+            - -XX:+UnlockExperimentalVMOptions
+            - -Djdk.internal.httpclient.disableHostnameVerification=true
+            - /app/app.jar
+          
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: dubbo
+              containerPort: 18080
+            - name: management
+              containerPort: 9090
+          volumeMounts:
+            - name: cloudcmd-im-openapi-im-store
+              mountPath: /home/linkx/im/
+            - name: cloudcmd-im-openapi-openapi-store
+              mountPath: /data/linkx/data/openapi
+            - name: oom-dump
+              mountPath: /opt/dump/
+          readinessProbe:
+            httpGet:
+              path: /actuator
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 20
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /actuator
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 20
+            successThreshold: 1
+          envFrom:
+            - configMapRef:
+                name: cloudcmd-profile
+          env:
+            - name: cloudcmd.service.name
+              value: cloudcmd-im-openapi
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: MYSQL_ROOT_PASSWORD
+              value: safebox:platform/platform-secret#mysql_password
+            - name: REDIS_PASSWORD
+              value: safebox:platform/platform-secret#redis_password
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: cloudcmd-im-openapi

@@ -1,0 +1,72 @@
+spring:
+  main:
+    web-application-type: servlet
+  application:
+    name: cloudcmd-cagent
+  cloud:
+    stream:
+      function:
+        definition: onMessage;logout;message;alert;admin
+      kafka:
+        binder:
+          min-partition-count: 10
+          configuration:
+            num.stream.threads: 100
+            max.poll.records: 10
+      bindings:
+        onMessage-in-0:
+          destination: cloudcmd-cagent
+          group: ${spring.application.name}-onMessage
+          consumer:
+            concurrency: 10
+            batchMode: true
+        logout-in-0:
+          destination: invalid_token
+          group: ${spring.application.name}-logout
+          consumer:
+            concurrency: 10
+        message-in-0:
+          destination: messageToCagent
+          group: ${spring.application.name}-message
+          consumer:
+            concurrency: 10
+        alert-in-0:
+          destination: sysMessageToCagent
+          group: ${spring.application.name}-alert
+          consumer:
+            concurrency: 10
+        admin-in-0:
+          destination: adminTOCagent
+          group: ${spring.application.name}-admin
+          consumer:
+            concurrency: 10
+
+cloudcmd:
+  cagent:
+    socketPort: 8866
+    webport: 8867
+    heartbeatTimeOut: 60
+    ssl: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    enabled-by-default: true
+  endpoint:
+    info:
+      enabled: true
+
+spring.jackson:
+  date-format: yyyy-MM-dd HH:mm:ss
+  time-zone: Asia/Shanghai
+  deserialization:
+    fail-on-unknown-properties: false
+  serialization:
+    fail-on-empty-beans: false
+    write-self-references-as-null: true
+    write-null-map-values: false
+
+server.port: 8080
+
+spring.main.allow-circular-references: true

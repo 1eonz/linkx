@@ -1,0 +1,174 @@
+---
+# Source: springboot-server/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-admin-service
+  labels:
+    app.kubernetes.io/name: cloudcmd-admin-service
+spec:
+  selector:
+    app: cloudcmd-admin-service
+  ports:
+    - port: 9090
+      name: healthz
+      protocol: TCP
+      targetPort: 9090
+    - port: 8080
+      name: http
+      protocol: TCP
+      targetPort: 8080
+    - port: 18080
+      name: dubbo
+      protocol: TCP
+      targetPort: 18080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: actuator-prometheus-cloudcmd-admin-service
+  namespace: linkx
+  annotations:
+    platform.prometheus: "/actuator/prometheus"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+  selector:
+    app: cloudcmd-admin-service
+---
+# Source: springboot-server/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: cloudcmd-admin-service
+  labels:
+    app: cloudcmd-admin-service
+    app.kubernetes.io/name: cloudcmd-admin-service
+    ha-service-stop/enable: "true"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cloudcmd-admin-service
+      labels:
+        app: cloudcmd-admin-service
+        app.kubernetes.io/name: cloudcmd-admin-service
+        enableRestart: "true"
+      annotations:
+        helm.sh/chart: springboot-server-0.1.0
+        app.kubernetes.io/name: cloudcmd-admin-service
+        app.kubernetes.io/instance: cloudcmd-admin-service
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+        safebox/enable: "true"
+    spec:
+      volumes:
+        - name: cloudcmd-admin-service-headshot-store
+          persistentVolumeClaim:
+            claimName: headshot-store-pvc-claim
+        - name: cloudcmd-admin-service-log-store
+          persistentVolumeClaim:
+            claimName: log-store-pvc-claim
+        - name: cloudcmd-admin-service-jingxin-file
+          persistentVolumeClaim:
+            claimName: jingxin-file-pvc-claim
+        - name: cloudcmd-admin-service-mapbox-store
+          persistentVolumeClaim:
+            claimName: mapbox-store-pvc-claim
+        - name: oom-dump
+          persistentVolumeClaim:
+            claimName: oom-dump-pvc-claim
+
+      initContainers:
+        - name: wait-zookeeper
+          image: imagerepo.td-tech.com:5001/busybox:1.28.0
+          imagePullPolicy: Always
+          command: [ 'sh', '-c', "until nc -z -v -w 20 zookeeper-0.zookeeper 2181; do echo waiting for zookeeper-0.zookeeper 2181; sleep 6; done" ]
+      containers:
+        - name: cloudcmd-admin-service
+          image: imagerepo.td-tech.com:5001/cloudcmd-admin-service:{Version}.{Arch}.{BuildTime}
+          
+          command: [ 'java' ]
+          args:
+            - -jar
+            - -Dfile.encoding=UTF-8
+            - -Duser.timezone=Asia/Shanghai
+            - -Xmx3g
+            - -Xms3g
+            - -server
+            - -XX:+UseG1GC
+            - -XX:+UseStringDeduplication
+            - -XX:MaxGCPauseMillis=20
+            - -XX:InitiatingHeapOccupancyPercent=50
+            - -XX:G1HeapWastePercent=10
+            - -XX:+ExplicitGCInvokesConcurrent
+            - -XX:MaxInlineLevel=15
+            - -verbose:gc
+            - -XX:+PrintGCDetails
+            - -XX:+HeapDumpOnOutOfMemoryError
+            - -XX:HeapDumpPath=/opt/dump/cloudcmd-admin-service.dump
+            - -XX:+UnlockExperimentalVMOptions
+            - -Djdk.internal.httpclient.disableHostnameVerification=true
+            - /app/app.jar
+          
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: dubbo
+              containerPort: 18080
+            - name: management
+              containerPort: 9090
+          volumeMounts:
+            - name: cloudcmd-admin-service-headshot-store
+              mountPath: /home/linkx/headshot/
+            - name: cloudcmd-admin-service-log-store
+              mountPath: /home/ubp/log_store/
+            - name: cloudcmd-admin-service-jingxin-file
+              mountPath: /home/linkx/file/
+            - name: cloudcmd-admin-service-mapbox-store
+              mountPath: /home/ics/offlinemap/data
+            - name: oom-dump
+              mountPath: /opt/dump/
+          readinessProbe:
+            httpGet:
+              path: /actuator
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /actuator
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 20
+          envFrom:
+            - configMapRef:
+                name: cloudcmd-profile
+          env:
+            - name: cloudcmd.service.name
+              value: cloudcmd-admin-service
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: MYSQL_ROOT_PASSWORD
+              value: safebox:platform/platform-secret#mysql_password
+            - name: REDIS_PASSWORD
+              value: safebox:platform/platform-secret#redis_password
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: cloudcmd-admin-service

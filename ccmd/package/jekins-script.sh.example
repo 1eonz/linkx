@@ -1,0 +1,152 @@
+#!/bin/bash
+############
+# USAGE: sh ci.sh /gitlab-ci/code/hebei_multicenter/config.conf
+############
+
+source /etc/profile
+nvm -v
+
+
+echo "build ${arch} package"
+
+if [[ ! -e $1 ]]; then
+    echo "config file not exists"
+fi
+
+whoami
+abs_conf="$(cd "$(dirname $1)" || exit 1;pwd)/$(basename $1)"
+
+# shellcheck source=./config.conf
+source $abs_conf
+echo "source $abs_conf done"
+
+function logger(){
+    echo "$0 $1"
+}
+
+function git_update(){
+    cd $path_workspace
+    dir_name=$1
+    code_url=$2
+    code_branch=$3
+    logger "git update $path_workspace $dir_name $code_branch"
+    if [[ -e "$path_workspace/$dir_name" ]]; then
+        cd "$path_workspace/$dir_name" || exit 1
+        git reset
+        git checkout .
+        git pull || exit 1
+        logger "update $dir_name done"
+    else
+        git clone $code_url -b $code_branch -o $dir_name
+    fi
+}
+
+function compile_icc(){
+    logger "compile icc"
+    cd "$path_workspace/$dir_icc" || exit 1
+    nvm use 22.2.0
+    node -v
+    #yarn cache clean
+    pnpm install
+    pnpm i element-plus@2.4.3
+    pnpm build:zjk
+    if [ $? -gt 0 ]; then
+        logger "build web error"
+        exit 12
+    fi
+}
+
+function compile_admin(){
+    logger "compile admin"
+    cd "$path_workspace/$dir_admin" || exit 1
+    nvm use 16.15.1
+    node -v
+    #yarn cache clean
+    yarn install
+    yarn build:prod
+    if [ $? -gt 0 ]; then
+        logger "build admin web error"
+        exit 12
+    fi
+}
+
+function compile_h5portal(){
+  logger "compile h5portal"
+  rm -rf $path_workspace/$dir_h5portal/unpackage
+  cd "$path_workspace/$dir_h5portal" || exit 1
+  npm install
+  hbcli open
+  hbcli project open --path ${path_workspace}/H5Portal
+  hbcli user login --username wangjichi@chinasofti.com --password eLTE@cOm123
+  hbcli publish --platform h5 --project ${path_workspace}/H5Portal
+  r=$?
+  hbcli user logout
+  hbcli project close --path ${path_workspace}/H5Portal
+  hbcli app quit
+  if [ $r -gt 0 ]; then
+      logger "build admin web error"
+      exit 12
+  fi
+}
+
+function compile_ccmd(){
+    logger "compile server"
+    rm "$path_workspace/$dir_ccmd/ci_package/package/*.tar.gz"
+    cd "$path_workspace/$dir_ccmd/cloudcmd-service/cloudcmd-base/cloudcmd-base-service/src/main/resources/" || exit 1
+    sed -i "s/1/0/" cloudcmd-config-display-target.properties
+    cd "$path_workspace/$dir_ccmd" || exit 1
+    export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+    mvn clean install -P ${arch}
+    if [ $? -gt 0 ]; then
+        logger "maven install failed"
+        exit 12
+    fi
+}
+
+function mv_pkg_path(){
+    mv ${path_workspace}/ci_package/package/*.tar.gz $cur_target_path/${arch}/
+    logger "package success"
+    echo "file path is ${cur_target_path}/${arch}/"
+}
+
+function main(){
+    if [ $# -lt 1 ]; then
+        exit 1
+        echo "param error"
+    fi
+    cur_timer=$(date +'%Y%m%d%H%M%S')
+    cur_target_path=${path_pkg}/${cur_timer}
+    git_update $dir_ccmd $branch_url_ccmd $branch_code_ccmd
+    git_update $dir_icc $branch_url_icc $branch_code_icc
+    git_update $dir_admin $branch_url_admin $branch_code_admin
+    git_update $dir_h5portal $branch_url_h5portal $branch_code_h5portal
+    compile_h5portal
+    compile_icc
+    compile_admin
+
+    if [ "${arch}" == "all" ]; then
+      archs=("x86" "arm")
+      for el in "${archs[@]}"; do
+        Arch=${el}
+              echo "================================= build ${arch} pkg start  ================================="
+        mkdir -p $cur_target_path/${arch}
+        compile_ccmd
+        rm -rf "${path_workspace}/ci_package"
+        cp -r "${path_workspace}/${dir_ccmd}/package/template" "${path_workspace}/ci_package" || exit 1
+        bash -x "$path_workspace/ci_package/package.sh" $abs_conf || exit 1
+
+        mv_pkg_path $@
+              echo "================================= build ${arch} pkg success ================================="
+      done
+    else
+      mkdir -p $cur_target_path/${arch}
+      compile_ccmd
+      rm -rf "${path_workspace}/ci_package"
+      cp -r "${path_workspace}/${dir_ccmd}/package/${arch}" "${path_workspace}/ci_package" || exit 1
+      bash -x "$path_workspace/ci_package/package.sh" $abs_conf || exit 1
+
+      mv_pkg_path $@
+    fi
+}
+
+main $@

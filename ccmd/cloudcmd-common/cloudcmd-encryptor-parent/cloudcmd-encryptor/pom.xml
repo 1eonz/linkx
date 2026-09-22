@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cloudcmd-encryptor-parent</artifactId>
+        <groupId>com.tdtech.cloudcmd</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>cloudcmd-encryptor</artifactId>
+    
+    <dependencies>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-encryptor-api</artifactId>
+            <version>${cloudcmd.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-common-util</artifactId>
+            <version>${cloudcmd.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-base-api</artifactId>
+            <version>${cloudcmd.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-dubbo-starter</artifactId>
+            <version>${cloudcmd.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-spring-boot-starter-web</artifactId>
+            <version>${cloudcmd.version}</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+</project>

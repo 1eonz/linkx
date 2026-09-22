@@ -1,0 +1,117 @@
+---
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+# 文件恢复-host
+- name: (0)Ensure that the backup directory exists
+  file:
+    path: "{{ file_restore_path }}"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: (1)recover-host Extract list file path
+  shell: grep '^backup_files_host_conf[[:space:]]*=' {{ app_root }}/backup_config/upgrade_adapter.conf | awk -F= '{print $2}' | tr -d ' '
+  register: list_file
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: (2)recover-host Default value handling
+  set_fact:
+    list_path: "{{ list_file.stdout | default('backup_files_host.conf', true) }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: (3)recover-host Read the list of files to be backed up
+  slurp:
+    src: "{{ app_root }}/backup_config/{{ list_path }}"
+  register: list_b64
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: (4)recover-host Decode and enter the carriage
+  set_fact:
+    files_list: "{{ (list_b64.content | b64decode).split('\n') | map('trim') | select | list }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: (5)recover-host Find the latest backup mapping file manifest_<ts>.yml
+  shell: |
+    find {{ file_restore_path }}/ \
+         -maxdepth 1 -type f -name 'manifest_*.yml' \
+         -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  register: latest_mani
+
+- name: (6)recover-host read manifest
+  slurp:
+    src: "{{ latest_mani.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  register: mani_b64
+
+- name: (7)recover-host resolve manifest
+  set_fact:
+    manifest: "{{ (mani_b64.content | b64decode | from_yaml) | default([], true) }}"
+
+- name: (8)recover-host Pack by pack, return to the original location
+  when: manifest | type_debug == 'list' and manifest | length > 0
+  loop: "{{ manifest }}"
+  vars:
+    original: "{{ item.original }}"
+    archive: "{{ item.archive }}"
+    original_mode: "{{ item.mode | default('0755', true) }}"      # 从 manifest 读取
+    original_owner: "{{ item.owner | default('root', true) }}"    # 从 manifest 读取
+    original_group: "{{ item.group | default('root', true) }}"    # 从 manifest 读取
+  command: |
+    sh -c '
+      # 清理原有文件/目录
+      if [ -d "{{ original }}" ]; then 
+        rm -rf "{{ original }}"*; 
+      fi; 
+      if [ -f "{{ original }}" ]; then 
+        rm -rf "{{ original }}"; 
+      fi; 
+    
+      # 解压归档
+      if [ -n "{{ archive }}" ]; then 
+        tar --use-compress-program="pigz -p 8" -C / -xf "{{ file_restore_path }}/{{ archive }}";
+    
+        # 还原原始权限（关键修改）
+        if [ -e "{{ original }}" ]; then
+          chmod {{ original_mode }} "{{ original }}"
+          chown {{ original_owner }}:{{ original_group }} "{{ original }}"
+          echo "Restored: {{ original }} with mode={{ original_mode }} owner={{ original_owner }}:{{ original_group }}"
+        fi
+      fi
+    '
+  register: restore_result
+  changed_when: "'Restored:' in restore_result.stdout"

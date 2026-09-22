@@ -1,0 +1,14 @@
+order: 49499
+rollback_order: 49499
+name: before_action
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_upgrade: true
+always_exec_rollback: true
+phases:
+  - upgrade
+  - patch_install
+  - rollback
+  - patch_rollback
+  

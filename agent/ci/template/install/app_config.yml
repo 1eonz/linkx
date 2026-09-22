@@ -1,0 +1,35 @@
+## ansible
+app_root: "/data/install/{{ path }}"
+
+# 升级/回退相关默认参数（与 MSIPTool InstallServiceImpl 保持一致）
+upgrade_backup_dir: /data/msip/backup
+single_file_backup_size: "5MB"
+db_backup_size: "10GB"
+inventory_file: "/data/hosts/{{ install_model }}.ini"
+
+platform_namespace: platform
+
+ignore_assert_errors: true
+
+data_partition_remaining_space: 20
+
+#kubernetes 相关配置
+kube_config_dir: /etc/kubernetes
+
+local_storage_path: /data/agent/data
+
+image_repo_host: imagerepo.td-tech.com
+image_repo_port: 5001
+image_repo_url: "{{ image_repo_host }}:{{ image_repo_port }}"
+#image_repo_url: wirepo.td-tech.com/cnp
+
+busybox_version: 1.28.0
+
+flyway_version: 10.10.0.1.0
+
+## 安装程序的二进制存放的位置
+bin_dir: /usr/local/bin
+
+first_kube_master: "{{ hostvars[groups['kube_control_plane'][0]].inventory_hostname}}"
+
+model: "{% if install_model == 'standalone' %}standalone{% else %}cluster{% endif %}"

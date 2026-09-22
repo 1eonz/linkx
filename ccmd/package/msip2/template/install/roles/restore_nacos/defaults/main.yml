@@ -1,0 +1,12 @@
+# restore_nacos/defaults/main.yml
+nacos_backup_path: "/data/msip/backup/patch"
+app_info_path: "{{ app_root }}/app-info.yaml"
+nacos_backup_config_path: "{{ app_root }}/backup_config/backupnacos_config.yml"
+nacos_manifest_folder: "{{ kube_config_dir }}/addons/nacos"
+greatsql_repo: "imagerepo.td-tech.com:5001"
+greatsql_backup_version: 8.0.35-31
+great_storage_data_path: /data/msip/data/greatsql
+mysql_storage_data_path: /data/msip/data/mysql
+great_storage_size: 20Gi
+great_storage_backup_tmp1_path: /data/msip/backup/patch/tmp1/
+first_kube_master: "{{first_kube_master}}"

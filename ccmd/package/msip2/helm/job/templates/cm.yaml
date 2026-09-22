@@ -1,0 +1,11 @@
+{{- if .Values.cm }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Values.name}}-cm
+  namespace: {{.Values.namespace}}
+  labels:
+    app: {{.Values.name}}-cm
+data:
+{{ toYaml .Values.cm | indent 2}}
+{{- end }}

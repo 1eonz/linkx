@@ -1,0 +1,4 @@
+com.chinasoft.cloud.framework.idempotent.config.CrsIdempotentConfiguration
+com.chinasoft.cloud.framework.lock4j.config.CrsLock4jConfiguration
+com.chinasoft.cloud.framework.ratelimiter.config.CrsRateLimiterConfiguration
+com.chinasoft.cloud.framework.signature.config.CrsApiSignatureAutoConfiguration

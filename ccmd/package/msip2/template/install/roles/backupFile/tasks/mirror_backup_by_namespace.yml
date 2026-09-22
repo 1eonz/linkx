@@ -1,0 +1,24 @@
+---
+- name: rename backup_svc_namespace
+  set_fact:
+    backup_svc_namespace: "{{ backup_namespace }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+#  升级备份前先临时删除备份目录的文件
+- name:  clear backup mongodbfile
+  shell: rm -rf {{ upgrade_backup_dir }}/{{ backup_svc_namespace }}/mirrorFile/*
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: backup by namespace======================================================== | {{ backup_svc_namespace }}
+  vars:
+    svc_name: "{{ namespace_item.name }}"
+    svc_paths: "{{ namespace_item.path }}"
+    svc_namespace: "{{ backup_svc_namespace }}"
+  include_tasks: mirror_backup_by_svc.yml
+  loop: "{{ backup_service }}"
+  loop_control:
+    label: "{{ svc_name }}"
+    loop_var: namespace_item

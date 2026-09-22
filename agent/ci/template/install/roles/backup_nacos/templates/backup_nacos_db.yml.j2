@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-saas-entrypoint
+  namespace: {{ platform_namespace }}
+data:
+  backup_nacos_db.sh: |-
+    #!/bin/bash
+    set -eo pipefail  # 确保管道中任何一步失败都会导致脚本退出
+
+    # 1. 初始化环境
+    rm -rf /backup/nacos/*
+    echo "[INFO] Starting logical backup for database: nacos"
+
+    # 2. 检查磁盘空间
+    disk_used=$(df -m | grep /backup | grep -v /backup_nacos_db.sh | awk '{print $5}' | cut -d"%" -f1)
+    echo "Current disk usage: ${disk_used}%, Maximum allowed: ${DISK_MAX}%"
+
+    if [ "$disk_used" -gt "$DISK_MAX" ]; then
+        echo "[ERROR] Not Enough Disk Space!"
+        exit 1
+    fi
+
+    # 3. 执行 mysqldump 备份 nacos 库（按配置过滤表和 group_id）
+    # - nacos_backup_tables 为空：不备份
+    # - nacos_backup_group_ids 为空：不备份
+    {% set _tables = (nacos_backup_tables | default([])) %}
+    {% set _gids = (nacos_backup_group_ids | default([])) %}
+
+    {% if _tables | length == 0 or _gids | length == 0 %}
+    echo "[INFO] Skip nacos backup: backup_tables or backup_group_ids is empty."
+    exit 0
+    {% endif %}
+
+    TABLES=(
+    {%- for t in _tables %}
+      {{ t }}
+    {%- endfor %}
+    )
+
+    WHERE_CLAUSE="group_id in ({% for gid in _gids %}'{{ gid }}'{% if not loop.last %},{% endif %}{% endfor %})"
+
+    echo "[INFO] Running mysqldump for 'nacos' database..."
+    echo "[INFO] where: ${WHERE_CLAUSE}"
+
+    has_group_id_column() {
+      local table_name="$1"
+      local cnt
+      cnt=$(mysql --host="$HOST" --port="$PORT" --user="$BACKUPUSER" --password="$USERPASSWD" -N -s -e \
+        "SELECT COUNT(1) FROM information_schema.columns WHERE table_schema='nacos' AND table_name='${table_name}' AND column_name='group_id';" 2>/dev/null || echo "0")
+      [ "${cnt}" -gt 0 ]
+    }
+
+    # 按表导出：有 group_id 字段则按 where 过滤，否则导出全量该表（避免报错）
+    tmp_sql="/backup/nacos_db.sql"
+    : > "${tmp_sql}"
+    for t in "${TABLES[@]}"; do
+      if has_group_id_column "${t}"; then
+        echo "[INFO] dump table=${t} with where"
+        mysqldump --host="$HOST" --port="$PORT" --user="$BACKUPUSER" --password="$USERPASSWD" \
+          --single-transaction \
+          --no-create-info \
+          nacos "${t}" \
+          --where="$WHERE_CLAUSE" >> "${tmp_sql}"
+      else
+        echo "[WARN] table=${t} has no group_id column, dump full table without where"
+        mysqldump --host="$HOST" --port="$PORT" --user="$BACKUPUSER" --password="$USERPASSWD" \
+          --single-transaction \
+          --no-create-info \
+          nacos "${t}" >> "${tmp_sql}"
+      fi
+    done
+
+    gzip -c "${tmp_sql}" > /backup/nacos_db.sql.gz
+    rm -f "${tmp_sql}"
+    if [ -s /backup/nacos_db.sql.gz ]; then
+        echo "[SUCCESS] Backup created: /backup/nacos_db.sql.gz"
+        # 生成 MD5 校验文件
+        md5sum /backup/nacos_db.sql.gz | awk '{print $1}' > /backup/nacos_db.MD5
+    else
+        echo "[ERROR] Backup failed! File is empty."
+        exit 1
+    fi

@@ -1,0 +1,2 @@
+## 三方件的程序或者工具组
+before_shell_path: "{{ app_root }}/script/{{ phase }}/shell"

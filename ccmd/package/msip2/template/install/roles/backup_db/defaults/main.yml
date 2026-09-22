@@ -1,0 +1,16 @@
+# 升级/回退备份目录
+upgrade_backup_dir: /data/msip/backup
+# ansible inventory 文件路径
+inventory_file: "/data/hosts/{{ install_model }}.ini"
+
+app_info_path: "{{ app_root }}/app-info.yaml"
+backup_config_path: "{{ app_root }}/backup_config/backupdb_config.yml"
+greatsql_repo: "{{ image_repo_url }}"
+greatsql_manifest_folder: "{{ kube_config_dir }}/addons/greatsql"
+greatsql_backup_version: 8.0.35-31
+great_storage_data_path: /data/msip/data/greatsql
+mysql_storage_data_path: /data/msip/data/mysql
+great_storage_backup_path: /data/msip/backup/
+great_storage_size: 20Gi
+great_storage_backup_tmp_path: /data/msip/backup/tmp/
+great_storage_backup_tmp1_path: /data/msip/backup/tmp1/

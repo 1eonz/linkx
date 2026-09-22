@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "crs-ci"
+version = "0.1.0"
+authors = []
+description = ""
+
+packages = [
+    { include = "common" }
+]
+
+include = []
+
+[tool.poetry.dependencies]
+python = "^3.12,<3.14"
+toml = "^0.10.2"
+colorlog = "^6.9.0"
+argparse = "^1.4.0"
+paramiko = "^3.5.1"
+pyyaml = "^6.0.3"
+
+[tool.poetry.scripts]
+install = "install:install"
+uninstall = "uninstall:uninstall"
+
+[[tool.poetry.source]]
+name = "mirrors"
+url = "https://mirrors.cloud.tencent.com/pypi/simple/"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[virtualenvs]
+create = true
+in-project = true

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CollaborationPostMapper">
+    <insert id="insertBatch">
+        INSERT INTO tb_collaboration_post ( id, post_name, icon_url,file_id, org_id,org_code, org_name, related_user_ids, related_user_names,operator_name, source,operate_time, update_time )
+        VALUES
+            <foreach collection="posts" separator="," item="item">
+                ( #{item.id}, #{item.postName}, #{item.iconUrl},#{item.fileId}, #{item.orgId},#{item.orgCode}, #{item.orgName},
+                 #{item.relatedUserIds}, #{item.relatedUserNames},#{item.operatorName}, #{item.source}, #{item.operateTime}, #{item.updateTime})
+            </foreach>
+    </insert>
+
+    <select id="selectPageWithCondition"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        SELECT id, post_name, icon_url, file_id, org_id, org_code, org_name,
+               related_user_ids, related_user_names, operation_type, source, operator_id,
+               operator_name, operate_time, update_time, `type`, deleted
+        FROM tb_collaboration_post
+        WHERE deleted = 0
+        <if test="name != null and name != ''">
+            AND post_name LIKE concat('%',#{name},'%')
+        </if>
+        <if test="orgName != null and orgName != ''">
+            AND org_name =#{orgName}
+        </if>
+        <if test="orgIds != null and orgIds.size() > 0">
+            AND org_id in
+            <foreach collection="orgIds" item="oid" open="(" close=")" separator=",">
+                #{oid}
+            </foreach>
+        </if>
+        <if test="relatedUserNames != null and relatedUserNames != ''">
+            AND related_user_names LIKE concat('%',#{relatedUserNames},'%')
+        </if>
+        <if test="startTime != null and startTime != ''">
+            AND update_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND update_time &lt;=CONCAT(#{endTime}, ' 23:59:59')
+        </if>
+        <if test="type != null">
+            AND `type` = #{type}
+        </if>
+        ORDER BY update_time DESC
+    </select>
+    <select id="listByUserId" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        SELECT id, post_name, icon_url, file_id, org_id, org_code, org_name,
+               related_user_ids, related_user_names, operation_type, source, operator_id,
+               operator_name, operate_time, update_time, `type`, deleted
+        FROM tb_collaboration_post
+        WHERE deleted = 0 AND related_user_ids LIKE concat('%', #{userId},'%')
+    </select>
+
+    <!-- 按用户集合查关联协同岗：等价于多个 LIKE 的 OR 组合，改写为 UNION（去重，
+         同一岗位命中多个用户时仍只返回一行），避免 OR 条件影响执行计划 -->
+    <select id="findPostList" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        <foreach collection="userIdList" item="userId" separator=" UNION ">
+            SELECT id, post_name, icon_url, file_id, org_id, org_code, org_name,
+                   related_user_ids, related_user_names, operation_type, source, operator_id,
+                   operator_name, operate_time, update_time, `type`, deleted
+            FROM tb_collaboration_post
+            WHERE deleted = 0 AND related_user_ids LIKE concat('%', #{userId},'%')
+        </foreach>
+    </select>
+
+    <select id="listAllIds" resultType="Long">
+        SELECT id FROM tb_collaboration_post WHERE deleted = 0
+    </select>
+    <select id="selectListByCondition"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        SELECT id, post_name, icon_url, file_id, org_id, org_code, org_name,
+               related_user_ids, related_user_names, operation_type, source, operator_id,
+               operator_name, operate_time, update_time, `type`, deleted
+        FROM tb_collaboration_post
+        WHERE deleted = 0
+        <if test="name != null and name != ''">
+            AND post_name LIKE concat('%',#{name},'%')
+        </if>
+        <if test="orgName != null and orgName != ''">
+            AND org_name LIKE concat('%',#{orgName},'%')
+        </if>
+        <if test="orgIds != null">
+            AND org_id in
+            <foreach collection="orgIds" item="oid" open="(" close=")" separator=",">
+                #{oid}
+            </foreach>
+        </if>
+        <if test="relatedUserNames != null and relatedUserNames != ''">
+            AND related_user_names LIKE concat('%',#{relatedUserNames},'%')
+        </if>
+        <if test="startTime != null and startTime != ''">
+            AND operate_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND operate_time &lt;= #{endTime}
+        </if>
+    </select>
+
+    <select id="findBatchContainsDeleted"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        SELECT id, post_name, icon_url, file_id, org_id, org_code, org_name,
+               related_user_ids, related_user_names, operation_type, source, operator_id,
+               operator_name, operate_time, update_time, `type`, deleted
+        FROM tb_collaboration_post
+        WHERE id in
+        <foreach collection="idList" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findPostListByIds" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        SELECT id, post_name, icon_url, file_id, org_id, org_code, org_name,
+               related_user_ids, related_user_names, operation_type, source, operator_id,
+               operator_name, operate_time, update_time, `type`, deleted
+        FROM tb_collaboration_post
+        where deleted = 0 AND
+        id in
+        <foreach collection="userIdList" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        <if test="departments != null and departments.size != 0">
+            and org_id in
+            <foreach collection="departments" item="department" open="(" separator="," close=")">
+                #{department}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="selectMemberByPostIds" resultType="java.lang.String">
+        SELECT related_user_ids FROM tb_collaboration_post WHERE deleted = 0 AND id in
+        <foreach collection="postMembers" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findBatchByType" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        SELECT id, post_name, icon_url, file_id, org_id, org_code, org_name,
+               related_user_ids, related_user_names, operation_type, source, operator_id,
+               operator_name, operate_time, update_time, `type`, deleted
+        FROM tb_collaboration_post
+        where deleted = 0 AND
+        id in
+        <foreach collection="idList" item="userId" open="(" close=")" separator=",">
+            #{userId}
+        </foreach>
+        and type = #{type}
+    </select>
+    <select id="selectByTimeRange" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationPost">
+        SELECT id,post_name as postName,deleted FROM tb_collaboration_post where deleted = 0
+       <where>
+           <if test="departmentIds != null and departmentIds.size != 0">
+                org_id in
+                <foreach collection="departmentIds" item="department" open="(" separator="," close=")">
+                    #{department}
+                </foreach>
+           </if>
+       </where>
+        union all
+        SELECT id,post_name as postName,deleted FROM tb_collaboration_post
+        <where>
+            deleted = 1
+            <if test="startTime != null and startTime != ''">
+                AND update_time &gt; #{startTime}
+            </if>
+            <if test="departmentIds != null and departmentIds.size != 0">
+                and org_id in
+                <foreach collection="departmentIds" item="department" open="(" separator="," close=")">
+                    #{department}
+                </foreach>
+            </if>
+        </where>
+    </select>
+     <select id="getByIds" resultType="java.lang.Long">
+        SELECT id FROM tb_collaboration_post WHERE 1 =1 AND id in
+        <foreach collection="idList" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
+</mapper>

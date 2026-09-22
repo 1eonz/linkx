@@ -1,0 +1,146 @@
+---
+# 获取所需参数
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Set mongodb backup path for upgrade
+  set_fact:
+    mongodb_backup_path: "{{ upgrade_backup_dir }}/{{ namespace }}/mongodb"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: phase == "upgrade"
+
+- name: Set mongodb backup path for patch_install
+  set_fact:
+    mongodb_backup_path: "{{ upgrade_backup_dir }}/patch/{{ namespace }}/mongodb"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: phase == "patch_install"
+
+#  备份前先临时删除备份目录的文件
+- name:  clear backup mongodbfile
+  shell: rm -rf {{ mongodb_backup_path }}/*
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+# 升级备份前检测mongo服务是否存在
+- name: detect current mongo service existence
+  shell: |
+    kubectl get svc mongodb -n platform >/dev/null 2>&1 && echo "exists" || echo "not_found"
+  register: mongo_check
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: set mongo_service_exists fact
+  set_fact:
+    mongo_service_exists: "{{ mongo_check.stdout == 'exists' }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Load db backup file config
+  include_vars: "{{ backup_config_path }}"
+
+# 查找配置文件中mongo配置是否存在
+- name: detect current mongo config exists
+  set_fact:
+    mongo_backup_config_exists: "{{ db_backup.mongodb is defined }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Print the upcoming backup command
+  ansible.builtin.debug:
+    msg: |
+      ansible-playbook -i {{ inventory_file }} \
+      -e 'phase=backup' \
+      -e 'role_name=mongodb' \
+      -e 'upgrade_mongodb_storage_backup_path={{ mongodb_backup_path }}/' \
+      -e 'install_model={{ install_model }}' \
+      -e 'business_path={{ path }}' \
+      -e 'path=apaas' \
+      -e 'op=manual' \
+      -e 'operate_host=kube_control_plane' \
+      -e 'dbs=configlistbackup' \
+      -e 'group_name=mongodb' \
+      -e 'stime=2' \
+      -e 'label_name=mongodb' \
+      -e 'status=startup' \
+      -e '@/data/install/apaas/install/apaas_config.yml' \
+      /data/install/apaas/install/apaas_install.yml
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when:
+    - mongo_service_exists
+    - mongo_backup_config_exists
+
+- name: backup mongodb | Start mongodb_backup playbook...
+  shell: |
+    ansible-playbook -i {{ inventory_file }} \
+    -e 'phase=backup' \
+    -e 'role_name=mongodb' \
+    -e 'upgrade_mongodb_storage_backup_path={{ mongodb_backup_path }}/' \
+    -e 'install_model={{ install_model }}' \
+    -e 'business_path={{ path }}' \
+    -e 'path=apaas' \
+    -e 'op=manual' \
+    -e 'operate_host=kube_control_plane' \
+    -e 'dbs=configlistbackup' \
+    -e 'group_name=mongodb' \
+    -e 'stime=2' \
+    -e 'label_name=mongodb' \
+    -e 'status=startup' \
+    -e '@/data/install/apaas/install/apaas_config.yml' \
+    /data/install/apaas/install/apaas_install.yml
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: backup_result
+  changed_when: backup_result.rc == 0   # ← 只有成功才标记 changed
+  failed_when: backup_result.rc != 0
+  when:
+    - mongo_service_exists
+    - mongo_backup_config_exists
+
+- name: print playbook exe result
+  debug:
+    msg: |
+      backup playbook recode: {{ backup_result.rc }}
+      standout: {{ backup_result.stdout }}
+      standerror: {{ backup_result.stderr }}
+  when:
+    - mongo_service_exists
+    - mongo_backup_config_exists
+    - backup_result.rc != 0
+
+
+- name: Fail if backup mongodb failed
+  fail:
+    msg: "Backup mongodb failed with return code {{ backup_result.rc }}"
+  when:
+    - mongo_service_exists
+    - mongo_backup_config_exists
+    - backup_result is defined
+    - backup_result.rc != 0
+

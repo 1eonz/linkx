@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.auth.mapper.OrganizationRoleMapper">
+
+    <delete id="deleteByRoleId">
+        DELETE FROM linkx_auth.tb_organization_role WHERE role_id = #{roleId}
+    </delete>
+    <delete id="deleteByRoleIds">
+        DELETE FROM linkx_auth.tb_organization_role WHERE role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" close=")" separator=",">
+            #{roleId}
+        </foreach>
+    </delete>
+
+    <insert id="insertBatch">
+        INSERT INTO linkx_auth.tb_organization_role (id,role_id, im_org_id, grant_user_id, grant_time, gmt_created, gmt_modified)
+        VALUES
+        <foreach collection="orgRoles" item="orgRole" separator=",">
+            (#{orgRole.id}, #{orgRole.roleId}, #{orgRole.imOrgId}, #{orgRole.grantUserId},#{orgRole.grantTime},
+             #{orgRole.gmtCreated}, #{orgRole.gmtModified})
+        </foreach>
+    </insert>
+
+    <select id="selectByRoleIds" resultType="com.tdtech.cloudcmd.auth.entity.OrganizationRole">
+        SELECT id, role_id, im_org_id, grant_user_id, grant_time, gmt_created, gmt_modified
+        FROM linkx_auth.tb_organization_role
+        WHERE role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" close=")" separator=",">
+            #{roleId}
+        </foreach>
+        ORDER BY gmt_created ASC
+    </select>
+
+</mapper>

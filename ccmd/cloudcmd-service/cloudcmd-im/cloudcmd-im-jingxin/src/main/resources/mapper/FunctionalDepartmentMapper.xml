@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.FunctionalDepartmentMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.FunctionalDepartment">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="parent_id" property="parentId" />
+        <result column="creator" property="creator" />
+        <result column="is_deleted" property="isDeleted" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <!-- 带子部门数量信息的映射结果 -->
+    <resultMap id="DepartmentWithChildrenResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.FunctionalDepartment">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="parentId" column="parent_id" />
+        <result property="creator" column="creator" />
+        <result property="isDeleted" column="is_deleted" />
+        <result property="createTime" column="create_time" />
+        <result property="hasChildren" column="count" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, name, parent_id, creator, is_deleted, create_time
+    </sql>
+
+    <!-- 根据部门名称统计数量 -->
+    <select id="selectByNameCount" resultType="int">
+        SELECT COUNT(1) FROM tb_functional_department WHERE name = #{name} AND is_deleted = 0
+    </select>
+
+    <!-- 根据父部门ID查询部门信息 -->
+    <select id="selectByParentId" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.FunctionalDepartment">
+        SELECT <include refid="Base_Column_List"/> FROM tb_functional_department WHERE id = #{parentId} AND is_deleted = 0
+    </select>
+
+    <!-- 统计子部门数量 -->
+    <select id="selectChildrenCount" resultType="int">
+        SELECT COUNT(1) FROM tb_functional_department WHERE parent_id = #{parentId} AND is_deleted = 0
+    </select>
+
+    <!-- 查询子部门列表 -->
+    <select id="selectChildren" resultMap="DepartmentWithChildrenResultMap">
+        SELECT id, name, parent_id, creator, create_time 
+        FROM tb_functional_department 
+        WHERE parent_id = #{parentId} AND is_deleted = 0
+        ORDER BY create_time ASC
+    </select>
+
+    <!-- 根据部门ID查询部门详细信息 -->
+    <select id="selectInfoById" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.FunctionalDepartment">
+        SELECT <include refid="Base_Column_List"/> FROM tb_functional_department WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <!-- 批量查询所有子部门数量 -->
+    <select id="selectAllChildrenCount" resultMap="DepartmentWithChildrenResultMap">
+        SELECT 
+            parent_id AS id, 
+            IF(COUNT(1) > 0, true, FALSE) AS count 
+        FROM tb_functional_department 
+        WHERE is_deleted = 0 
+        AND parent_id IN
+        <foreach collection="ids" open="(" close=")" separator="," item="id">
+            #{id}
+        </foreach>
+        GROUP BY parent_id
+    </select>
+
+</mapper>

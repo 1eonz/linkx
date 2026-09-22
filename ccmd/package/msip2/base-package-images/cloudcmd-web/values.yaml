@@ -1,0 +1,46 @@
+haControl: "true"
+ports:
+  - name: web
+    port: 8011
+container:
+  strategy:
+  replicas: 1
+  vault: false
+  volumes:
+    - name: ai-attachment
+      hostPath:
+        path: /data/agent/data/upload/ai_attachment
+      mountPath: /usr/share/nginx/html/ai_attachment/
+  config_map:
+    - name: config
+      mount_path: /etc/nginx/conf.d/
+      data:
+        cloudcmd.web.conf: |-
+          server{
+              listen 8011;
+              location / {
+                  if ($request_method = 'OPTIONS') {
+                      return 200;
+                  }
+                  return 404;  # 或者重定向到特定页面
+              }
+          
+              location /ai_attachment/ {
+              alias /usr/share/nginx/html/ai_attachment/;
+              autoindex off;
+          }
+
+          location /cloudcmd{
+                  if ($request_method = 'OPTIONS') {
+                      return 200;
+                  }
+                  alias /usr/share/nginx/html/;
+                  index index.html index.htm login.html;
+                  proxy_set_header x-plat_appkey CDC-1000;
+                  try_files $uri $uri/ /cloudcmd/index.html;
+          
+                  # 添加 no-cache 头部
+                  expires -1;
+                  add_header Cache-Control "no-cache, no-store, must-revalidate";
+              }
+          }

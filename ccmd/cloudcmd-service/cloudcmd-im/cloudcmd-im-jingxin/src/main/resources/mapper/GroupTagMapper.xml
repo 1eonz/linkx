@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.GroupTagMapper">
+
+    <!-- Delete tag relations by group ID -->
+    <delete id="deleteByGroupId" parameterType="java.lang.Long">
+        DELETE
+        FROM tb_group_tag
+        WHERE group_id = #{groupId}
+    </delete>
+
+    <update id="updateByGroupId" parameterType="java.lang.Long">
+        UPDATE tb_group_tag
+        SET is_deleted = 1
+        WHERE group_id = #{groupId}
+    </update>
+
+    <select id="getCountGroupTags" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.TagCountDTO">
+        SELECT
+        tt.id AS tagId,
+        tt.name AS tagName,
+        tt.icon AS icon,
+        tt.color AS color,
+        tt.is_deleted AS deleted,
+        -- 根据标签删除状态应用不同的统计逻辑
+        COUNT( c.group_id) AS count,
+        COUNT( DISTINCT CASE WHEN tg.archived=2
+        THEN tg.id
+        ELSE NULL
+        END) as archivedCount,
+        COUNT(DISTINCT CASE WHEN tg.archived IN (0, 1)
+        THEN tg.id
+        ELSE NULL
+        END) as unArchivedCount
+        FROM
+        tb_label tt
+        -- 左连接确保未删除标签即使无关联数据也能保留
+        LEFT JOIN
+        tb_group_tag t ON tt.id = t.tag_id AND t.is_deleted = 0
+        LEFT JOIN (
+        select ttc.group_id from tb_create_group ttc
+        LEFT JOIN tb_group_extends ttg  on ttc.group_id = ttg.group_id
+        <where>
+            ttg.group_type = 2
+            <if test="departmentCodeList == null or departmentCodeList.size() == 0">
+
+                <if test="orgIds != null and orgIds.size() > 0">
+                    and ttc.department_id IN
+                    <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                        #{orgId}
+                    </foreach>
+                </if>
+                <if test="orgIds == null or orgIds.size() == 0">
+                    AND
+                    (
+                    ttc.user_ids LIKE CONCAT('%', #{userId}, '%')
+                    <if test="postIdList != null and postIdList.size() > 0">
+                        OR
+                        <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                            user_ids LIKE CONCAT('%', #{postId}, '%')
+                        </foreach>
+                    </if>
+                    )
+                </if>
+
+            </if>
+            <if test="departmentCodeList != null and departmentCodeList.size() > 0">
+                AND ttc.department_id IN
+                <foreach collection="departmentCodeList" item="departmentCode" open="(" separator="," close=")">
+                    #{departmentCode}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND ttc.create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND ttc.create_time  &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+            )
+         c ON t.group_id = c.group_id
+        LEFT JOIN tb_group_extends tg  on c.group_id = tg.group_id
+
+
+        GROUP BY
+        tt.id,
+        tt.name,
+        tt.is_deleted
+        -- 筛选条件：未删除标签全部显示 或 已删除标签有统计数据时显示
+        HAVING
+        tt.is_deleted = 0  -- 未删除标签全部显示（包括tagCount=0）
+        OR (tt.is_deleted = 1 AND count > 0)  -- 已删除标签仅显示有数据的
+        ORDER BY
+        deleted ASC,  -- 未删除标签排在前
+        tagId ASC
+    </select>
+    <select id="listTagsByGroupIds" resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.group.GroupTagVO">
+        select t.id,t.name,t.icon,t.color,t.is_deleted as deleted,gt.group_id
+        from tb_label t,
+        tb_group_tag gt
+        where t.id = gt.tag_id
+        and gt.is_deleted = 0
+        and gt.group_id IN
+        <foreach collection="groupIds" item="gid" open="(" separator="," close=")">
+            #{gid}
+        </foreach>
+    </select>
+    <select id="selectListByOrgIds" resultType="java.lang.Long">
+        SELECT DISTINCT t.tag_id AS tagIds FROM tb_create_group c
+        INNER JOIN tb_group_tag t ON c.group_id = t.group_id AND t.is_deleted = 0
+        <where>
+            <if test="orgIds != null and orgIds.size() > 0">
+               and  c.department_id IN
+                <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                    #{orgId}
+                </foreach>
+
+            </if>
+            <if test="orgIds == null or orgIds.size() == 0">
+               and  t.create_user_id = #{userId}
+            </if>
+
+        </where>
+    </select>
+    <select id="getAllGroup" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.TagCountDTO">
+        SELECT
+            1 as tagId,
+            '未设置标签' as tagName,
+            null as icon,
+            null as  color,
+            0 as deleted,
+            -- 根据标签删除状态应用不同的统计逻辑
+            COUNT( c.group_id) AS count,
+        COUNT( DISTINCT CASE WHEN tg.archived=2
+        THEN tg.id
+        ELSE NULL
+        END) as archivedCount,
+        COUNT(DISTINCT CASE WHEN tg.archived IN (0, 1)
+        THEN tg.id
+        ELSE NULL
+        END) as unArchivedCount
+        FROM
+            tb_create_group c
+            LEFT JOIN tb_group_extends tg  on c.group_id = tg.group_id
+        LEFT JOIN
+        tb_group_tag t ON t.group_id = c.group_id AND t.is_deleted = 0
+        <where>
+            t.id is null and tg.group_type = 2
+            <if test="departmentCodeList == null or departmentCodeList.size() == 0">
+
+                <if test="orgIds != null and orgIds.size() > 0">
+                   and  department_id IN
+                    <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                        #{orgId}
+                    </foreach>
+
+                </if>
+                <if test="orgIds == null or orgIds.size() == 0">
+                    AND
+                    (
+                    user_ids LIKE CONCAT('%', #{userId}, '%')
+                    <if test="postIdList != null and postIdList.size() > 0">
+                        OR
+                        <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                            user_ids LIKE CONCAT('%', #{postId}, '%')
+                        </foreach>
+                    </if>
+                    )
+                </if>
+
+            </if>
+            <if test="departmentCodeList != null and departmentCodeList.size() > 0">
+                AND department_id IN
+                <foreach collection="departmentCodeList" item="departmentCode" open="(" separator="," close=")">
+                    #{departmentCode}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND create_time  &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+    </select>
+    <select id="getAllGroupCount" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.TagCountDTO">
+        SELECT
+            0 as tagId,
+            '全部' as tagName,
+            'fas fa-home' as icon,
+            'rgba(38, 78, 209, 1)' as color,
+            0 as deleted,
+            COUNT(c.group_id) AS count,
+            COUNT(DISTINCT CASE WHEN tg.archived=2
+                THEN tg.id
+                ELSE NULL
+                END) as archivedCount,
+            COUNT(DISTINCT CASE WHEN tg.archived IN (0, 1)
+                THEN tg.id
+                ELSE NULL
+                END) as unArchivedCount
+        FROM
+            tb_create_group c
+            LEFT JOIN tb_group_extends tg on c.group_id = tg.group_id
+        <where>
+            tg.group_type = 2
+            <if test="departmentCodeList == null or departmentCodeList.size() == 0">
+                <if test="orgIds != null and orgIds.size() > 0">
+                    and c.department_id IN
+                    <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                        #{orgId}
+                    </foreach>
+                </if>
+                <if test="orgIds == null or orgIds.size() == 0">
+                    AND
+                    (
+                    c.user_ids LIKE CONCAT('%', #{userId}, '%')
+                    <if test="postIdList != null and postIdList.size() > 0">
+                        OR
+                        <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                            c.user_ids LIKE CONCAT('%', #{postId}, '%')
+                        </foreach>
+                    </if>
+                    )
+                </if>
+            </if>
+            <if test="departmentCodeList != null and departmentCodeList.size() > 0">
+                AND c.department_id IN
+                <foreach collection="departmentCodeList" item="departmentCode" open="(" separator="," close=")">
+                    #{departmentCode}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND c.create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND c.create_time &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+    </select>
+    <select id="listTagsByTimeRange" resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.group.GroupTagVO">
+        select t.id,t.name,gt.group_id
+        from tb_label t
+        join tb_group_tag gt on t.id = gt.tag_id and gt.is_deleted = 0
+        join tb_create_group c on gt.group_id = c.group_id
+        join tb_group_extends tg on c.group_id = tg.group_id
+        <where>
+            tg.archived = 2
+            <if test="endTime != null ">
+                AND gt.gmt_created &lt;= #{endTime}
+            </if>
+            <if test="departmentCodes != null and departmentCodes.size() > 0">
+                AND c.department_id IN
+                <foreach collection="departmentCodes" item="departmentCode" open="(" separator="," close=")">
+                    #{departmentCode}
+                </foreach>
+            </if>
+        </where>
+    </select>
+</mapper>

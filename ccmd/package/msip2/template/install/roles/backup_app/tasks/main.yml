@@ -1,0 +1,54 @@
+---
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}" 
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info 
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data  
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get version_id
+  set_fact:
+    version_id: "{{ data['app-info'][0]['version_id'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase=="upgrade" or phase == "patch_install"
+
+- name: get patch version_id
+  set_fact:
+    version_id: "{{ data['app-info'][0]['version_patch_id'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase == "patch_install"   
+
+- name: set backup_name
+  set_fact:
+    backup_name: "{{namespace}}-{{ version_id.split(' ')[1] | lower }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes  
+
+- name: backup app
+  shell: velero backup create {{backup_name}} --ttl 360h --include-namespaces {{namespace}} --default-volumes-to-fs-backup=false --snapshot-volumes=false -n velero
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true

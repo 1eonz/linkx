@@ -1,0 +1,3 @@
+app_info_path: "{{ app_root }}/app-info.yaml"
+app_file_backup_config_path: "/data/install/{{ path }}/backup_config/backupfile_config.yml"
+

@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+    com.tdtech.cloudcmd.web.config.CustomWebConfig,\
+    com.tdtech.cloudcmd.web.converter.Jackson2HttpMessageConverterConfigurer,\
+    com.tdtech.cloudcmd.web.advice.ExceptionAdvice

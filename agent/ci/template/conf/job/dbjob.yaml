@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dbjob-{{ .Values.now }}
+  namespace: agent
+  labels:
+    app.kubernetes.io/name: dbjob
+spec:
+  template:
+    metadata:
+      name: dbjob
+      labels:
+        app: dbjob
+        app.kubernetes.io/name: dbjob
+      annotations:
+        safebox/enable: "true"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: dbjob
+          image: imagerepo.td-tech.com:5001/dbjob:{{ .Values.version }}.{{ .Values.arch }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - /usr/bin/docker_run.sh
+          env:
+            - name: MYSQL_HOST
+              value: cnp-leader.platform.svc
+            - name: MYSQL_PORT
+              value: "3306"
+            - name: MYSQL_USER
+              value: cnp
+            - name: MYSQL_PASSWORD
+              value: safebox:platform/platform-secret#mysql_password
+            - name: cloudcmd.service.name
+              value: dbjob
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP

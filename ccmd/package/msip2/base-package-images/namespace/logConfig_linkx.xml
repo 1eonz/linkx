@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Log-Config>
+	<Namespace name="linkx">
+		<Service name="cloudcmd-admin-service" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-admin-service.log"/>
+		<Service name="cloudcmd-admin-web" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-admin-web.log"/>
+		<Service name="cloudcmd-auth-service" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-auth-service.log"/>
+		<Service name="cloudcmd-base-service" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-base-service.log"/>
+		<Service name="cloudcmd-cagent" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-cagent.log"/>
+		<Service name="cloudcmd-gateway" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-gateway.log"/>
+		<Service name="cloudcmd-h5portal" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-h5portal.log"/>
+        <Service name="cloudcmd-icp-proxy" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-icp-proxy.log"/>
+		<Service name="linkx-dashboard-service" tracePath="/data/logs/fluentd-log/linkx/linkx_linkx-dashboard-service.log"/>
+		<Service name="linkx-third-service" tracePath="/data/logs/fluentd-log/linkx/linkx_linkx-third-service.log"/>
+		<Service name="linkx-node-service" tracePath="/data/logs/fluentd-log/linkx/linkx_linkx-node-service.log"/>
+		<Service name="linkx-encryptor-service" tracePath="/data/logs/fluentd-log/linkx/linkx_linkx-encryptor-service.log"/>
+        <Service name="cloudcmd-im-jingxin" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-im-jingxin.log"/>
+        <Service name="cloudcmd-im-openapi" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-im-openapi.log"/>
+        <Service name="cloudcmd-script" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-script.log"/>
+        <Service name="cloudcmd-web" tracePath="/data/logs/fluentd-log/linkx/linkx_cloudcmd-web.log"/>
+        <Service name="egress-ai" tracePath="/data/logs/fluentd-log/linkx/linkx_egress-ai.log"/>
+        <Service name="egress-pim" tracePath="/data/logs/fluentd-log/linkx/linkx_egress-pim.log"/>
+        <Service name="mapbox" tracePath="/data/logs/fluentd-log/linkx/mapbox.log"/>
+		<Service name="job-db" tracePath="/data/logs/fluentd-log/linkx/linkx_job-db.log"/>
+		<Service name="job-files" tracePath="/data/logs/fluentd-log/linkx/linkx_job-files.log"/>
+		<Service name="job-intermediary" tracePath="/data/logs/fluentd-log/linkx/linkx_job-intermediary.log"/>
+		<Service name="job-job-route" tracePath="/data/logs/fluentd-log/linkx/linkx_job-job-route.log"/>
+		<Service name="job-sim" tracePath="/data/logs/fluentd-log/linkx/linkx_job-sim.log"/>
+	</Namespace>
+</Log-Config>

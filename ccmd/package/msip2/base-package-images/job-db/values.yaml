@@ -1,0 +1,17 @@
+name: job-db
+namespace: linkx
+container:
+  vault: true
+  envs:
+    env:
+      - name: MYSQL_PASSWORD
+        value: safebox:platform/platform-secret#mysql_password
+      - name: MYSQL_HOST
+        value: cnp-leader.platform.svc
+      - name: MYSQL_PORT
+        value: "3306"
+      - name: MYSQL_USER
+        value: cnp
+  command:
+    - bash
+    - /usr/bin/docker_run.sh

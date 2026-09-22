@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.dashboard.mapper.GroupMsgSendStaticMapper">
+
+    <!-- 批量插入群组消息统计 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO tb_group_msg_send_static (
+            msg_id,
+            session_id,
+            user_id,
+            department_id,
+            msg_time,
+            category,
+            msg_type,
+            gmt_created
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.msgId},
+                #{item.sessionId},
+                #{item.userId},
+                #{item.departmentId},
+                #{item.msgTime},
+                #{item.category},
+                #{item.msgType},
+                #{item.gmtCreated}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 查询已存在的消息ID列表 -->
+    <select id="selectExistingMsgIds" resultType="java.lang.Long">
+        SELECT msg_id
+        FROM tb_group_msg_send_static
+        WHERE msg_id IN
+        <foreach collection="msgIds" item="msgId" open="(" separator="," close=")">
+            #{msgId}
+        </foreach>
+    </select>
+
+    <select id="selectLatestByUserId" resultType="com.tdtech.cloudcmd.linkx.dashboard.entity.GroupMsgSendStatic">
+        SELECT msg_id, session_id, user_id, department_id, msg_time, category, msg_type, gmt_created
+        FROM tb_group_msg_send_static
+        WHERE user_id = #{userId} ORDER BY msg_time DESC LIMIT 1
+    </select>
+
+    <select id="countTopMessageByUserId" resultType="com.tdtech.cloudcmd.linkx.dashboard.vo.GroupMsgSendStaticVO">
+        select gmss.user_id as userId,
+            count(*) as count,
+            u.name  as name
+            from linkx_dashboard.tb_group_msg_send_static gmss
+            left join  icp_res.tb_im_user u on gmss.user_id = u.id
+            <where>
+               u.id is not null
+              <if test="departmentIds != null and departmentIds.size()>0">
+                  and u.department_id in
+                  <foreach collection="departmentIds" item="departmentId" open="(" separator="," close=")">
+                     #{departmentId}
+                 </foreach>
+             </if>
+             <if test="startTime !=null">
+                 and gmss.msg_time &gt;= #{startTime}
+             </if>
+             <if test="endTime !=null">
+                 and gmss.msg_time &lt;= #{endTime}
+             </if>
+            </where>
+            group by user_id, u.name
+            order by count desc
+            limit ${topn}
+    </select>
+</mapper>

@@ -1,0 +1,87 @@
+{{ $value:=.Values }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{.Values.namespace}}
+  name: {{.Values.name}}
+  labels:
+    app: {{.Values.name }}
+    app.kubernetes.io/name: {{ .Values.name }}
+    {{- if and .Values.haControl (eq .Values.haControl "true") }}
+    ha-service-stop/enable: "true"
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{.Values.name}}
+  replicas: {{ .Values.container.replicas }}
+  {{- if .Values.container.strategy }}
+  strategy:
+    type: {{ .Values.container.strategy }}
+  {{- end}}
+  template:
+    metadata:
+      name: {{ .Values.name }}
+      labels:
+        app: {{.Values.name}}
+        app.kubernetes.io/name: {{ .Values.name }}
+      annotations:
+{{ include "fragment.labels" . | indent 8}}
+      {{- if eq (.Values.container.vault | toString | default "true") "true" }}
+        vault.security.banzaicloud.io/vault-addr: "http://vault.default:8200"
+        vault.security.banzaicloud.io/vault-skip-verify: "true"
+        vault.security.banzaicloud.io/vault-role: "default"
+        vault.security.banzaicloud.io/vault-path: "kubernetes"
+      {{- end }}
+    spec:
+      {{- if (or (kindIs "slice" .Values.container.volumes) (kindIs "slice" .Values.container.config_map)) }}
+      volumes:
+        {{- if kindIs "slice" .Values.container.volumes }}
+        {{- range .Values.container.volumes }}
+        - name: {{ .name }}
+          {{- if .hostPath }}
+          hostPath:
+            path: {{ .hostPath.path }}
+          {{- end }}
+          {{- if .persistentVolumeClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+          {{- end }}
+          {{- if .configMap }}
+          configMap:
+            name: {{ .configMap.name }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if kindIs "slice" .Values.container.config_map }}
+        {{- range .Values.container.config_map }}
+        - name: {{$value.name}}-{{.name}}
+          configMap:
+            name: {{$value.name}}-{{.name}}
+        {{- end }}
+        {{- end }}
+      {{- end}}
+      containers:
+        - name: {{.Values.name}}
+          image: {{.Values.register_host}}/{{ .Values.name }}:{{ .Values.version }}.{{ .Values.arch }}
+          imagePullPolicy: Always
+          {{- if .Values.ports }}
+          ports:
+          {{- range .Values.ports}}
+            - name: {{.name}}
+              containerPort: {{.port}}
+          {{- end}}
+          {{- end }}
+          {{- if (or (kindIs "slice" .Values.container.volumes) (kindIs "slice" .Values.container.config_map)) }}
+          volumeMounts:
+            {{- if kindIs "slice" .Values.container.volumes }}
+            {{- range .Values.container.volumes }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+            {{- end }}
+            {{- range .Values.container.config_map }}
+            - name: {{$value.name}}-{{.name}}
+              mountPath: {{.mount_path}}
+            {{- end }}
+          {{- end}}

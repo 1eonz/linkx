@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.base.mapper.TenantGlobalsMapper">
+
+    <select id="selectGlobalsByOrganizationId" resultType="com.tdtech.cloudcmd.base.entity.Globals"
+            parameterType="java.lang.Long">
+        SELECT id, name, `value`, remark, status, org_id, gmt_created, gmt_modified
+        FROM tb_tenant_globals
+        WHERE org_id = #{organizationId} and status = 0
+    </select>
+</mapper>

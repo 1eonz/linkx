@@ -1,0 +1,13 @@
+rollback_order: 50360
+name: recoverFile
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_rollback: true
+phases:
+  - rollback
+  - patch_rollback
+models:
+  - three_nodes
+  - multi_nodes
+  - standalone

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.resource.mapper.TrUserRoleMapper">
+
+    <!-- 仅统计具备某角色的执行者用户数：tb_role 表与统计无字段关联，直接用 tur.role_id 过滤即可，减少一表关联 -->
+    <select id="countUserByRoleId" resultType="int">
+        select count(1) from tb_executor te
+        join tr_executor_user teu on te.id=teu.executor_id
+        join tb_user tu on tu.id=teu.user_id
+        join tr_user_role tur on tu.id=tur.user_id
+        where
+        tu.status=0
+        and te.type=1
+        and tur.role_id=#{roleId}
+    </select>
+
+    <select id="count" resultType="int">
+        select count(1) from tr_user_role tur where tur.role_id = #{roleId}
+    </select>
+
+</mapper>

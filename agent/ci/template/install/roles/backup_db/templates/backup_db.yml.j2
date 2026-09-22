@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-bis-entrypoint
+  namespace: platform
+data:
+  backup_db.sh: |-
+    #!/bin/bash
+    set -eo pipefail
+    ALL_TABLES=$(mysql --host=$HOST --port=$PORT --user=$BACKUPUSER --password=$USERPASSWD -N -B -e "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.tables")
+    rm -rf /backup/*
+    DATABASE_LIST_FILE=/backup/database_list.txt
+    echo "[INFO] Processing database/table rules from config..."
+    {% for db in db_backup.databases %}
+    BLACKLIST_TABLES=(
+    {% for t in db.blacklist_tables %}
+    "{{ t }}"
+    {% endfor %}
+    )
+    WHITELIST_TABLES=(
+    {% for t in db.whitelist_tables %}
+    "{{ t }}"
+    {% endfor %}
+    )
+    echo "$ALL_TABLES" | while read SCHEMA TABLE; do
+        [ -z "$SCHEMA" ] && continue
+        if [ "$SCHEMA" != "{{ db.name }}" ]; then
+            continue
+        fi
+        {% raw %}
+        MATCH_WHITE=0
+        MATCH_BLACK=0
+        for pattern in "${BLACKLIST_TABLES[@]}"; do
+            echo "black table is $pattern"
+            [[ -n "$pattern" && "$TABLE" == $pattern ]] && MATCH_BLACK=1
+        done
+
+        if [ $MATCH_BLACK -eq 1 ]; then
+            echo "[DEBUG] Skip $SCHEMA.$TABLE by blacklist"
+            continue
+        fi
+        {% endraw %}
+        if [ {{ db.whitelist_tables | length }} -gt 0 ]; then
+            {% raw %}
+            for pattern in "${WHITELIST_TABLES[@]}"; do
+                echo "white table is $pattern"
+                [[ -n "$pattern" && "$TABLE" == $pattern ]] && MATCH_WHITE=1
+            done
+
+            if [ $MATCH_WHITE -eq 0 ]; then
+                echo "[DEBUG] Skip $SCHEMA.$TABLE (not in whitelist)"
+                continue
+            fi
+        fi
+        echo "${SCHEMA}.${TABLE}" >> $DATABASE_LIST_FILE
+    done
+    {% endraw %}
+
+    {% endfor %}
+    disk_used=`df -m | grep /backup | grep -v /backup.sh  | awk {'print $5'}`
+    v_diskspace_int=`echo "$disk_used" | cut -d"%" -f1`
+    echo "Used disk space $disk_used, maximum allowable disk usage is $DISK_MAX% "
+    if [ $DISK_MAX -lt $v_diskspace_int ]
+    then
+        echo "Not Enough Disk Space!"
+        exit 1
+    fi
+    echo "------------$USERPASSWD"
+    mkdir -p /backup/db
+    xtrabackup --backup --export --databases-file=$DATABASE_LIST_FILE --target-dir=/backup/db --host=$HOST --port=$PORT --user=$BACKUPUSER --password=$USERPASSWD
+    xtrabackup --prepare --export --target-dir=/backup/db
+
+    echo "this is /var/lib/mysql: $(ls /var/lib/mysql)"
+    tar czvf  /backup/mysql_db.tar.gz -C /backup/db .
+    md5sum /backup/mysql_db.tar.gz | awk '{print $1}' > /backup/mysql_db.MD5
+    rm -rf /backup/db

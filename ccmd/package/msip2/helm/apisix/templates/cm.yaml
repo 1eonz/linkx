@@ -1,0 +1,129 @@
+{{- define "NormalizePrefix" -}}
+{{- if not (hasSuffix "/" .) -}}
+{{ printf "%s/" . }}
+{{- else -}}
+{{ . }}
+{{- end -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Values.name}}-apisix-scripts
+  namespace: {{.Release.Namespace}}
+data:
+  init.sh: |-
+    #!/bin/bash
+    set -euo pipefail
+    cd "$(dirname "$0")" || exit 1
+    status_code=1
+    for file in upstream* ;do
+      echo "Processing $file..."
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" http://apisix-admin.platform:9180/apisix/admin/upstreams/{{.Release.Namespace}}-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file")
+      if [ "$status_code" = "200" ] || [ "$status_code" = "201" ]; then
+          echo "$file status code is $status_code"
+      else
+          echo "$file upstream add failed!status_code:$status_code"
+          curl http://apisix-admin.platform:9180/apisix/admin/upstreams/{{.Release.Namespace}}-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file"
+          exit 1
+      fi
+    done
+    for file in route* ;do
+      echo "Processing $file..."
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" http://apisix-admin.platform:9180/apisix/admin/routes/{{.Release.Namespace}}-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file")
+      if [ "$status_code" = "200" ] || [ "$status_code" = "201" ]; then
+          echo "$file status code is $status_code"
+      else
+          echo "$file route add failed!status_code:$status_code"
+          curl http://apisix-admin.platform:9180/apisix/admin/routes/{{.Release.Namespace}}-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file"
+          exit 1
+      fi
+    done
+{{- range $name,$conf := .Values.upstreams }}
+  upstream-{{$name}}: |-
+    {
+      "timeout": {
+        "connect": 10,
+        "send": 10,
+        "read": 60
+      },
+      "type": "roundrobin",
+      "scheme": "http",
+      "pass_host": "pass",
+      "name": "{{$.Release.Namespace}}-upstream-{{$name}}",
+      "keepalive_pool": {
+        "idle_timeout": 60,
+        "requests": 50000,
+        "size": 1000
+      },
+      "nodes": {{ toJson $conf}}
+    }
+{{- end }}
+{{- range $prefix,$r := .Values.routes }}
+{{- range $name,$conf := $r.config }}
+  route-{{$name}}: |-
+    {
+      "uris": {{ toJson $conf.uris }},
+      "upstream_id": "{{$.Release.Namespace}}-upstream-{{$conf.upstream}}",
+      "enable_websocket": {{$conf.enableWs}},
+      "name": "{{$.Release.Namespace}}-route-{{$name}}",
+      "vars": [
+          [
+            "server_port",
+            "IN",
+            [
+              {{- range $i,$b := $r.bindings}}
+              {{- if ne $i 0}}
+              ,
+              {{- end }}
+              "{{$b}}"
+              {{- end}}
+            ]
+          ]
+      ],
+      "plugins": {
+        "proxy-rewrite": {
+          {{- if $conf.rewrite}}
+           "regex_uri": ["^{{ include "NormalizePrefix" $conf.rewrite.source | trim }}(.*)", "{{ include "NormalizePrefix" $conf.rewrite.target | trim }}$1"]
+          {{- else }}
+          "regex_uri": ["^{{ include "NormalizePrefix" $prefix | trim }}(.*)", "/$1"]
+          {{- end}}
+        },
+        "response-rewrite":{
+          "headers":{
+            "set":{
+              {{- if $r.cors }}
+              "Access-Control-Allow-Private-Network": "true",
+              "Access-Control-Request-Private-Network": "true",
+              {{- end }}
+              {{- if $r.xFrameOptions }}
+              "X-Frame-Options": {{$r.xFrameOptions | quote}},
+              {{- else }}
+              "X-Frame-Options": "DENY",
+              {{- end }}
+              "X-Content-Type-Options": "nosniff",
+              "X-XSS-Protection": "1; mode=block",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+            },
+            "remove": ["server","vary"]
+          }
+        },
+        {{- if $r.cors }}
+        "cors":{
+          "allow_origins": "*",
+          "allow_methods": "POST,GET,PUT,DELETE,PATCH,OPTIONS",
+          "allow_headers": "*",
+          "max_age": 1728000
+        },
+        {{- end }}
+        "gzip": {
+          "types": "*",
+          "min_length": 20,
+          "buffers": {
+            "number": 32,
+            "size": 65536
+          }
+        }
+      }
+    }
+{{- end }}
+{{- end }}

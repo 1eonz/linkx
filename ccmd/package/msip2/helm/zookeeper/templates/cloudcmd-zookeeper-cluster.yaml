@@ -1,0 +1,153 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zookeeper-config
+  namespace: {{ .Values.namespace }}
+data:
+  zoo.cfg: |-
+    clientPort=2181
+    dataDir=/opt/zookeeper/data
+    dataLogDir=/opt/zookeeper/datalog
+    tickTime=2000
+    initLimit=5
+    syncLimit=2
+    maxClientCnxns=60
+    standaloneEnabled=true
+    admin.enableServer=true
+    enableEagerACLCheck=true
+  logback.xml: |-
+    <configuration>
+        
+        <property name="zookeeper.console.threshold" value="INFO"/>
+        
+        <property name="zookeeper.log.dir" value="."/>
+        <property name="zookeeper.log.file" value="zookeeper.log"/>
+        <property name="zookeeper.log.threshold" value="INFO"/>
+        <property name="zookeeper.log.maxfilesize" value="256MB"/>
+        <property name="zookeeper.log.maxbackupindex" value="20"/>
+        
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{ISO8601} [myid:%X{myid}] - %-5p [%t:%C{1}@%L] - %m%n</pattern>
+            </encoder>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>${zookeeper.console.threshold}
+                </level>
+            </filter>
+        </appender>
+        
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </configuration>
+  configuration.xsl: |-
+    <?xml version="1.0"?>
+    <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+        <xsl:output method="html"/>
+        <xsl:template match="configuration">
+            <html>
+                <body>
+                    <table border="1">
+                        <tr>
+                            <td>name</td>
+                            <td>value</td>
+                            <td>description</td>
+                        </tr>
+                        <xsl:for-each select="property">
+                            <tr>
+                                <td>
+                                    <a name="{name}">
+                                        <xsl:value-of select="name"/>
+                                    </a>
+                                </td>
+                                <td>
+                                    <xsl:value-of select="value"/>
+                                </td>
+                                <td>
+                                    <xsl:value-of select="description"/>
+                                </td>
+                            </tr>
+                        </xsl:for-each>
+                    </table>
+                </body>
+            </html>
+        </xsl:template>
+    </xsl:stylesheet>
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: zookeeper
+  serviceName: zookeeper
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      name: zookeeper
+      labels:
+        app: zookeeper
+    spec:
+      volumes:
+        - name: zookeeper-config
+          configMap:
+            name: zookeeper-config
+      containers:
+        - name: zookeeper
+          image: {{ .Values.zk.image }}
+          command:
+            - bash
+            - /opt/zookeeper/bin/zkServer.sh
+            - start-foreground
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "0.5"
+          ports:
+            - containerPort: 2181
+              name: client
+            - containerPort: 2888
+              name: follower
+            - containerPort: 3888
+              name: election
+            - containerPort: 8080
+              name: admin
+          volumeMounts:
+            - name: zookeeper-config
+              mountPath: /opt/zookeeper/conf
+              readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Values.namespace }}
+  name: zookeeper
+spec:
+  selector:
+    app: zookeeper
+  clusterIP: None
+  ports:
+    - port: 2181
+      name: client
+      protocol: TCP
+      targetPort: 2181
+    - port: 2888
+      name: follower
+      protocol: TCP
+      targetPort: 2888
+    - port: 3888
+      name: election
+      protocol: TCP
+      targetPort: 3888
+    - port: 8080
+      name: admin
+      protocol: TCP
+      targetPort: 8080

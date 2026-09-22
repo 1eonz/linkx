@@ -1,0 +1,6 @@
+FROM repo.rd.td-tech.com/docker-virtual/linkx/msip/jre:11.openeuler.openjre.amd64
+WORKDIR /src_f
+COPY file/ .
+WORKDIR /target
+
+ENTRYPOINT exec cp -r /src_f/* .

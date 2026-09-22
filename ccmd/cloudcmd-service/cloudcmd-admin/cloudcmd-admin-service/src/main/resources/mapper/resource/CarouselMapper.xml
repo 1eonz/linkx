@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.resource.mapper.CarouselMapper">
+
+    <select id="selectPage" resultType="com.tdtech.cloudcmd.admin.resource.entity.dto.CarouselDO"
+            parameterType="com.tdtech.cloudcmd.admin.resource.entity.vo.CarouselPageReqVO">
+        SELECT id, title, pci_url, url, sort,
+               official_account_id, official_account_name, article_id
+        FROM carousel
+        <where>
+            <if test="reqVO.title != null and reqVO.title != ''">
+                AND title   LIKE CONCAT('%', #{reqVO.title}, '%')
+            </if>
+        </where>
+        ORDER BY sort ASC
+    </select>
+</mapper>

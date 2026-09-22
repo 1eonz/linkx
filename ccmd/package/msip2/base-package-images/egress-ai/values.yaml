@@ -1,0 +1,21 @@
+ports:
+  - name: web
+    port: 8080
+haControl: "false"
+container:
+  strategy:
+  replicas: 1
+  vault: false
+  volumes:
+  config_map:
+    - name: config
+      mount_path: /etc/nginx/conf.d/
+      data:
+        pim.conf: |-
+          server{
+                listen 8080;
+                location /XA-ics-agent/ {
+                  proxy_pass http://10.28.15.61:30113/;
+                  proxy_http_version 1.1;
+                }
+            }

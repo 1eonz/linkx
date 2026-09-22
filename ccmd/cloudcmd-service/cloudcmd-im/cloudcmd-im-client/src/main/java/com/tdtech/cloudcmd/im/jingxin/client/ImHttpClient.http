@@ -1,0 +1,187 @@
+### 获取访问令牌
+POST {{host}}{{gatewayPrefix}}/openapi/v2/oauth/login
+Content-Type: application/json
+
+{
+  "clientId": "{{clientId}}",
+  "clientSecret": "{{clientSecret}}",
+  "state": "randomState"
+}
+
+### 分页查询部门列表
+GET {{host}}{{gatewayPrefix}}/openapi/v2/departments/page?pageNo=1&pageSize=10&includeChildren=0
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 查询部门详情
+GET {{host}}{{gatewayPrefix}}/openapi/v2/departments?departmentCodes=DEPT001
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 分页查询用户列表（按部门）
+GET {{host}}{{gatewayPrefix}}/openapi/addressbook/v2/cooperationusers/page?pageNo=1&pageSize=10&includeChildren=1
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 分页查询人员列表信息
+GET {{host}}{{gatewayPrefix}}/openapi/v2/users/page?pageNo=1&pageSize=10&departmentCode=26549506190854&includeChildren=1
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 根据身份证号查询用户
+GET {{host}}{{gatewayPrefix}}/openapi/v2/users?idCards=11010119900307XXXX
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 查询用户详情
+GET {{host}}{{gatewayPrefix}}/openapi/v2/users/userInfo?userIds=26549506201094
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 查询用户资料
+GET {{host}}{{gatewayPrefix}}/openapi/v2/users/profile?imToken={{userToken}}
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 创建协同用户
+POST {{host}}{{gatewayPrefix}}/openapi/addressbook/v2/cooperationusers
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "name": "asd",
+  "avatar": "26590013870597",
+  "category": 1,
+  "remark": null,
+  "policy": {
+    "type": 1,
+    "whiteDepartmentIds": null,
+    "whiteUserTypeIds": null,
+    "whiteUserIds": 26549506192898,
+    "redDepartmentIds": null,
+    "redUserTypeIds": null,
+    "redUserIds": null
+  },
+  "bindUserIds": [
+    "26549506192900"
+  ],
+  "departmentId": "26549506188807"
+}
+
+### 更新协同用户
+PUT {{host}}{{gatewayPrefix}}/openapi/addressbook/v2/cooperationusers/{{userId}}
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "name": "asd",
+  "avatar": "26590013870597",
+  "category": 1,
+  "remark": null,
+  "policy": {
+    "type": 1,
+    "whiteDepartmentIds": null,
+    "whiteUserTypeIds": null,
+    "whiteUserIds": 26549506192900,
+    "redDepartmentIds": null,
+    "redUserTypeIds": null,
+    "redUserIds": null
+  },
+  "bindUserIds": [
+    "26549506192900"
+  ],
+  "departmentId": "26549506188807"
+}
+
+### 查询协同用户列表
+GET {{host}}{{gatewayPrefix}}/openapi/addressbook/v2/cooperationusers/page?pageNo=1&pageSize=10
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 删除协同用户
+DELETE {{host}}{{gatewayPrefix}}/openapi/addressbook/v2/cooperationusers/{{userId}}
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 查询群组详情
+GET {{host}}{{gatewayPrefix}}/openapi/v2/group/{{groupId}}?isIncludeMember=1
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 创建群组
+POST {{host}}{{gatewayPrefix}}/openapi/v2/group
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  // 群组创建请求对象
+}
+
+### 上传文件
+POST {{host}}{{gatewayPrefix}}/openapi/v2/file/upload
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: application/octet-stream
+
+< ./test.txt
+--boundary123
+Content-Disposition: form-data; name="category"
+
+0
+--boundary123--
+
+### 下载文件
+GET {{host}}{{gatewayPrefix}}/openapi/v2/file/download/1757643153038/0
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+
+### 群组支持用户
+POST {{host}}{{gatewayPrefix}}/openapi/addressbook/v2/cooperationusers/support
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+[
+  {
+    // 协同用户支持请求对象
+  }
+]
+
+###
+POST {{host}}{{gatewayPrefix}}/openapi/v2/messages/offline/page
+Authorization: {{accessToken}}
+X-Client-Id: {{clientId}}
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "msgIds": [
+    235907511117414400
+  ],
+  "userId": 26765031092740,
+  "limit": 1,
+  "plaintext": 1
+}

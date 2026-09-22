@@ -1,0 +1,4 @@
+nacos_backup:
+  enabled: false
+  backup_tables: []
+  backup_group_ids: []

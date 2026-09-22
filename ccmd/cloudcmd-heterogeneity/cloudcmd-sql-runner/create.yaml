@@ -1,0 +1,7 @@
+create:
+  - idx: idx_post_ids_multival
+    table: icp_collabs.tb_label_binding
+    columns: "(cast(`post_ids` as unsigned array))"
+  - idx: idx_resources_type
+    table: icp_collabs.tb_ai_agent_submission
+    columns: "(CAST(resources -> '$[*].type' AS UNSIGNED ARRAY))"

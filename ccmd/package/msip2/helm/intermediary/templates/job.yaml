@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.Values.name}}-{{ now | date "20060102150405" }}
+  namespace: {{.Release.Namespace}}
+spec:
+{{/*  ttlSecondsAfterFinished: 300*/}}
+  template:
+    spec:
+      containers:
+        - name: curl
+          image: imagerepo.td-tech.com:5001/openeuler:22.03SP3.0
+          command:
+            - "sh"
+            - "/home/init.sh"
+          volumeMounts:
+            - mountPath: /home
+              name: {{.Values.name}}-scripts
+      restartPolicy: Never
+      volumes:
+        - configMap:
+            name: {{.Values.name}}-scripts
+          name: {{.Values.name}}-scripts
+  backoffLimit: 2

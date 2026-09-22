@@ -1,0 +1,6 @@
+FROM repo.rd.td-tech.com/docker-virtual/linkx/flyway:11.17.2-alpine.arm
+
+COPY ./agent/ /flyway/db/migration/agent/
+COPY ./database.txt/ /flyway/db/migration/database.txt
+COPY ./flyway.conf/ /flyway/conf/flyway.conf
+COPY ./docker_run.sh /usr/bin/docker_run.sh

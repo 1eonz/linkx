@@ -1,0 +1,2 @@
+## 三方件的程序或者工具组
+images_path: "{{ app_root }}/images"

@@ -1,0 +1,138 @@
+- name: get restore_path
+  set_fact:
+    restore_path: "{{ great_storage_backup_path }}{{namespace}}/db"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase=="rollback"
+- name: get restore_path
+  set_fact:
+    restore_path: "{{ great_storage_backup_path }}patch/{{namespace}}/db"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase == "patch_rollback"
+
+- name: restore greatsql | make sure restore file exist
+  ansible.builtin.find:
+    paths: "{{ restore_path }}"
+    patterns: "*.tar.gz"
+    use_regex: no
+  register: tar_files
+  delegate_to: "{{ first_kube_master }}"
+
+- name: restore greatsql | Debug result tar_files
+  ansible.builtin.debug:
+    msg: "Found {{ tar_files.files | length }} .tar.gz files"
+  delegate_to: "{{ first_kube_master }}"
+  when: tar_files.files | length == 1
+
+- name: restore greatsql | Fail *.tar.gz files not found
+  ansible.builtin.fail:
+    msg: "No .tar.gz files found in {{ restore_path }}"
+  delegate_to: "{{ first_kube_master }}"
+  when:
+    - tar_files.files | length == 0
+    # 补丁回滚且已走 Flyway .sql.rollback 时，允许没有 tar 备份
+    - not (phase == "patch_rollback" and (flyway_script_rollback_done | default(false) | bool))
+
+- name: restore greatsql | skip tar restore because flyway script rollback done
+  debug:
+    msg: "Skip tar restore, flyway_script_rollback_done=true"
+  when:
+    - phase == "patch_rollback"
+    - flyway_script_rollback_done | default(false) | bool
+  delegate_to: "{{ first_kube_master }}"
+
+- name: restore greatsql | Decompress tar_files
+  ansible.builtin.unarchive:
+    src: "{{ item.path }}"
+    dest: "{{ restore_path }}/"
+    remote_src: yes
+  delegate_to: "{{ first_kube_master }}"
+  loop: "{{ tar_files.files }}"
+  when:
+    - tar_files.files | length == 1
+    - not (phase == "patch_rollback" and (flyway_script_rollback_done | default(false) | bool))
+
+- name: Execute kubectl command to get leader node name
+  command: kubectl get pod -A -l role=LEADER --no-headers -o custom-columns='NODE:.spec.nodeName'
+  register: node_mysql_leader
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Convert node names to array
+  set_fact:
+    backupnode: "{{ node_mysql_leader.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Debug Node Names
+  debug:
+    var: backupnode
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | make sure greatsql data folder exist
+  file:
+    path: "{{ great_storage_data_path }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Create restorejob manifests files
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ greatsql_manifest_folder }}/{{ item.file }}"
+  loop:
+    - {name: greatsql, file: restore_job.yml, type: job}
+    - {name: greatsql, file: restore_db.yml, type: cm}
+  register: greatsql_manifests
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Execute kubectl command to delete job
+  command: kubectl delete job restore-db-job -n platform
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: restore greatsql | create configmap
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/restore_db.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: false
+
+- name: restore greatsql | start restore service
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/restore_job.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: false
+
+- name: restore greatsql | make sure restore complete
+  command: "kubectl wait --for=condition=complete job/restore-db-job -n platform"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: restore_result
+  until: restore_result.rc == 0
+  retries: 20
+  delay: 60
+
+- name: restore greatsql | import tablespace to master node
+  shell: |
+    kubectl exec -i -n platform $(kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].metadata.name}') -c {{ db_container }} -- mysql -uroot < {{ restore_path }}/import_sql.sql
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  timeout: 2100
+
+# 清理恢复产物，保留 table_snapshot.list 与 flyway_rollback/ 供后续兜底使用
+- name: backup greatsql | clean old backup data
+  shell: |
+    find "{{ restore_path }}" -mindepth 1 -maxdepth 1 \
+      ! -name 'table_snapshot.list' \
+      ! -name 'flyway_rollback' \
+      -exec rm -rf {} +
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true

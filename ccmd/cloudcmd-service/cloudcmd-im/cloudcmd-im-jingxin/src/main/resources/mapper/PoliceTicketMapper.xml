@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.PoliceTicketMapper">
+
+    <select id="findListByOrgCodeList" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.TrPoliceTicketGroupVO">
+        SELECT
+            tpt.id AS id, tpt.ticket_id AS ticketId, tpt.group_id AS groupId, tcg.department_id AS orgCode
+        FROM
+            tr_police_ticket_group tpt
+        LEFT JOIN tb_create_group tcg ON tpt.group_id = tcg.group_id
+        <where>
+            <if test="orgCodeList != null and orgCodeList.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="orgCodeList" item="code" open="(" close=")" separator=",">
+                    #{code}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+
+</mapper>

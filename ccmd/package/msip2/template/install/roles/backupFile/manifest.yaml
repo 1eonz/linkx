@@ -1,0 +1,13 @@
+order: 50001
+name: backupFile
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_upgrade: true
+phases:
+  - upgrade
+  - patch_install
+models:
+  - three_nodes
+  - multi_nodes
+  - standalone

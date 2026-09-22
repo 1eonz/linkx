@@ -1,0 +1,15 @@
+FROM 127.0.0.1:5000/maven:3.9.11-eclipse-temurin-21 as maven
+WORKDIR /app
+COPY . .
+RUN mkdir -p /repo && \
+    mvn \
+    -DskipTests=true \
+    -s /app/settings.xml \
+    package
+
+FROM 127.0.0.1:5000/mcr.microsoft.com/openjdk:21-ubuntu-arm64
+
+WORKDIR /app
+COPY --from=maven /app/target/cloudcmd-cnx-private-queue-0.1.jar ./app.jar
+
+CMD java -jar /app/app.jar

@@ -1,0 +1,31 @@
+---
+- name: execute outer shell 
+  command: "/bin/bash {{ after_shell_path }}/after.sh"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: yes  
+
+- name: define path
+  set_fact:
+    outer: "{{ after_shell_path }}/after.sh"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: find after shell files
+  find:
+    paths: "{{ after_shell_path }}"
+    recurse: yes
+    patterns: "after.sh"
+  register: after_shell_files
+  delegate_to: "{{ first_kube_master }}" 
+  run_once: yes
+
+- name: execute after shell 
+  command: "/bin/bash {{ item.path }}"
+  with_items: "{{ after_shell_files.files }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: after_shell_files.matched > 0 and item.path != outer
+    
+
+

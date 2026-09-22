@@ -1,0 +1,49 @@
+---
+- name: backup by service ======= | {{ svc_name }}
+  shell: >-
+    kubectl -n {{ svc_namespace }} get pod -l app={{ svc_name }} -o jsonpath='{.items[0].metadata.name}' || kubectl -n {{ svc_namespace }} get pod -l name={{ svc_name }} -o jsonpath='{.items[0].metadata.name}'
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  register: pod_name
+  until: pod_name.rc == 0
+  retries: 30
+  delay: 20
+
+- name: Back up each path individually.  | {{ pod_name.stdout }}
+  shell: |
+    set -e
+    pod="{{ pod_name.stdout }}"
+    path="{{ inner_item }}"
+    # 查看当前文件是否大于single_file_backup_size，如果是，则直接失败
+    file_size=$(kubectl -n {{ svc_namespace }} exec "$pod" -- stat -c %s "$path" | tr -d '[:space:]')
+    echo "file_size (bytes) = $file_size" >> "{{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/backup_file.log"
+    echo "single_file_limit_bytes (bytes) = {{ single_file_limit_bytes }}" >> "{{ upgrade_backup_dir }}/{{ svc_namespace
+    }}/mirrorFile/backup_file.log"
+    if awk -v f="$file_size" -v l="{{ single_file_limit_bytes }}" 'BEGIN{exit !(f>l)}'; then
+      echo "ERROR: $path size $file_size bytes > limit {{ single_file_limit_bytes }} bytes" >> "{{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/backup_file.log"
+      exit 1
+    fi
+
+    pkg="{{ svc_name }}_{{ inner_item | regex_replace('[^A-Za-z0-9]', '_') }}_${ubp_mirror_backup_ts}.tar.gz"
+    pkgPath="{{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/${pkg}"
+
+    # 进入容器打包
+    kubectl -n {{ svc_namespace }} exec "$pod" -- sh -c "if [ -d {{ inner_item }} ]; then cd {{ inner_item }}; tar -czf /tmp/pkg.tgz *; fi"
+    kubectl -n {{ svc_namespace }} exec "$pod" -- sh -c "if [ -f {{ inner_item }} ]; then cd $(dirname {{ inner_item }}); tar -czf /tmp/pkg.tgz $(basename {{ inner_item }}); fi"
+
+    # 拷出到宿主机
+    kubectl -n {{ svc_namespace }} cp "$pod:/tmp/pkg.tgz" "$pkgPath"
+    
+    chmod 755 "$pkgPath"
+
+    # 清理容器内临时包
+    kubectl -n {{ svc_namespace }} exec "$pod" -- rm -f /tmp/pkg.tgz
+
+    # 写映射文件
+    echo "- containerPath: {{ inner_item }}
+      archive: ${pkg}" >> {{ upgrade_backup_dir }}/{{ svc_namespace }}/mirrorFile/manifest.yml
+  loop: "{{ svc_paths }}"
+  loop_control:
+    loop_var: inner_item
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes

@@ -1,0 +1,3 @@
+com.chinasoft.cloud.framework.datapermission.config.CrsDataPermissionAutoConfiguration
+com.chinasoft.cloud.framework.datapermission.config.CrsDeptDataPermissionAutoConfiguration
+com.chinasoft.cloud.framework.datapermission.config.CrsDataPermissionRpcAutoConfiguration

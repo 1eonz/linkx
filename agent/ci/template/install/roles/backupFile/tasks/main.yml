@@ -1,0 +1,64 @@
+- name: Get total node count
+  ansible.builtin.set_fact:
+    total_nodes: "{{ groups['all'] | length }}"
+  run_once: true
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Show total number of nodes
+  ansible.builtin.debug:
+    msg: "Inventory 总节点数: {{ total_nodes }}"
+  delegate_to: "{{ first_kube_master }}"
+
+# 先加载 namespace，确保后续 file_backup_path 能正确引用
+- name: Load app-info to get namespace
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Set namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Set file backup path for upgrade
+  set_fact:
+    file_backup_path: "{{ upgrade_backup_dir }}/{{ namespace }}/file"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: phase == "upgrade"
+
+- name: Set file backup path for patch_install
+  set_fact:
+    file_backup_path: "{{ upgrade_backup_dir }}/patch/{{ namespace }}/file"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: phase == "patch_install"
+
+- name: Check if backup target directory exists
+  stat:
+    path: "/data/install/backup/addons/saas/msip"
+  register: backup_dir_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+# 1 业务网元 升级前备份需要的文件（宿主机上的）
+- name: 1 upgrade backup file (host machine)
+  include_tasks: upgrade_backup_file_host.yml
+  when:
+    - total_nodes | int == 1
+    - (phase == "patch_install") or (phase == "upgrade" and backup_dir_status.stat.exists)
+
+## 2 业务网元 升级前备份需要的文件（镜像上的）--功能已验证，不适用冷备场景（如：主备）
+#- name: 2 upgrade backup file (mirror)
+#  include_tasks: upgrade_backup_file_mirror.yml
+
+# 3 业务网元 通过共享pod备份
+- name: 3 upgrade backup file (Shared Pod)
+  include_tasks: upgrade_backup_file_sharedPod.yml
+  when:
+    - phase == "upgrade" or phase == "patch_install"
+    - total_nodes | int > 1
+    - (phase == "patch_install") or (phase == "upgrade" and backup_dir_status.stat.exists)

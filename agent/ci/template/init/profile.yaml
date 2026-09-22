@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: agent
+  name: agent-profile
+data:
+  "application.yml": |-
+    --- #################### 注册中心 + 配置中心相关配置 ####################
+    spring:
+      cloud:
+        nacos:
+          server-addr: ${NACOS_ADDRESS} # Nacos 服务器地址
+          discovery: # 【配置中心】配置项
+            group: ${NACOS_GROUP} # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
+            metadata:
+              version: 1.0.0 # 服务实例的版本号，可用于灰度发布
+          config: # 【注册中心】配置项
+            group: ${NACOS_GROUP} # 使用的 Nacos 配置分组，默认为 DEFAULT_GROUP
+
+    --- #################### 数据库相关配置 ####################
+    spring:
+      # 数据源配置项
+      datasource:
+        druid: # Druid 【监控】相关的全局配置
+          web-stat-filter:
+            enabled: true
+          stat-view-servlet:
+            enabled: true
+            allow: # 设置白名单，不填则允许所有访问
+            url-pattern: /druid/*
+            login-username: # 控制台管理用户名和密码
+            login-password:
+          filter:
+            stat:
+              enabled: true
+              log-slow-sql: true # 慢 SQL 记录
+              slow-sql-millis: 100
+              merge-sql: true
+            wall:
+              config:
+                multi-statement-allow: true
+        dynamic: # 多数据源配置
+          druid: # Druid 【连接池】相关的全局配置
+            initial-size: 1 # 初始连接数
+            min-idle: 1 # 最小连接池数量
+            max-active: 20 # 最大连接池数量
+            max-wait: 600000 # 配置获取连接等待超时的时间，单位：毫秒
+            time-between-eviction-runs-millis: 60000 # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位：毫秒
+            min-evictable-idle-time-millis: 300000 # 配置一个连接在池中最小生存的时间，单位：毫秒
+            max-evictable-idle-time-millis: 900000 # 配置一个连接在池中最大生存的时间，单位：毫秒
+            validation-query: SELECT 1 FROM DUAL # 配置检测连接是否有效
+            test-while-idle: true
+            test-on-borrow: false
+            test-on-return: false
+          primary: master
+          datasource:
+            master:
+              url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/agent?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+              username: ${MYSQL_USER}
+              password: ${MYSQL_PASSWORD}
+
+      # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
+      data:
+        redis:
+          host: ${REDIS_HOST} # 地址
+          port: ${REDIS_POST} # 端口
+          database: 3 # 数据库索引
+          password: ${REDIS_PASSWORD} # 密码，建议生产环境开启
+
+    --- #################### MQ 消息队列相关配置 ####################
+
+    spring:
+      kafka:
+        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # 指定 Kafka Broker 地址，可以设置多个，以逗号分隔
+
+    --- #################### 定时任务相关配置 ####################
+    xxl:
+      job:
+        enabled: false
+
+    --- #################### 服务保障相关配置 ####################
+
+    # Lock4j 配置项
+    lock4j:
+      acquire-timeout: 3000 # 获取分布式锁超时时间，默认为 3000 毫秒
+      expire: 30000 # 分布式锁的超时时间，默认为 30 毫秒
+
+    --- #################### 监控相关配置 ####################
+
+    # Actuator 监控端点的配置项
+    management:
+      server:
+        port: 9090 # Actuator 监控端点的端口号。默认值为 8080
+      endpoints:
+        web:
+          base-path: /actuator # Actuator 提供的 API 接口的根目录。默认为 /actuator
+          exposure:
+            include: health,info,prometheus,metrics # 需要开放的端点。默认值只打开 health 和 info 两个端点。通过设置 * ，可以开放所有端点。
+      metrics:
+        tags:
+          application: ${spring.application.name}
+        enable:
+          jvm: true
+          process: true
+          system: true
+      prometheus:
+        metrics:
+          export:
+            enabled: true
+      endpoint:
+        prometheus:
+          enabled: true
+        health:
+          probes:
+            enabled: true
+          show-details: always
+          group:
+            liveness:
+              include: livenessState
+            readiness:
+              include: readinessState
+
+    # Spring Boot Admin 配置项
+    spring:
+      boot:
+        admin:
+          # Spring Boot Admin Client 客户端的相关配置
+          client:
+            instance:
+              service-host-type: IP # 注册实例时，优先使用 IP [IP, HOST_NAME, CANONICAL_HOST_NAME]
+          # Spring Boot Admin Server 服务端的相关配置
+          context-path: /admin # 配置 Spring
+    
+    crs:
+      web:
+        admin-ui:
+          url: http://${SERVER_IP}:30014 # Admin 管理后台 UI 的地址
+      tracer:
+        enable: false
+      metrics:
+        enable: true
+      access-log:
+        enable: false

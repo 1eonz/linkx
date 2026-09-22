@@ -1,0 +1,76 @@
+---
+# Source: web/templates/cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: linkx
+  name: egress-ai-config
+data:
+  pim.conf: |-
+    server{
+          listen 8080;
+          location /XA-ics-agent/ {
+            proxy_pass http://10.28.15.61:30113/;
+            proxy_http_version 1.1;
+          }
+      }
+---
+# Source: web/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: linkx
+  name: egress-ai
+  labels:
+    app.kubernetes.io/name: egress-ai
+spec:
+  selector:
+    app: egress-ai
+  ports:
+    - port: 8080
+      name: web
+      protocol: TCP
+      targetPort: 8080
+---
+# Source: web/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: egress-ai
+  labels:
+    app: egress-ai
+    app.kubernetes.io/name: egress-ai
+spec:
+  selector:
+    matchLabels:
+      app: egress-ai
+  replicas: 1
+  template:
+    metadata:
+      name: egress-ai
+      labels:
+        app: egress-ai
+        app.kubernetes.io/name: egress-ai
+        enableRestart: "true"
+      annotations:
+        helm.sh/chart: web-0.1.0
+        app.kubernetes.io/name: egress-ai
+        app.kubernetes.io/instance: egress-ai
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      volumes:
+        - name: egress-ai-config
+          configMap:
+            name: egress-ai-config
+      containers:
+        - name: egress-ai
+          image: imagerepo.td-tech.com:5001/egress-ai:{Version}.{Arch}.{BuildTime}
+          imagePullPolicy: Always
+          ports:
+            - name: web
+              containerPort: 8080
+          volumeMounts:
+            - name: egress-ai-config
+              mountPath: /etc/nginx/conf.d/

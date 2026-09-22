@@ -1,0 +1,16 @@
+FROM repo.rd.td-tech.com/docker-virtual/linkx/msip/jre:21.openeuler.openjre.amd64
+
+USER root
+
+ARG https_proxy="http://192.168.195.201:8080"
+ARG http_proxy="http://192.168.195.201:8080"
+ENV http_proxy=${http_proxy} https_proxy=${https_proxy}
+
+RUN echo "proxy=http://192.168.195.201:8080" >> /etc/dnf/dnf.conf && \
+    echo "sslverify=0" >> /etc/dnf/dnf.conf && \
+    mkdir -p /etc/curl && \
+    echo "insecure" > /etc/curl/curlrc && \
+    dnf install -y gtk2 && \
+    dnf clean all
+
+ENV http_proxy="" https_proxy=""

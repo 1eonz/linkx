@@ -1,0 +1,16 @@
+- name: "{{ role_to_execute }}"
+  hosts: "{{host_to_operate}}"
+  any_errors_fatal: true
+  gather_facts: False
+  vars:
+    role_to_execute: "{{ role_name }}"
+    host_to_operate: "{{ operate_host }}"
+    host_to_label: "{{label_name}}"
+    deploy_on_group: "{{group_name}}"
+    single_file_backup_size: "{{ single_file_backup_size | default('5MB') }}"
+    db_backup_size: "{{ db_backup_size | default('10GB') }}"
+    # 升级回退文件存放路径
+    upgrade_backup_dir: "{{ upgrade_backup_dir | default('/data/msip/backup') }}"
+    inventory_file: "{{ inventory_file | default('/data/hosts/' ~ install_model ~ '.ini') }}"
+  roles:
+    - "{{ role_to_execute }}"

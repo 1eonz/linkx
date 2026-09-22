@@ -1,0 +1,98 @@
+---
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: restore mongodb
+  include_tasks: restore_mongodb.yml
+  when:
+    - phase=="rollback" or phase == "patch_rollback"
+    - inventory_hostname == first_kube_master
+    # Mongo 与 GreatSQL 备份独立：即使走了 Flyway .sql.rollback，仍应恢复 mongodb（无备份则任务内跳过）
+
+- name: set database container name
+  set_fact:
+    db_container: "greatsql-standalone"
+  when:
+    - model=="standalone"
+
+- name: set database container name
+  set_fact:
+    db_container: "mysql"
+  when:
+    - model=="cluster"
+
+- name: restore greatsql | Clean up the relevant data of *.zst
+  shell: "rm -f {{ great_storage_data_path }}/*/*.zst; rm -f {{ great_storage_data_path }}/*.zst"
+  when:
+    - model=="standalone"
+    - not (flyway_script_rollback_done | default(false) | bool)
+  run_once: true
+
+- name: restore greatsql | Clean up the relevant data of *.zst
+  shell: "rm -f {{ mysql_storage_data_path }}/*/*.zst; rm -f {{ mysql_storage_data_path }}/*.zst"
+  when:
+    - model=="cluster"
+    - not (flyway_script_rollback_done | default(false) | bool)
+
+- name: get restore_path for rollback
+  set_fact:
+    restore_path: "{{ great_storage_backup_path }}{{ namespace }}/db"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase == "rollback"
+
+- name: get restore_path for patch_rollback
+  set_fact:
+    restore_path: "{{ great_storage_backup_path }}patch/{{ namespace }}/db"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase == "patch_rollback"
+
+- name: restore greatsql | restore table structure
+  shell: "kubectl exec -i $(kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].metadata.name}') -n platform -c {{ db_container }} -- mysql -uroot < {{ restore_path }}/table_schema.sql"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when:
+    - not (flyway_script_rollback_done | default(false) | bool)
+
+- name: restore standby db
+  include_tasks: restore_db.yml
+  when:
+    - model=="standalone"
+    - phase=="rollback" or phase == "patch_rollback"
+    - inventory_hostname == first_kube_master
+    - not (flyway_script_rollback_done | default(false) | bool)
+
+- name: restore multi db
+  include_tasks: restore_dbs.yml
+  when:
+    - model=="cluster"
+    - phase=="rollback" or phase == "patch_rollback"
+    - inventory_hostname == first_kube_master
+    - not (flyway_script_rollback_done | default(false) | bool)
+
+# 补丁回滚：按打补丁前表快照删除新增表（方案2）
+- name: drop tables added by patch
+  include_tasks: drop_new_tables.yml
+  when:
+    - phase == "patch_rollback"
+    - inventory_hostname == first_kube_master

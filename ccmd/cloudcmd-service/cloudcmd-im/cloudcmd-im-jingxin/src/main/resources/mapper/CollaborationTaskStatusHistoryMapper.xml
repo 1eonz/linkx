@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CollaborationTaskStatusHistoryMapper">
+
+    <select id="getCTStatusHistory" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationTaskStatusHistory">
+        SELECT id, task_id, status, user_id, user_name,
+               department_id, department_name, is_deleted, gmt_modified, gmt_created
+        FROM `tb_task_status_history`
+        WHERE task_id = #{taskId}
+          AND user_id = #{userId}
+        ORDER BY gmt_created DESC
+            LIMIT 1
+    </select>
+
+</mapper>

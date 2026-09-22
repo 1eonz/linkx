@@ -1,0 +1,49 @@
+---
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+
+- name: Load variables from app-info 
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data  
+
+- name: get group_name
+  set_fact:
+    group_name: "{{ data['app-info'][0]['group_name'] }}"
+
+- name: get label_name
+  set_fact:
+    label_name: "{{ data['app-info'][0]['label_name'] }}"
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+
+- name: Check if the group exists
+  fail:
+    msg: "The group '{{ group_name }}' does not exist in the inventory.Please add first!"
+  when: group_name not in groups
+
+- name: set hostname_list
+  set_fact:
+    hostname_list: >-
+      {% for host in groups[group_name] -%}{{ host }}{% if not loop.last %},{% endif %} {%- endfor %}
+
+- name: Set label
+  command: "kubectl label node  {{hostvars[item[0]].hostname}} {{item[1]}}=true --overwrite=true "
+  with_nested:
+    - "{{hostname_list.split(',')}}"
+    - "{{label_name.split(',')}}"
+
+- name: Set first master
+  command: "kubectl label node {{hostvars[item[0]].hostname}} {{namespace}}.pvHost=true --overwrite=true "
+  with_nested:
+    - "{{hostname_list.split(',')}}"
+    - "{{label_name.split(',')}}"

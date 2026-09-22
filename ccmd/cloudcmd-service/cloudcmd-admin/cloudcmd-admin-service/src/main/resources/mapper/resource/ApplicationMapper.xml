@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.resource.mapper.ApplicationMapper">
+    <insert id="batchInsertApplication" parameterType="java.util.List">
+        INSERT INTO tb_application(id, name, app_key, app_secret,remark)
+        VALUES
+        <foreach collection="applicationList" item="application" separator="," open="(" close=")">
+            #{application.id},
+            #{application.name},
+            #{application.appKey},
+            #{application.appSecret},
+            #{application.remark}
+        </foreach>
+    </insert>
+
+    <update id="batchLogicDeleteApplication" parameterType="java.util.List">
+        UPDATE tb_application set status = 1
+        WHERE id in
+        <foreach collection="idList" item="id" separator="," open="(" close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </update>
+</mapper>

@@ -1,0 +1,5 @@
+com.chinasoft.cloud.framework.security.config.CrsSecurityRpcAutoConfiguration
+com.chinasoft.cloud.framework.security.config.CrsSecurityAutoConfiguration
+com.chinasoft.cloud.framework.security.config.CrsWebSecurityConfigurerAdapter
+com.chinasoft.cloud.framework.operatelog.config.CrsOperateLogConfiguration
+com.chinasoft.cloud.framework.operatelog.config.CrsOperateLogRpcAutoConfiguration

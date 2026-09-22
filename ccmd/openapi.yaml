@@ -1,0 +1,75 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-auth-service-openapi
+spec:
+  selector:
+    app: cloudcmd-auth-service
+  ports:
+    - port: 9001
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-admin-service-openapi
+spec:
+  selector:
+    app: cloudcmd-admin-service
+  ports:
+    - port: 9002
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-base-service-openapi
+spec:
+  selector:
+    app: cloudcmd-base-service
+  ports:
+    - port: 9003
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-im-jingxin-openapi
+spec:
+  selector:
+    app: cloudcmd-im-jingxin
+  ports:
+    - port: 9004
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-im-openapi-openapi
+spec:
+  selector:
+    app: cloudcmd-im-openapi
+  ports:
+    - port: 9005
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+  type: LoadBalancer

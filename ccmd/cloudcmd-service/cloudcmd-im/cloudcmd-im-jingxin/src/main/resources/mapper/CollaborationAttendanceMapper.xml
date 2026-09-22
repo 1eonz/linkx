@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CollaborationAttendanceMapper">
+    <resultMap id="attendanceMap"
+               type="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.CollaborationAttendance">
+        <id column="id" property="id"/>
+        <result property="orgId" column="org_id"/>
+        <result property="orgName" column="org_name"/>
+        <result property="postId" column="post_id"/>
+        <result property="postName" column="post_name"/>
+        <result property="personId" column="person_id"/>
+        <result property="personName" column="person_name"/>
+        <result property="lastPeopleNum" column="last_people_num"/>
+        <result property="lastPeople" column="last_people"/>
+        <result property="type" column="type"/>
+        <result property="createTime" column="create_time"/>
+        <result property="switchType" column="switch_type"/>
+    </resultMap>
+
+    <sql id="attendanceWhereSql">
+        <where>
+            <if test="postName != null and postName != ''">
+                AND post_name LIKE concat('%',#{postName},'%')
+            </if>
+            <if test="orgName != null and orgName != ''">
+                AND org_name = #{orgName}
+            </if>
+            <if test="orgIds != null and orgIds.size() > 0">
+                AND org_id in
+                <foreach collection="orgIds" item="oid" open="(" close=")" separator=",">
+                    #{oid}
+                </foreach>
+            </if>
+            <if test="personName != null and personName != ''">
+                AND person_name LIKE concat('%',#{personName},'%')
+            </if>
+            <if test="startTime != null and startTime != ''">
+                AND create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND create_time &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+    </sql>
+
+    <sql id="queryAttendanceSql">
+        SELECT
+        id,
+        post_id,
+        post_name,
+        org_id,
+        org_name,
+        person_id,
+        person_name,
+        COALESCE(last_people_num, 0) AS last_people_num,
+        last_people,
+        type,
+        create_time,
+        switch_type
+        FROM
+        tb_collaboration_attendance
+        <include refid="attendanceWhereSql"/>
+        ORDER BY
+        create_time DESC ,id desc
+    </sql>
+
+    <select id="selectPageWithCondition" resultMap="attendanceMap">
+        <include refid="queryAttendanceSql"/>
+    </select>
+
+    <select id="getLastNumByPostId" resultType="int">
+        SELECT count(*)
+        FROM tb_collaboration_attendance origin
+                 JOIN (SELECT post_id, person_id, max(create_time) create_time
+                       FROM tb_collaboration_attendance
+                       GROUP BY post_id, person_id) tmp ON origin.post_id = tmp.post_id
+            AND origin.person_id = tmp.person_id
+            AND origin.create_time = tmp.create_time
+        WHERE type = '上岗'
+          AND origin.post_id = #{postId}
+        GROUP BY origin.post_id
+    </select>
+
+    <select id="listLastPeopleByPostId" resultType="String">
+        SELECT origin.person_name
+        FROM tb_collaboration_attendance origin
+                 JOIN (SELECT post_id, person_id, max(create_time) create_time
+                       FROM tb_collaboration_attendance
+                       GROUP BY post_id, person_id) tmp ON origin.post_id = tmp.post_id
+            AND origin.person_id = tmp.person_id
+            AND origin.create_time = tmp.create_time
+        WHERE type = '上岗'
+          AND origin.post_id = #{postId}
+    </select>
+
+    <select id="lastPeopleListByPostIdList" resultMap="attendanceMap">
+        SELECT
+        origin.post_id,
+        origin.person_id,
+        origin.person_name
+        FROM
+        tb_collaboration_attendance origin
+        JOIN ( SELECT post_id, person_id, max( create_time ) create_time FROM tb_collaboration_attendance GROUP BY
+        post_id, person_id ) tmp ON origin.post_id = tmp.post_id
+        AND origin.person_id = tmp.person_id
+        AND origin.create_time = tmp.create_time
+        WHERE
+        type = '上岗'
+        AND origin.post_id in
+        <foreach collection="postIdList" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="getLastRandomPerson" resultType="String">
+        SELECT origin.person_name
+        FROM tb_collaboration_attendance origin
+                 JOIN (SELECT post_id, person_id, max(create_time) create_time
+                       FROM tb_collaboration_attendance
+                       GROUP BY post_id, person_id) tmp ON origin.post_id = tmp.post_id
+            AND origin.person_id = tmp.person_id
+            AND origin.create_time = tmp.create_time
+        WHERE type = '上岗'
+          AND origin.post_id = #{postId}
+          AND origin.person_id != #{userId}
+        LIMIT 1
+    </select>
+
+    <select id="getLastNumByPostIds" resultMap="attendanceMap">
+        SELECT
+        origin.post_id,
+        count(*) last_people_num
+        FROM
+        tb_collaboration_attendance origin
+        JOIN ( SELECT post_id, person_id, max( create_time ) create_time FROM tb_collaboration_attendance GROUP BY
+        post_id, person_id ) tmp ON origin.post_id = tmp.post_id
+        AND origin.person_id = tmp.person_id
+        AND origin.create_time = tmp.create_time
+        WHERE
+        type = '上岗'
+        AND origin.post_id in
+        <foreach collection="postIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        GROUP BY
+        origin.post_id
+    </select>
+
+    <select id="getLastOffDutyTimeByPostIds" resultMap="attendanceMap">
+        SELECT
+        post_id,
+        max( create_time ) create_time
+        FROM
+        tb_collaboration_attendance
+        WHERE
+        type = '下岗'
+        AND post_id in
+        <foreach collection="postIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        GROUP BY
+        post_id
+    </select>
+
+    <select id="selectListByCondition" resultMap="attendanceMap">
+        <include refid="queryAttendanceSql"/>
+    </select>
+    <select id="selectLatestRecordByPostAndPerson" resultMap="attendanceMap">
+        SELECT id,
+               post_id,
+               post_name,
+               org_id,
+               org_name,
+               person_id,
+               person_name,
+               last_people_num,
+               last_people,
+               type,
+               create_time
+        FROM tb_collaboration_attendance
+        WHERE post_id = #{postId}
+          AND person_id = #{personId}
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询最新记录为"上岗"的 personId 列表（使用窗口函数） -->
+    <select id="selectPersonIdsWithLatestOnDuty" resultType="java.lang.Long">
+        SELECT person_id
+        FROM (
+            SELECT person_id,
+                   type,
+                   ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY create_time DESC) as rn
+            FROM tb_collaboration_attendance
+            WHERE post_id = #{postId}
+              AND person_id IN
+              <foreach collection="personIds" item="personId" open="(" separator="," close=")">
+                  #{personId}
+              </foreach>
+        ) t
+        WHERE rn = 1
+          AND type = '上岗'
+    </select>
+
+    <select id="selectPostIdsWithOnDutyPeople" resultType="java.lang.Long">
+        SELECT post_id
+        FROM (
+            SELECT post_id, person_id, type,
+                   ROW_NUMBER() OVER (PARTITION BY post_id, person_id ORDER BY create_time DESC) as rn
+            FROM tb_collaboration_attendance
+            WHERE post_id IN
+            <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+                #{postId}
+            </foreach>
+            AND person_id IN
+            <foreach collection="personIds" item="personId" open="(" separator="," close=")">
+                #{personId}
+            </foreach>
+        ) t
+        WHERE rn = 1 AND type = '上岗'
+        GROUP BY post_id
+    </select>
+</mapper>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.auth.mapper.ImUserMapper">
+
+    <select id="getList" resultType="com.tdtech.cloudcmd.auth.entity.ImUserDto">
+        select id, code, name, avatar, gender, mobile, email, isdn, id_card, district,
+               direct_leader_id, direct_leader_name, department_code, department_name, department_id,
+               type, status, password, pwd_time, gmt_created, gmt_updated
+        from tb_im_user
+        where gmt_created &lt; #{maxTime}
+        <if test="minId != null">
+            and id &gt; #{minId}
+        </if>
+        order by id
+        limit #{limit}
+    </select>
+
+    <!-- 根据ID列表查询用户数据（返回DTO，不触发解密拦截器） -->
+    <select id="listByIds" resultType="com.tdtech.cloudcmd.auth.entity.ImUserDto">
+        select id, code, name, avatar, gender, mobile, email, isdn, id_card, district,
+               direct_leader_id, direct_leader_name, department_code, department_name, department_id,
+               type, status, password, pwd_time, gmt_created, gmt_updated
+        from tb_im_user
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- 批量更新用户敏感字段（不触发加密拦截器）
+         用 CASE WHEN 合并为单条 UPDATE，避免多语句拼接依赖 JDBC allowMultiQueries=true -->
+    <update id="batchUpdateDecryptedData">
+        update tb_im_user
+        <set>
+            name = case id
+                <foreach collection="users" item="userDto">
+                    when #{userDto.id} then #{userDto.name}
+                </foreach>
+                else name end,
+            mobile = case id
+                <foreach collection="users" item="userDto">
+                    when #{userDto.id} then #{userDto.mobile}
+                </foreach>
+                else mobile end,
+            id_card = case id
+                <foreach collection="users" item="userDto">
+                    when #{userDto.id} then #{userDto.idCard}
+                </foreach>
+                else id_card end
+        </set>
+        where id in
+        <foreach collection="users" item="userDto" open="(" separator="," close=")">
+            #{userDto.id}
+        </foreach>
+    </update>
+
+    <!--
+      批量 upsert（仅更新 IM 属性字段）
+      注意：本方法不触发 EncryptionInnerInterceptor，调用方需在传入前手动加密 name/mobile/idCard。
+      新增时写入 password/pwd_time（默认密码哈希），更新时不覆盖 password/type/status/pwd_time/gmt_created；
+      gmt_updated 由数据库 ON UPDATE 自动维护（若未配置则此处显式置 NOW()）。
+    -->
+    <insert id="upsertBatch">
+        INSERT INTO tb_im_user
+        (id, code, name, avatar, gender, mobile, email, isdn, id_card, district,
+         direct_leader_id, direct_leader_name, department_code, department_name, department_id,
+         password, pwd_time, gmt_created, gmt_updated)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.code}, #{item.name}, #{item.avatar}, #{item.gender},
+             #{item.mobile}, #{item.email}, #{item.isdn}, #{item.idCard}, #{item.district},
+             #{item.directLeaderId}, #{item.directLeaderName}, #{item.departmentCode},
+             #{item.departmentName}, #{item.departmentId},
+             #{item.password}, #{item.pwdTime},
+             <choose>
+                 <when test="item.gmtCreated != null">#{item.gmtCreated}</when>
+                 <otherwise>NOW()</otherwise>
+             </choose>,
+             NOW())
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            code = VALUES(code),
+            name = VALUES(name),
+            avatar = VALUES(avatar),
+            gender = VALUES(gender),
+            mobile = VALUES(mobile),
+            email = VALUES(email),
+            isdn = VALUES(isdn),
+            id_card = VALUES(id_card),
+            district = VALUES(district),
+            direct_leader_id = VALUES(direct_leader_id),
+            direct_leader_name = VALUES(direct_leader_name),
+            department_code = VALUES(department_code),
+            department_name = VALUES(department_name),
+            department_id = VALUES(department_id),
+            gmt_updated = NOW()
+    </insert>
+
+</mapper>

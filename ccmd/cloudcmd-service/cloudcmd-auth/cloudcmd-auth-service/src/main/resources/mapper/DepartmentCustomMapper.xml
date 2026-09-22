@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.auth.mapper.DepartmentCustomMapper">
+
+    <!-- 根据ID更新name和dutyType字段，dutyType为空时也更新为null -->
+    <update id="updateNameAndDutyTypeById">
+        update tb_department_custom
+        set name = #{name},
+            duty_type = #{dutyType}
+        where id = #{id}
+    </update>
+
+</mapper>

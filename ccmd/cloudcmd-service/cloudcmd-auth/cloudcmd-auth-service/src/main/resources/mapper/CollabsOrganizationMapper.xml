@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.auth.mapper.CollabsOrganizationMapper">
+
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.auth.entity.Organization">
+        <id column="id" property="id"/>
+        <result column="code" property="code"/>
+        <result column="name" property="name"/>
+        <result column="full_path_name" property="fullPathName"/>
+    </resultMap>
+
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT id, code, name, full_path_name
+        FROM icp_collabs.tb_organization
+        WHERE id IN
+        <foreach collection="orgIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <resultMap id="DetailResultMap" type="com.tdtech.cloudcmd.auth.entity.Organization">
+        <id column="id" property="id"/>
+        <result column="code" property="code"/>
+        <result column="name" property="name"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="short_name" property="shortName"/>
+        <result column="sort" property="sort"/>
+        <result column="full_path" property="fullPath"/>
+        <result column="full_path_name" property="fullPathName"/>
+    </resultMap>
+
+    <select id="selectDetailByIds" resultMap="DetailResultMap">
+        SELECT id, code, name, parent_id, short_name, sort, full_path, full_path_name
+        FROM icp_collabs.tb_organization
+        WHERE id IN
+        <foreach collection="orgIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

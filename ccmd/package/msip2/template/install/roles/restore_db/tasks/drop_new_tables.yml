@@ -1,0 +1,88 @@
+# 补丁回滚后：对比打补丁前表清单，删除新增表（方案2）
+# 整库 restore 后通常已对齐；本任务兜底处理未纳入备份库中的新建表
+---
+- name: drop new tables | check snapshot file
+  stat:
+    path: "{{ great_storage_backup_path }}patch/{{ namespace }}/db/table_snapshot.list"
+  register: snapshot_stat
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: drop new tables | skip if no snapshot
+  debug:
+    msg: "table_snapshot.list not found, skip drop new tables"
+  when: not snapshot_stat.stat.exists
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: drop new tables | wait mysql leader ready
+  shell: |
+    for i in $(seq 1 60); do
+      pod=$(kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+      if [ -n "$pod" ]; then
+        echo "$pod"
+        exit 0
+      fi
+      sleep 10
+    done
+    echo "mysql leader pod not ready" >&2
+    exit 1
+  register: leader_pod_wait
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: snapshot_stat.stat.exists
+
+- name: drop new tables | dump current table list
+  shell: |
+    kubectl exec -i -n platform {{ leader_pod_wait.stdout_lines[-1] }} -c {{ db_container }} -- \
+      mysql -uroot -N -e "
+        SELECT CONCAT(table_schema, '.', table_name)
+        FROM information_schema.tables
+        WHERE table_schema NOT IN ('information_schema','mysql','performance_schema','sys','sys_config')
+          AND table_type = 'BASE TABLE'
+        ORDER BY table_schema, table_name;
+      " > /tmp/table_current_{{ namespace }}.list
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: snapshot_stat.stat.exists
+
+- name: drop new tables | find tables added by patch
+  shell: |
+    comm -13 \
+      <(sort "{{ great_storage_backup_path }}patch/{{ namespace }}/db/table_snapshot.list") \
+      <(sort "/tmp/table_current_{{ namespace }}.list") \
+      > /tmp/table_new_{{ namespace }}.list || true
+    cat /tmp/table_new_{{ namespace }}.list
+  args:
+    executable: /bin/bash
+  register: new_tables_result
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: snapshot_stat.stat.exists
+
+- name: drop new tables | drop each new table
+  shell: |
+    full="{{ item }}"
+    schema="${full%%.*}"
+    table="${full#*.}"
+    # 仅删除基表，跳过异常名
+    if [ -z "$schema" ] || [ -z "$table" ] || [ "$schema" = "$table" ]; then
+      exit 0
+    fi
+    # 使用 CASCADE，避免补丁新建表间外键导致 DROP 失败
+    kubectl exec -i -n platform {{ leader_pod_wait.stdout_lines[-1] }} -c {{ db_container }} -- \
+      mysql -uroot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS \`${schema}\`.\`${table}\`; SET FOREIGN_KEY_CHECKS=1;"
+  loop: "{{ new_tables_result.stdout_lines | default([]) }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when:
+    - snapshot_stat.stat.exists
+    - new_tables_result.stdout_lines is defined
+    - new_tables_result.stdout_lines | length > 0
+
+- name: drop new tables | debug done
+  debug:
+    msg: "drop new tables finished, count={{ new_tables_result.stdout_lines | default([]) | length }}"
+  when: snapshot_stat.stat.exists
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true

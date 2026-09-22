@@ -1,0 +1,11 @@
+order: 50290
+rollback_order: 50290
+name: clean_history_images
+error_ignore: false
+gather_facts: false
+handler_host: registry
+always_exec_upgrade: true
+always_exec_rollback: true
+phases:
+  - upgrade
+  - patch_install 

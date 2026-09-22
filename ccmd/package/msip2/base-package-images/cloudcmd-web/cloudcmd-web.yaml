@@ -1,0 +1,103 @@
+---
+# Source: web/templates/cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: linkx
+  name: cloudcmd-web-config
+data:
+  cloudcmd.web.conf: |-
+    server{
+        listen 8011;
+        location / {
+            if ($request_method = 'OPTIONS') {
+                return 200;
+            }
+            return 404;  # 或者重定向到特定页面
+        }
+  
+        location /ai_attachment/ {
+            alias /usr/share/nginx/html/ai_attachment/;
+            autoindex off;
+        }
+
+        location /cloudcmd{
+            if ($request_method = 'OPTIONS') {
+                return 200;
+            }
+            alias /usr/share/nginx/html/;
+            index index.html index.htm login.html;
+            proxy_set_header x-plat_appkey CDC-1000;
+            try_files $uri $uri/ /cloudcmd/index.html;
+  
+            # 添加 no-cache 头部
+            expires -1;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+        }
+    }
+---
+# Source: web/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: linkx
+  name: cloudcmd-web
+  labels:
+    app.kubernetes.io/name: cloudcmd-web
+spec:
+  selector:
+    app: cloudcmd-web
+  ports:
+    - port: 8011
+      name: web
+      protocol: TCP
+      targetPort: 8011
+---
+# Source: web/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: cloudcmd-web
+  labels:
+    app: cloudcmd-web
+    app.kubernetes.io/name: cloudcmd-web
+    ha-service-stop/enable: "true"
+spec:
+  selector:
+    matchLabels:
+      app: cloudcmd-web
+  replicas: 1
+  template:
+    metadata:
+      name: cloudcmd-web
+      labels:
+        app: cloudcmd-web
+        app.kubernetes.io/name: cloudcmd-web
+        enableRestart: "true"
+      annotations:
+        helm.sh/chart: web-0.1.0
+        app.kubernetes.io/name: cloudcmd-web
+        app.kubernetes.io/instance: cloudcmd-web
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      volumes:
+        - name: cloudcmd-web-config
+          configMap:
+            name: cloudcmd-web-config
+        - name: ai-attachment
+          hostPath:
+            path: /data/agent/data/upload/ai_attachment
+      containers:
+        - name: cloudcmd-web
+          image: imagerepo.td-tech.com:5001/cloudcmd-web:{Version}.{Arch}.{BuildTime}
+          imagePullPolicy: Always
+          ports:
+            - name: web
+              containerPort: 8011
+          volumeMounts:
+            - name: cloudcmd-web-config
+              mountPath: /etc/nginx/conf.d/
+            - name: ai-attachment
+              mountPath: /usr/share/nginx/html/ai_attachment/

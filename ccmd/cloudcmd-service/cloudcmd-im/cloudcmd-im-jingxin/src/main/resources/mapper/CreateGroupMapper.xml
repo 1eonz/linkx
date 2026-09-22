@@ -1,0 +1,208 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CreateGroupMapper">
+    <select id="groupCreateCountByCode"
+            resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.GroupCreationCountVO">
+        SELECT
+        tc.department_Id AS departmentId,
+        any_value(tc.department_name) AS departmentName,
+        COUNT(1) AS groupCount
+        FROM
+        tb_create_group tc
+        left join tb_group_extends tg on  tg.group_id = tc.group_id
+        <where>
+            tg.group_type = 2
+            <if test="departmentCode != null and departmentCode.size() > 0">
+                and tc.department_Id IN
+                <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and tc.create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and tc.create_time &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+            <if test="source!=null">
+                and tc.source = #{source}
+            </if>
+        </where>
+        GROUP BY
+        tc.department_Id
+        ORDER BY
+        groupCount DESC;
+    </select>
+
+    <select id="groupCreateAllCount" resultType="java.lang.Integer">
+        SELECT COUNT(1) FROM tb_create_group
+        <where>
+            <if test="departmentCode != null and departmentCode.size() > 0">
+                and department_Id IN
+                <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and create_time &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+            <if test="source!=null">
+                and source = #{source}
+            </if>
+        </where>
+    </select>
+
+    <select id="groupCreateCountByUser"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.UserCreationCountVO">
+        WITH dept_latest AS (
+                SELECT
+                    department_id,
+                    department_name
+                FROM (
+                     SELECT department_id,department_name,create_time,
+                            ROW_NUMBER() OVER (PARTITION BY department_id  ORDER BY create_time DESC) AS rn
+                FROM tb_create_group tc
+                where 1 = 1
+                <include refid="groupCreateCountByUserCondition"></include>
+                ) t
+                WHERE rn = 1
+        )
+        SELECT
+        tc.owner_id AS userId,
+        tc.owner_name AS userName,
+        ld.department_name AS departmentName,
+        COUNT(1) AS totalCount
+        FROM
+        tb_create_group tc
+        left join tb_group_extends tg on  tg.group_id = tc.group_id
+        left join dept_latest ld on tc.department_id = ld.department_id
+        <where>
+            tg.group_type = 2
+            <include refid="groupCreateCountByUserCondition"></include>
+        </where>
+        GROUP BY
+        tc.owner_id, tc.owner_name, tc.department_id, ld.department_name
+        ORDER BY
+        totalCount DESC;
+    </select>
+
+    <sql id="groupCreateCountByUserCondition">
+        <if test="departmentCode != null and departmentCode.size() > 0">
+            and tc.department_Id IN
+            <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                #{code}
+            </foreach>
+        </if>
+        <if test="startTime != null and startTime != ''">
+            and tc.create_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and tc.create_time &lt;= CONCAT(#{endTime}, ' 23:59:59')
+        </if>
+    </sql>
+
+    <delete id="deleteByGroupId" parameterType="java.lang.Long">
+        DELETE
+        FROM tb_create_group
+        WHERE group_id = #{groupId}
+    </delete>
+
+    <select id="selectByGroupId" parameterType="java.lang.Long" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CreateGroup">
+        select id, owner_id, owner_name, department_id, department_name,
+               create_time, update_time, user_ids, user_names, group_id,
+               group_name, location, avatar, avatar_img, source, existed
+        FROM tb_create_group
+        WHERE group_id = #{groupId}
+    </select>
+
+    <select id="findListByOrgCodeList" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CreateGroupCountVO">
+        SELECT
+            tcg.department_id AS orgCode,
+            count( 1 ) AS count
+        FROM
+            tb_create_group tcg
+        <where>
+            <if test="orgCodeList != null and orgCodeList.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="orgCodeList" item="code" open="(" close=")" separator=",">
+                    #{code}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY
+            tcg.department_id
+    </select>
+    <select id="selectByGroupIds" resultType="java.lang.Long">
+        SELECT
+        group_id
+        FROM
+        tb_create_group
+        WHERE
+        group_id IN
+        <foreach item="groupId" collection="groupIds" open="(" close=")" separator=",">
+            #{groupId}
+        </foreach>
+    </select>
+    <select id="selectUserGroupsByKeywords" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CreateGroup">
+        SELECT id, owner_id, owner_name, department_id, department_name,
+               create_time, update_time, user_ids, user_names, group_id,
+               group_name, location, avatar, avatar_img, source, existed
+        FROM
+            tb_create_group
+        WHERE
+            FIND_IN_SET(#{userId}, user_ids)
+            AND existed = 1
+            <if test="keywords != null and keywords != ''">
+                AND (
+                    group_name LIKE CONCAT('%', #{keywords}, '%')
+                    OR user_names LIKE CONCAT('%', #{keywords}, '%')
+                    OR owner_name LIKE CONCAT('%', #{keywords}, '%')
+                )
+            </if>
+        ORDER BY update_time DESC
+    </select>
+
+    <select id="selectGroupWithArchiveStatus" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.GroupWithArchiveStatusDTO">
+        SELECT
+            tcg.group_id AS groupId,
+            tcg.owner_id AS ownerId,
+            tcg.group_name AS groupName,
+            tcg.user_ids AS userIds,
+            tge.archived AS archived,
+            tge.id AS groupExtendsId,
+            tge.group_type AS groupType,
+            tcg.user_ids as memberIds
+        FROM
+            tb_create_group tcg
+            LEFT JOIN tb_group_extends tge ON tcg.group_id = tge.group_id
+        WHERE
+            tcg.group_id = #{groupId}
+    </select>
+
+    <select id="selectStaticCreateGroupAggByCursor"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.StaticCreateGroupAggVO">
+        SELECT
+            cg.group_id,
+            cg.update_time,
+            cg.owner_id,
+            cg.owner_name,
+            cg.department_id,
+            cg.department_name,
+            cg.create_time,
+            cg.group_name,
+            cg.source,
+            ge.group_type
+        FROM tb_create_group cg
+        LEFT JOIN tb_group_extends ge ON ge.group_id = cg.group_id
+        <where>
+            <!-- 双游标用行构造器比较，等价于 update_time > timeAfter OR (update_time = timeAfter AND group_id > idAfter)，且无 OR -->
+            <if test="timeAfter != null">
+                AND (cg.update_time, cg.group_id) &gt; (#{timeAfter}, #{idAfter})
+            </if>
+        </where>
+        ORDER BY cg.update_time ASC, cg.group_id ASC
+        LIMIT #{pageSize}
+    </select>
+</mapper>

@@ -1,0 +1,17 @@
+order: 50200
+rollback_order: 50340
+name: migrate
+error_ignore: false
+gather_facts: false
+pre_depend: images
+always_exec_upgrade: true
+always_exec_rollback: true
+handler_host: kube_control_plane
+images:
+  - "flyway:10.10.0.1"
+phases:
+  - install
+  - upgrade
+  - patch_install
+  - patch_rollback
+

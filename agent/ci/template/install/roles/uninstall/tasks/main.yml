@@ -1,0 +1,38 @@
+---
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}" 
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info 
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data  
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: init
+  shell: kubectl get sts,deploy,ds,svc,cm,job -n {{ namespace }} -o name | grep -v syncthing | grep -v filesync | while read -r resource; do kubectl delete "$resource" -n {{ namespace }}; done
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: init-delete
+  shell: kubectl get cm pvc.fingerprint -n platform -o name | while read -r resource; do kubectl delete "$resource" -n platform; done
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true

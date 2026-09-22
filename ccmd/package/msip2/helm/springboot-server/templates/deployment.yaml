@@ -1,0 +1,148 @@
+{{ $value:=.Values}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.name }}
+  labels:
+    app: {{ .Values.name }}
+    app.kubernetes.io/name: {{ .Values.name }}
+    {{- if and .Values.haControl (eq .Values.haControl "true") }}
+    ha-service-stop/enable: "true"
+    {{- end }}
+spec:
+  replicas: {{ .Values.container.replicas }}
+  {{- if .Values.container.strategy }}
+  strategy:
+    type: {{ .Values.container.strategy }}
+  {{- end}}
+  template:
+    metadata:
+      name: {{ .Values.name }}
+      labels:
+        app: {{ .Values.name }}
+        app.kubernetes.io/name: {{ .Values.name }}
+        {{- if and .Values.enableRestart (eq .Values.enableRestart "true") }}
+        enableRestart: "true"
+        {{- end }}
+      annotations:
+{{ include "fragment.labels" . | indent 8}}
+      {{- if eq (.Values.container.vault | toString | default "true") "true" }}
+        safebox/enable: "true"
+      {{- end }}
+    spec:
+      volumes:
+        {{- range .Values.container.volumes }}
+        - name: {{$value.name}}-{{.pvc}}
+          persistentVolumeClaim:
+            claimName: {{.pvc}}-pvc-claim
+        {{- end }}
+        {{- range .Values.container.config_map }}
+        - name: {{$value.name}}-{{.name}}
+          configMap:
+            name: {{.name}}
+        {{- end }}
+        - name: oom-dump
+          persistentVolumeClaim:
+            claimName: oom-dump-pvc-claim
+
+      initContainers:
+        - name: wait-zookeeper
+          image: imagerepo.td-tech.com:5001/busybox:1.28.0
+          imagePullPolicy: Always
+          command: [ 'sh', '-c', "until nc -z -v -w 20 zookeeper-0.zookeeper 2181; do echo waiting for zookeeper-0.zookeeper 2181; sleep 6; done" ]
+        {{- if .Values.init_container}}
+        {{- if .Values.init_container.wait}}
+        {{- range .Values.init_container.wait}}
+        - name: wait-{{ .name }}
+          image: imagerepo.td-tech.com:5001/busybox:1.28.0
+          imagePullPolicy: Always
+          command: [ 'sh', '-c', "until nc -z -v -w {{.times}} {{.target}}; do echo waiting for {{.target}}; sleep {{.sleep}}; done" ]
+        {{- end }}
+        {{- end }}
+        {{- end }}
+      containers:
+        - name: {{ .Values.name }}
+          image: {{.Values.register_host}}/{{ .Values.name }}:{{ .Values.version }}.{{ .Values.arch }}
+          {{ if .Values.container.cmd }}
+{{ toYaml .Values.container.cmd | indent 10 }}
+          {{ else }}
+          command: [ 'java' ]
+          args:
+            - -jar
+            - -Dfile.encoding=UTF-8
+            - -Duser.timezone=Asia/Shanghai
+            - -Xmx{{.Values.container.jvm.xmx}}
+            - -Xms{{.Values.container.jvm.xms}}
+            - -server
+            - -XX:+UseG1GC
+            - -XX:+UseStringDeduplication
+            - -XX:MaxGCPauseMillis=20
+            - -XX:InitiatingHeapOccupancyPercent=50
+            - -XX:G1HeapWastePercent=10
+            - -XX:+ExplicitGCInvokesConcurrent
+            - -XX:MaxInlineLevel=15
+            - -verbose:gc
+            - -XX:+PrintGCDetails
+            - -XX:+HeapDumpOnOutOfMemoryError
+            - -XX:HeapDumpPath=/opt/dump/{{ .Values.name }}.dump
+            - -XX:+UnlockExperimentalVMOptions
+            - -Djdk.internal.httpclient.disableHostnameVerification=true
+            - /app/app.jar
+          {{ end }}
+          imagePullPolicy: Always
+          {{- if .Values.ports }}
+          ports:
+          {{- range .Values.ports}}
+            - name: {{.name}}
+              containerPort: {{.port}}
+          {{- end}}
+          {{- end }}
+          volumeMounts:
+            {{- range .Values.container.volumes }}
+            - name: {{$value.name}}-{{.pvc}}
+              mountPath: {{.mount_path}}
+            {{- end }}
+            {{- range .Values.container.config_map }}
+            - name: {{$value.name}}-{{.name}}
+              mountPath: {{.mount_path}}
+            {{- end }}
+            - name: oom-dump
+              mountPath: /opt/dump/
+          {{- if .Values.container.health_check }}
+{{ toYaml .Values.container.health_check | indent 10 }}
+          {{- else}}
+          readinessProbe:
+            httpGet:
+              path: /actuator
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /actuator
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 20
+          {{- end }}
+          envFrom:
+{{ toYaml .Values.container.envs.env_from | indent 12}}
+          env:
+            - name: cloudcmd.service.name
+              value: {{ .Values.name }}
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+{{ toYaml .Values.container.envs.env | indent 12}}
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}

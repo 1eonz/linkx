@@ -1,0 +1,7 @@
+# 升级/回退备份目录
+upgrade_backup_dir: /data/msip/backup
+# 单文件备份大小限制
+single_file_backup_size: "5MB"
+
+app_info_path: "{{ app_root }}/app-info.yaml"
+app_file_backup_config_path: "/data/install/{{ path }}/backup_config/backupfile_config.yml"

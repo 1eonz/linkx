@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.FunctionalDepartmentCoopMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.FunctionalDepartmentCoop">
+        <id column="id" property="id" />
+        <result column="dept_id" property="deptId" />
+        <result column="user_id" property="userId" />
+        <result column="checked" property="checked" />
+        <result column="sort" property="sort" />
+        <result column="creator" property="creator" />
+        <result column="updater" property="updater" />
+        <result column="is_deleted" property="isDeleted" />
+        <result column="update_time" property="updateTime" />
+        <result column="gmt_created" property="gmtCreated" />
+    </resultMap>
+
+    <resultMap id="coopUserResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.CoopUser">
+        <id property="id" column="user_id" />
+        <result property="name" column="post_name" />
+        <result property="uid" column="id" />
+        <result column="operate_time" property="operateTime"/>
+        <result column="org_name" property="orgName"/>
+        <result column="related_user_names" property="relatedUserNames"/>
+        <result column="icon_url" property="iconUrl"/>
+        <result column="level_name" property="levelName"/>
+        <result column="org_id" property="orgId"/>
+        <result column="checked" property="checked"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, dept_id, user_id, checked, sort, creator, updater, is_deleted, update_time, gmt_created
+    </sql>
+
+    <select id="getCoopUsers" resultMap="coopUserResultMap">
+        SELECT c.user_id,
+               p.post_name,
+               c.id,
+               p.related_user_names,
+               p.org_name,
+               c.gmt_created as operate_time,
+               p.icon_url,
+               p.org_id,
+               c.checked
+        FROM tb_functional_department_coop c
+        LEFT JOIN tb_collaboration_post p ON c.user_id = p.id
+        WHERE dept_id = #{deptId} and c.is_deleted = 0 and p.deleted = 0
+        <if test="departments != null and departments.size != 0">
+            and p.org_id in
+            <foreach collection="departments" item="department" open="(" separator="," close=")">
+                #{department}
+            </foreach>
+        </if>
+        order by c.gmt_created desc
+    </select>
+
+    <select id="searchCoopUsers" resultMap="coopUserResultMap">
+        SELECT c.user_id,
+        p.post_name, c.id,
+        p.related_user_names,
+        p.org_name,
+        p.operate_time,
+        d.name as level_name,
+        p.org_id,
+        p.icon_url,
+        c.checked
+        FROM tb_functional_department_coop c
+        LEFT JOIN tb_collaboration_post p ON c.user_id = p.id
+        LEFT JOIN tb_functional_department d ON c.dept_id = d.id
+        WHERE c.is_deleted = 0 and p.deleted = 0 and d.is_deleted = 0
+        <if test="name != null and name != ''">
+            and p.post_name like concat('%', #{name}, '%')
+        </if>
+        <if test="deptId != null ">
+            and c.dept_id = #{deptId}
+        </if>
+        <if test="startTime != null and startTime != ''">
+            AND p.operate_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND p.operate_time &lt;=CONCAT(#{endTime}, ' 23:59:59')
+        </if>
+
+    </select>
+
+    <select id="getCoopUsersList" resultMap="coopUserResultMap">
+        SELECT user_id,
+               p.post_name,
+               c.id,
+               p.related_user_names,
+               p.org_name,
+               p.operate_time,
+               p.icon_url,
+               p.org_id
+        FROM tb_functional_department_coop c
+                 LEFT JOIN tb_collaboration_post p ON c.user_id = p.id
+        WHERE dept_id = #{deptId} and c.is_deleted = 0 and p.deleted = 0
+    </select>
+
+    <select id="getMemberCountByLevelId" resultType="int">
+        SELECT COUNT(1) FROM tb_functional_department_coop WHERE dept_id = #{deptId} and is_deleted = 0
+    </select>
+
+    <select id="getBindMember" resultType="java.lang.String">
+        SELECT
+        p.post_name
+        FROM tb_functional_department_coop c
+        LEFT JOIN tb_collaboration_post p ON c.user_id = p.id
+        WHERE c.is_deleted = 0 and p.deleted = 0
+        and c.user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="deleteCoopUsersByids">
+        update tb_functional_department_coop set is_deleted = 1
+        where id in
+        <foreach collection="ids" open="(" close=")" separator="," item="id">
+            #{id}
+        </foreach>
+    </update>
+</mapper>

@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.tdtech.cloudcmd.mysql.MybatisAutoConfiguration,\
+com.tdtech.cloudcmd.mysql.encrypt.config.EncryptAutoConfiguration

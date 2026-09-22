@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{.Values.namespace}}
+  name: cloudcmd-profile
+data:
+  "cloudcmd.mysql.host": "cnp-leader.platform.svc.cluster.local:3306"
+  "cloudcmd.mysql.username": "cnp"
+  "cloudcmd.mysql.password": "${MYSQL_ROOT_PASSWORD}"
+  "cloudcmd.redis.host": "redis.platform.svc.cluster.local"
+  "cloudcmd.redis.port": "6379"
+  "cloudcmd.redis.password": "${REDIS_PASSWORD}"
+  "cloudcmd.redis.database": "2"
+  "cloudcmd.kafka.brokers": "kafka-service.platform.svc.cluster.local:9092"
+  "cloudcmd.zookeeper.conn-str": "zookeeper-0.zookeeper:2181"
+  "spring.main.allow-circular-references": "true"
+  "cloudcmd.es.host": "elasticsearch-master.platform.svc.cluster.local:9200"

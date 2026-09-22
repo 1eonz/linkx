@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.GroupRatingMapper">
+
+    <select id="selectGroupRatingWithGroupInfo" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.GroupRatingWithGroupInfoDTO">
+        SELECT
+            tgr.id AS id,
+            tgr.group_id AS groupId,
+            tgr.rater_id AS raterId,
+            tgr.rater_type AS raterType,
+            tgr.coop_user_id AS coopUserId,
+            tgr.coop_user_name AS coopUserName,
+            tgr.rating_details AS ratingDetails,
+            tgr.avg_rating AS avgRating,
+            tgr.gmt_created AS gmtCreated,
+            tcg.department_id AS departmentCode,
+            tge.archived AS archived,
+            tag.tag_id AS tagId,
+            tag.tag_name AS tagName
+        FROM
+            tb_group_rating tgr
+            LEFT JOIN tb_create_group tcg ON tgr.group_id = tcg.group_id
+            LEFT JOIN tb_group_extends tge ON tgr.group_id = tge.group_id
+            <!-- 标签两表合并为单个 LATERAL 派生表关联，顶层 5 -> 4；关联条件与 is_deleted/deleted 过滤保持不变，多标签仍展开多行 -->
+            LEFT JOIN LATERAL (
+                SELECT tgt.tag_id, tt.name AS tag_name
+                FROM tb_group_tag tgt
+                LEFT JOIN tb_tags tt ON tgt.tag_id = tt.id AND tt.deleted = 0
+                WHERE tgt.group_id = tgr.group_id AND tgt.is_deleted = 0
+            ) tag ON TRUE
+        <where>
+            tge.archived = 2
+            <if test="query.groupIds != null and query.groupIds.size() > 0">
+                AND tgr.group_id IN
+                <foreach collection="query.groupIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.departmentCode != null and query.departmentCode != ''">
+                AND tcg.department_id = #{query.departmentCode}
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectGroupRatingWithGroupInfoPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.GroupRatingWithGroupInfoDTO">
+        SELECT
+            tgr.id AS id,
+            tgr.group_id AS groupId,
+            tgr.rater_id AS raterId,
+            tgr.rater_type AS raterType,
+            tgr.coop_user_id AS coopUserId,
+            tgr.coop_user_name AS coopUserName,
+            tgr.rating_details AS ratingDetails,
+            tgr.avg_rating AS avgRating,
+            tgr.gmt_created AS gmtCreated
+        FROM
+            tb_group_rating tgr
+        <where>
+            <if test="query.groupIds != null and query.groupIds.size() > 0">
+                AND tgr.group_id IN
+                <foreach collection="query.groupIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+        ORDER BY tgr.id
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectGroupRatingCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT tgr.id)
+        FROM tb_group_rating tgr
+            LEFT JOIN tb_create_group tcg ON tgr.group_id = tcg.group_id
+            LEFT JOIN tb_group_extends tge ON tgr.group_id = tge.group_id
+        <where>
+            tge.archived = 2
+            <if test="query.groupIds != null and query.groupIds.size() > 0">
+                AND tgr.group_id IN
+                <foreach collection="query.groupIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+    </select>
+    <select id="selectTopNCoop"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.GroupRatingWithGroupInfoDTO">
+        WITH top_coop_users AS (
+            SELECT
+                coop_user_id,
+                AVG(avg_rating) AS overall_avg
+            FROM tb_group_rating
+            <include refid="groupCondition"/>
+            GROUP BY coop_user_id
+            ORDER BY overall_avg DESC
+            LIMIT #{topN}
+            )
+        SELECT
+        tgr.id AS id,
+        tgr.group_id AS groupId,
+        tgr.rater_id AS raterId,
+        tgr.rater_type AS raterType,
+        tgr.coop_user_id AS coopUserId,
+        tgr.coop_user_name AS coopUserName,
+        tgr.rating_details AS ratingDetails,
+        tgr.avg_rating AS avgRating,
+        tgr.gmt_created AS gmtCreated,
+        tcg.department_id AS departmentId
+        FROM
+        tb_group_rating tgr
+        LEFT JOIN tb_create_group tcg ON tgr.group_id = tcg.group_id
+        LEFT JOIN tb_group_extends tge ON tgr.group_id = tge.group_id
+        LEFT JOIN tb_group_tag tgt ON tgr.group_id = tgt.group_id AND tgt.is_deleted = 0
+        LEFT JOIN tb_tags tt ON tgt.tag_id = tt.id AND tt.deleted = 0
+        INNER JOIN top_coop_users top ON t.coop_user_id = top.coop_user_id
+        <include refid="groupCondition"/>
+    </select>
+
+    <select id="selectAllCoopRatingsPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.GroupRatingWithGroupInfoDTO">
+        SELECT
+            tgr.id AS id,
+            tgr.group_id AS groupId,
+            tgr.rater_id AS raterId,
+            tgr.rater_type AS raterType,
+            tgr.coop_user_id AS coopUserId,
+            tgr.coop_user_name AS coopUserName,
+            tgr.rating_details AS ratingDetails,
+            tgr.avg_rating AS avgRating,
+            tgr.gmt_created AS gmtCreated
+        FROM
+            tb_group_rating tgr
+        lEFT JOIN tb_create_group tcg ON tgr.group_id = tcg.group_id
+        <where>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.departmentCodes != null and query.departmentCodes.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="query.departmentCodes" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+        ORDER BY tgr.id
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectAllCoopRatingsCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT tgr.id)
+        FROM tb_group_rating tgr
+        lEFT JOIN tb_create_group tcg ON tgr.group_id = tcg.group_id
+        <where>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.departmentCodes != null and query.departmentCodes.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="query.departmentCodes" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.postIds != null and query.postIds.size() > 0">
+                AND tgr.coop_user_id IN
+                <foreach collection="query.postIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectCoopRatingsByUserIdsPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.GroupRatingWithGroupInfoDTO">
+        SELECT
+            tgr.id AS id,
+            tgr.group_id AS groupId,
+            tgr.rater_id AS raterId,
+            tgr.rater_type AS raterType,
+            tgr.coop_user_id AS coopUserId,
+            tgr.coop_user_name AS coopUserName,
+            tgr.rating_details AS ratingDetails,
+            tgr.avg_rating AS avgRating,
+            tgr.gmt_created AS gmtCreated,
+            tcg.department_id AS departmentId
+        FROM
+            tb_group_rating tgr
+            LEFT JOIN tb_create_group tcg ON tgr.group_id = tcg.group_id
+            LEFT JOIN tb_group_extends tge ON tgr.group_id = tge.group_id
+        <where>
+            tge.archived = 2
+            AND tgr.coop_user_id IN
+            <foreach collection="coopUserIds" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.departmentIds != null and query.departmentIds.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="query.departmentIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+        ORDER BY tgr.id
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectCoopRatingsByUserIdsCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT tgr.id)
+        FROM tb_group_rating tgr
+            LEFT JOIN tb_create_group tcg ON tgr.group_id = tcg.group_id
+            LEFT JOIN tb_group_extends tge ON tgr.group_id = tge.group_id
+        <where>
+            tge.archived = 2
+            AND tgr.coop_user_id IN
+            <foreach collection="coopUserIds" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.departmentIds != null and query.departmentIds.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="query.departmentIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+    </select>
+
+    <sql id="groupCondition">
+        <where>
+            <if test="query.type != null">
+                AND tgr.rater_type = #{query.type}
+            </if>
+            <if test="query.departmentIds != null and query.departmentIds.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="query.departmentIds" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="query.startTimeDateTime != null">
+                AND tgr.gmt_created &gt;= #{query.startTimeDateTime}
+            </if>
+            <if test="query.endTimeDateTime != null">
+                AND tgr.gmt_created &lt;= #{query.endTimeDateTime}
+            </if>
+        </where>
+    </sql>
+</mapper>

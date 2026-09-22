@@ -1,0 +1,79 @@
+---
+# Source: web/templates/cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: linkx
+  name: egress-pim-config
+data:
+  pim.conf: |-
+    server{
+        listen 8080;
+        location / {
+           proxy_pass https://10.28.64.83:30013;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+---
+# Source: web/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: linkx
+  name: egress-pim
+  labels:
+    app.kubernetes.io/name: egress-pim
+spec:
+  selector:
+    app: egress-pim
+  ports:
+    - port: 8080
+      name: web
+      protocol: TCP
+      targetPort: 8080
+---
+# Source: web/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: egress-pim
+  labels:
+    app: egress-pim
+    app.kubernetes.io/name: egress-pim
+spec:
+  selector:
+    matchLabels:
+      app: egress-pim
+  replicas: 1
+  template:
+    metadata:
+      name: egress-pim
+      labels:
+        app: egress-pim
+        app.kubernetes.io/name: egress-pim
+        enableRestart: "true"
+      annotations:
+        helm.sh/chart: web-0.1.0
+        app.kubernetes.io/name: egress-pim
+        app.kubernetes.io/instance: egress-pim
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      volumes:
+        - name: egress-pim-config
+          configMap:
+            name: egress-pim-config
+      containers:
+        - name: egress-pim
+          image: imagerepo.td-tech.com:5001/egress-pim:{Version}.{Arch}.{BuildTime}
+          imagePullPolicy: Always
+          ports:
+            - name: web
+              containerPort: 8080
+          volumeMounts:
+            - name: egress-pim-config
+              mountPath: /etc/nginx/conf.d/

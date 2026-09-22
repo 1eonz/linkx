@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.auth.mapper.IcpRoleMapper">
+
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.auth.entity.Role">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="im_org_priv_json" property="imOrgPrivJson" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+
+    <select id="selectRolesWithOrgPriv" resultMap="BaseResultMap">
+        SELECT id, name, im_org_priv_json
+        FROM icp_res.tb_role
+        WHERE im_org_priv_json IS NOT NULL
+          AND im_org_priv_json != '[]'
+          AND im_org_priv_json != ''
+    </select>
+
+</mapper>

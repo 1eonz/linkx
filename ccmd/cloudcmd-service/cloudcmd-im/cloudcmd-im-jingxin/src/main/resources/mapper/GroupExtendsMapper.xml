@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.GroupExtendsMapper">
+    <select id="selectByGroupId" parameterType="java.lang.Long"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.GroupExtends">
+        SELECT id, group_id, archived, archived_file, archived_attachxxx_file,
+               archived_user_id, archived_time, gmt_created, group_type
+        FROM tb_group_extends
+        WHERE group_id = #{groupId}
+        LIMIT 1
+    </select>
+
+    <update id="updateArchiveStatus">
+        UPDATE tb_group_extends
+        <set>
+            archived = #{extends.archived},
+            archived_file = #{extends.archivedFile},
+            archived_attachxxx_file = #{extends.archivedAttachxxxFile},
+            archived_user_id = #{extends.archivedUserId},
+            archived_time = #{extends.archivedTime}
+        </set>
+        WHERE group_id = #{groupId}
+    </update>
+
+    <select id="selectPageList"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.UserCareGroupDTO">
+        SELECT tge.id, tgc.user_id, tgc.group_id, tcg.group_name as groupName,tge.archived, tcg.create_time as
+        gmtCreated,
+        tge.archived_time,tcg.avatar_img as avatarImg, COALESCE(tag_agg.tags, '') as tagName, 1 as is_care,
+        tge.group_type as groupType,
+        tcg.owner_id as ownerId,
+        tcg.user_ids as members,
+        tge.archived_user_id as  archivedUserId
+        FROM tb_group_care tgc
+        LEFT JOIN tb_group_extends tge ON tge.group_id = tgc.group_id
+        LEFT JOIN tb_create_group tcg ON tge.group_id = tcg.group_id
+        LEFT JOIN LATERAL (
+            SELECT GROUP_CONCAT(tag.name SEPARATOR ',') as tags
+            FROM tb_group_tag tgt
+            LEFT JOIN tb_label tag ON tgt.tag_id = tag.id
+            WHERE tgt.group_id = tge.group_id AND tgt.is_deleted = 0
+        ) tag_agg ON TRUE
+        <where>
+            <if test="keywords != null and keywords != ''">
+                AND (
+                tcg.user_names LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.group_name LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.department_name LIKE CONCAT('%', #{keywords}, '%')
+                OR EXISTS (SELECT 1 FROM tr_tasks_group ttg LEFT JOIN tb_tasks tt ON ttg.task_id = tt.id WHERE
+                ttg.group_id = tge.group_id AND tt.name LIKE CONCAT('%', #{keywords}, '%'))
+                OR EXISTS (SELECT 1 FROM tr_police_ticket_group tptg LEFT JOIN tb_police_ticket tpt ON tptg.ticket_id =
+                tpt.id WHERE tptg.group_id = tge.group_id AND tpt.name LIKE CONCAT('%', #{keywords}, '%'))
+                )
+            </if>
+            <if test="groupType != null">
+                AND tge.group_type = #{groupType}
+            </if>
+            <!-- 月份过滤改为参数侧构造区间 [当月1号, 次月1号)，等价于 DATE_FORMAT(archived_time,'%Y-%m')=#{archivedTime}，
+                 列上无函数，archived_time 索引可用 -->
+            <if test="archivedTime != null and archivedTime != ''">
+                AND tge.archived_time &gt;= STR_TO_DATE(CONCAT(#{archivedTime}, '-01'), '%Y-%m-%d')
+                AND tge.archived_time &lt; DATE_ADD(STR_TO_DATE(CONCAT(#{archivedTime}, '-01'), '%Y-%m-%d'), INTERVAL 1 MONTH)
+            </if>
+            <if test="archiveds != null">
+                AND tge.archived IN
+                <foreach collection="archiveds" item="archived" open="(" separator="," close=")">
+                    #{archived}
+                </foreach>
+            </if>
+            <if test="userId != null">
+                AND tgc.user_id = #{userId}
+            </if>
+            <if test="orgIds == null or orgIds.size() == 0">
+                AND
+                (
+                tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+                <if test="postIdList != null and postIdList.size() > 0">
+                    OR
+                    <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                        tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                    </foreach>
+                </if>
+                )
+            </if>
+            <!-- userId必传，直接作为条件 -->
+            <!-- 若orgIds存在，追加OR条件 -->
+            <if test="orgIds != null and orgIds.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                    #{orgId}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="archiveds != null and archiveds.contains(2)">
+                tge.archived_time DESC, tcg.create_time DESC
+            </when>
+            <otherwise>
+                tcg.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="getTagsPageList" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.UserCareGroupDTO">
+        SELECT DISTINCT tge.id, tcg.owner_id as user_id, tge.group_id, tcg.group_name as
+        groupName,tge.archived,tcg.avatar_img as avatarImg,
+        tcg.create_time as gmtCreated,
+        COALESCE(tag_agg.tags, '') as tagName,tge.archived_time, MAX(CASE WHEN tgc.user_id = #{userId} THEN 1 ELSE 0 END )AS is_care,
+        tge.group_type as groupType,
+        tcg.owner_id as ownerId,
+        tcg.user_ids as members,
+        tge.archived_user_id as  archivedUserId  FROM
+        tb_group_extends tge
+        LEFT JOIN tb_group_care tgc ON tge.group_id = tgc.group_id
+        LEFT JOIN tb_create_group tcg ON tge.group_id = tcg.group_id
+        LEFT JOIN LATERAL (
+            SELECT GROUP_CONCAT(tag.name SEPARATOR ',') as tags
+            FROM tb_group_tag tgt
+            LEFT JOIN tb_label tag ON tgt.tag_id = tag.id
+            WHERE tgt.group_id = tge.group_id AND tgt.is_deleted = 0
+        ) tag_agg ON TRUE
+        <where>
+            <if test="keywords != null and keywords != ''">
+                AND (
+                tcg.user_names LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.group_name LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.department_name LIKE CONCAT('%', #{keywords}, '%')
+                OR EXISTS (SELECT 1 FROM tr_tasks_group ttg LEFT JOIN tb_tasks tt ON ttg.task_id = tt.id WHERE
+                ttg.group_id = tge.group_id AND tt.name LIKE CONCAT('%', #{keywords}, '%'))
+                OR EXISTS (SELECT 1 FROM tr_police_ticket_group tptg LEFT JOIN tb_police_ticket tpt ON tptg.ticket_id =
+                tpt.id WHERE tptg.group_id = tge.group_id AND tpt.name LIKE CONCAT('%', #{keywords}, '%'))
+                )
+            </if>
+            <if test="groupType != null">
+                AND tge.group_type = #{groupType}
+            </if>
+            <if test="archived != null and archived == 2">
+                AND tge.archived = 2
+            </if>
+            <if test="archived == null or (archived != 2 and archived != 3)">
+                AND tge.archived in (0, 1)
+            </if>
+            <!-- 月份过滤改为参数侧构造区间 [当月1号, 次月1号)，等价于 DATE_FORMAT(archived_time,'%Y-%m')=#{archivedTime}，
+                 列上无函数，archived_time 索引可用 -->
+            <if test="archivedTime != null and archivedTime != ''">
+                AND tge.archived_time &gt;= STR_TO_DATE(CONCAT(#{archivedTime}, '-01'), '%Y-%m-%d')
+                AND tge.archived_time &lt; DATE_ADD(STR_TO_DATE(CONCAT(#{archivedTime}, '-01'), '%Y-%m-%d'), INTERVAL 1 MONTH)
+            </if>
+            <if test="tagName != null and tagName != ''">
+                AND FIND_IN_SET(#{tagName}, tag_agg.tags) > 0
+            </if>
+            <if test="groupName != null and groupName != ''">
+                AND tcg.group_name LIKE CONCAT('%', #{groupName}, '%')
+            </if>
+            <if test="orgIds == null or orgIds.size() == 0">
+                AND
+                (
+                tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+                <if test="postIdList != null and postIdList.size() > 0">
+                    OR
+                    <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                        tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                    </foreach>
+                </if>
+                OR EXISTS (SELECT 1 FROM tb_collaboration_post_group tcpg
+                           WHERE tcpg.group_id = tge.group_id AND tcpg.support_user_id = #{userId})
+                )
+            </if>
+            <!-- 若orgIds存在，追加OR条件 -->
+            <if test="orgIds != null and orgIds.size() > 0">
+                AND tcg.department_id IN
+                <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                    #{orgId}
+                </foreach>
+            </if>
+            <!-- scope: 1=我创建的; 3=我可查看的但不是成员; 4=我是成员; null或其他=不过滤 -->
+            <if test="scope != null and scope == 1">
+                AND tcg.owner_id = #{userId}
+            </if>
+            <if test="scope != null and scope == 4">
+                AND (
+                    tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+                    <if test="postIdList != null and postIdList.size() > 0">
+                        OR
+                        <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                            tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                        </foreach>
+                    </if>
+                )
+            </if>
+            <if test="scope != null and scope == 3">
+                AND tcg.user_ids NOT LIKE CONCAT('%', #{userId}, '%')
+                <if test="postIdList != null and postIdList.size() > 0">
+                    AND
+                    <foreach collection="postIdList" item="postId" open="(" separator="and" close=")">
+                        tcg.user_ids NOT LIKE CONCAT('%', #{postId}, '%')
+                    </foreach>
+                </if>
+                AND tcg.owner_id != #{userId}
+            </if>
+        </where>
+        GROUP BY tge.id, tcg.owner_id, tge.group_id,tag_agg.tags , tcg.group_name, tge.archived, tcg.avatar_img,
+        tcg.create_time, tge.archived_time,tge.group_type,tge.archived_user_id
+        ORDER BY
+        <choose>
+            <when test="archived != null and archived == 2">
+                tge.archived_time DESC, tcg.create_time DESC
+            </when>
+            <otherwise>
+                tcg.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCombinedArchiveTimeline"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.ArchiveTimelineDTO">
+        SELECT CONCAT(YEAR(tge.archived_time), '-',LPAD(MONTH(tge.archived_time), 2, '0')) AS yearMonth,
+        COUNT(DISTINCT tge.group_id) AS count FROM tb_group_extends tge LEFT JOIN tb_create_group tcg ON tge.group_id =
+        tcg.group_id WHERE tge.archived = 2
+        <if test="keywords != null and keywords != ''">
+            AND (
+                tcg.group_name LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.user_names LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.department_name LIKE CONCAT('%', #{keywords}, '%')
+                OR EXISTS (SELECT 1 FROM tr_tasks_group ttg LEFT JOIN tb_tasks tt ON ttg.task_id = tt.id WHERE
+                ttg.group_id = tge.group_id AND tt.name LIKE CONCAT('%', #{keywords}, '%'))
+                OR EXISTS (SELECT 1 FROM tr_police_ticket_group tptg LEFT JOIN tb_police_ticket tpt ON tptg.ticket_id =
+                tpt.id WHERE tptg.group_id = tge.group_id AND tpt.name LIKE CONCAT('%', #{keywords}, '%'))
+            )
+        </if>
+        <if test="orgIds == null or orgIds.size() == 0">
+            AND
+            (
+            tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+            <if test="postIdList != null and postIdList.size() > 0">
+                OR
+                <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                    tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                </foreach>
+            </if>
+            )
+        </if>
+        <!-- userId必传，直接作为条件 -->
+        <!-- 若orgIds存在，追加OR条件 -->
+        <if test="orgIds != null and orgIds.size() > 0">
+            AND tcg.department_id IN
+            <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                #{orgId}
+            </foreach>
+        </if>
+        AND archived_time IS NOT NULL
+        GROUP BY yearMonth
+        ORDER BY yearMonth DESC
+    </select>
+
+    <select id="selectCaredArchivedPageList"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.ArchiveTimelineDTO">
+        SELECT CONCAT(YEAR(tge.archived_time), '-',LPAD(MONTH(tge.archived_time), 2, '0')) AS yearMonth,
+        COUNT(DISTINCT tge.group_id) AS count FROM tb_group_care tgc
+        LEFT JOIN tb_group_extends tge ON tge.group_id = tgc.group_id
+        LEFT JOIN tb_create_group tcg ON tge.group_id = tcg.group_id
+        WHERE tge.archived = 2
+        AND tgc.user_id = #{userId}
+        <if test="keywords != null and keywords != ''">
+            AND (
+                tcg.group_name LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.user_names LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tcg.create_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%m/%d') LIKE CONCAT('%', #{keywords}, '%')
+                OR DATE_FORMAT(tge.archived_time, '%Y/%c/%e') LIKE CONCAT('%', #{keywords}, '%')
+                OR tcg.department_name LIKE CONCAT('%', #{keywords}, '%')
+                OR EXISTS (SELECT 1 FROM tr_tasks_group ttg LEFT JOIN tb_tasks tt ON ttg.task_id = tt.id WHERE
+                ttg.group_id = tge.group_id AND tt.name LIKE CONCAT('%', #{keywords}, '%'))
+                OR EXISTS (SELECT 1 FROM tr_police_ticket_group tptg LEFT JOIN tb_police_ticket tpt ON tptg.ticket_id =
+                tpt.id WHERE tptg.group_id = tge.group_id AND tpt.name LIKE CONCAT('%', #{keywords}, '%'))
+            )
+        </if>
+        <if test="orgIds == null or orgIds.size() == 0">
+            AND
+            (
+            tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+            <if test="postIdList != null and postIdList.size() > 0">
+                OR
+                <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                    tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                </foreach>
+            </if>
+            )
+        </if>
+        <!-- userId必传，直接作为条件 -->
+        <!-- 若orgIds存在，追加OR条件 -->
+        <if test="orgIds != null and orgIds.size() > 0">
+            AND tcg.department_id IN
+            <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                #{orgId}
+            </foreach>
+        </if>
+        AND archived_time IS NOT NULL
+        GROUP BY yearMonth
+        ORDER BY yearMonth DESC
+    </select>
+    <select id="getArchiveList" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.GroupExtendsVO">
+        select tge.group_id as groupId,
+        tcg.group_name as groupName,
+        COALESCE(tag_agg.tags, '') as tagName,
+        tcg.department_name as departmentName,
+        tge.archived_time as archivedTime,
+        tge.archived_file as archivedFile,
+        CONCAT(
+        COALESCE(agg.ticket_names, ''),
+        CASE
+        WHEN agg.task_names IS NOT NULL
+        AND agg.ticket_names IS NOT NULL
+        THEN ','
+        ELSE ''
+        END,
+        COALESCE(agg.task_names, '')
+        ) as taskName,
+        tiu.name as archiveUserName
+        from tb_group_extends tge
+        left join tb_create_group tcg on tge.group_id = tcg.group_id
+        <!-- 任务名/工单名改为单个 LATERAL 内标量子查询预聚合，
+             顶层关联 8 -> 5（tge/tcg/agg/tiu/tag_agg），GROUP_CONCAT 去重聚合语义不变 -->
+        LEFT JOIN LATERAL (
+            SELECT
+                (SELECT GROUP_CONCAT(DISTINCT tt.name SEPARATOR ',')
+                 FROM tr_tasks_group ttg
+                 JOIN tb_tasks tt ON ttg.task_id = tt.id
+                 WHERE ttg.group_id = tge.group_id) AS task_names,
+                (SELECT GROUP_CONCAT(DISTINCT tpt.name SEPARATOR ',')
+                 FROM tr_police_ticket_group tptg
+                 JOIN tb_police_ticket tpt ON tptg.ticket_id = tpt.id
+                 WHERE tptg.group_id = tge.group_id) AS ticket_names
+        ) agg ON TRUE
+        left join icp_res.tb_im_user tiu on tge.archived_user_id = tiu.id
+        LEFT JOIN LATERAL (
+            SELECT GROUP_CONCAT(tag.name SEPARATOR ',') as tags
+            FROM tb_group_tag tgt
+            LEFT JOIN tb_label tag ON tgt.tag_id = tag.id
+            WHERE tgt.group_id = tge.group_id AND tgt.is_deleted = 0
+        ) tag_agg ON TRUE
+        <where>
+            tge.archived = 2
+            <if test="startTime != null and startTime != ''">
+                and tge.archived_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and tge.archived_time &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+            <if test="keywords != null and keywords != ''">
+                and (
+                tag_agg.tags like concat('%',#{keywords},'%')
+                or tcg.group_name like concat('%',#{keywords},'%')
+                or tcg.department_name like concat('%',#{keywords},'%')
+                )
+            </if>
+        </where>
+
+        GROUP BY tge.group_id, tcg.group_name, tag_agg.tags, tcg.department_name,
+        tge.archived_time, tge.archived_file, tiu.name, agg.task_names, agg.ticket_names
+        ORDER BY tge.archived_time DESC
+    </select>
+    <select id="getArchiveListByIds" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.GroupExtendsVO">
+        select tge.group_id as groupId, tcg.group_name as groupName, tag_agg.tags as tagName, tcg.department_name as
+        departmentName,
+        tge.archived_time as archivedTime,tge.archived_file as archivedFile,concat(tt.name,tpt.name) as taskName,
+        tiu.name as archiveUserName
+        from tb_group_extends tge
+        left join tb_create_group tcg on tge.group_id = tcg.group_id
+        left join tr_tasks_group ttg on tge.group_id = ttg.group_id
+        left join tb_tasks tt on ttg.task_id = tt.id
+        LEFT JOIN tr_police_ticket_group tptg on tge.group_id= tptg.group_id
+        left join tb_police_ticket tpt on tptg.ticket_id=tpt.id
+        left join icp_res.tb_im_user tiu on tge.archived_user_id = tiu.id
+        LEFT JOIN LATERAL (
+            SELECT GROUP_CONCAT(tag.name SEPARATOR ',') as tags
+            FROM tb_group_tag tgt
+            LEFT JOIN tb_label tag ON tgt.tag_id = tag.id
+            WHERE tgt.group_id = tge.group_id AND tgt.is_deleted = 0
+        ) tag_agg ON TRUE
+        where tge.archived = 2
+        <if test="ids != null and ids.size() > 0">
+            and tge.group_id in
+            <foreach collection="ids" item="groupId" open="(" separator="," close=")">
+                #{groupId}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="listGroupsByUser" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.UserCareGroupDTO">
+        SELECT DISTINCT tge.id, tge.group_id, tcg.group_name as groupName, tge.archived,
+        tcg.avatar_img as avatarImg, tcg.create_time as gmtCreated, tge.archived_time,
+        tge.group_type as groupType, tcg.owner_id as ownerId, tcg.user_ids as members,
+        tcg.source as source
+        FROM tb_group_extends tge
+        LEFT JOIN tb_create_group tcg ON tge.group_id = tcg.group_id
+        <where>
+            tcg.existed = 1
+            <!-- scope: 1=我创建的; 3=我可查看的但不是成员; 4=我是成员; 5=我的所有(1,3,4并集) -->
+            <choose>
+                <when test="scope != null and scope == 1">
+                    AND tcg.owner_id = #{userId}
+                </when>
+                <!-- scope=4: 我是成员 -->
+                <when test="scope != null and scope == 4">
+                    AND (
+                        tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+                        <if test="postIdList != null and postIdList.size() > 0">
+                            OR
+                            <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                                tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                            </foreach>
+                        </if>
+                    )
+                </when>
+                <!-- scope=3: 数据权限范围内但不在成员列表中 -->
+                <when test="scope != null and scope == 3">
+                    AND tcg.user_ids NOT LIKE CONCAT('%', #{userId}, '%')
+                    <if test="postIdList != null and postIdList.size() > 0">
+                        AND
+                        <foreach collection="postIdList" item="postId" open="(" separator="and" close=")">
+                            tcg.user_ids NOT LIKE CONCAT('%', #{postId}, '%')
+                        </foreach>
+                    </if>
+                    AND tcg.owner_id != #{userId}
+                    <if test="orgIds != null and orgIds.size() > 0">
+                        AND tcg.department_id IN
+                        <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                            #{orgId}
+                        </foreach>
+                    </if>
+                    <if test="orgIds == null or orgIds.size() == 0">
+                        AND 1 = 0
+                    </if>
+                </when>
+                <otherwise>
+                    AND (
+                        tcg.owner_id = #{userId}
+                        OR tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+                        <if test="postIdList != null and postIdList.size() > 0">
+                            OR
+                            <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                                tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                            </foreach>
+                        </if>
+                        <if test="orgIds != null and orgIds.size() > 0">
+                            OR tcg.department_id IN
+                            <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                                #{orgId}
+                            </foreach>
+                        </if>
+                    )
+                </otherwise>
+            </choose>
+            <!-- groupType: 0=全部; 1=普通群组; 2=协同群组(default) -->
+            <if test="groupType != null and groupType != 0">
+                AND tge.group_type = #{groupType}
+            </if>
+            <!-- createType/source: 0=全部; 1=一键建群; 5=一键调度; 4=职能建群; 3=自定义建群 -->
+            <if test="createType != null and createType != 0">
+                AND tcg.source = #{createType}
+            </if>
+            <!-- 未归档+已归档 -->
+            AND tge.archived IN (0, 1, 2)
+        </where>
+        GROUP BY tge.id, tge.group_id, tcg.group_name, tge.archived, tcg.avatar_img,
+        tcg.create_time, tge.archived_time, tge.group_type, tcg.owner_id, tcg.user_ids, tcg.source
+        ORDER BY tcg.create_time DESC
+    </select>
+
+    <select id="getGroupCountByUserId" resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.group.OpenApiGroupCountVO">
+        SELECT
+            SUM(CASE WHEN tge.group_type = 1 AND tge.archived = 0 THEN 1 ELSE 0 END) as normalGroupUnarchivedCount,
+            SUM(CASE WHEN tge.group_type = 1 AND tge.archived IN (1, 2) THEN 1 ELSE 0 END) as normalGroupArchivedCount,
+            SUM(CASE WHEN tge.group_type = 2 AND tge.archived = 0 THEN 1 ELSE 0 END) as coopGroupUnarchivedCount,
+            SUM(CASE WHEN tge.group_type = 2 AND tge.archived IN (1, 2) THEN 1 ELSE 0 END) as coopGroupArchivedCount
+        FROM (
+            SELECT DISTINCT tge.id, tge.group_type, tge.archived
+            FROM tb_group_extends tge
+            LEFT JOIN tb_create_group tcg ON tge.group_id = tcg.group_id
+            <where>
+                tcg.existed = 1
+                AND (
+                    tcg.owner_id = #{userId}
+                    OR tcg.user_ids LIKE CONCAT('%', #{userId}, '%')
+                    <if test="postIdList != null and postIdList.size() > 0">
+                        OR
+                        <foreach collection="postIdList" item="postId" open="(" separator="or" close=")">
+                            tcg.user_ids LIKE CONCAT('%', #{postId}, '%')
+                        </foreach>
+                    </if>
+                )
+                AND tge.archived IN (0, 1, 2)
+            </where>
+        ) tge
+    </select>
+</mapper>

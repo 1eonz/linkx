@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.third.mapper.PushMsgMapper">
+  <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.linkx.third.entity.PushMsg">
+    <!--@mbg.generated-->
+    <!--@Table linkx_third.tb_push_msg-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="received_user_id" jdbcType="BIGINT" property="receivedUserId" />
+    <result column="url" jdbcType="VARCHAR" property="url" />
+    <result column="text" jdbcType="VARCHAR" property="text" />
+    <result column="contact_id" jdbcType="BIGINT" property="contactId" />
+    <result column="data" jdbcType="LONGVARCHAR" property="data" />
+    <result column="received_at" jdbcType="TIMESTAMP" property="receivedAt" />
+    <result column="gmt_last_modified" jdbcType="TIMESTAMP" property="gmtLastModified" />
+    <result column="gmt_create_time" jdbcType="TIMESTAMP" property="gmtCreateTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    id, notification_id, received_user_id, url, `text`, contact_id, `data`, received_at, gmt_last_modified,
+    gmt_create_time
+  </sql>
+
+  <select id="messageRecordPage" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from tb_push_msg
+    where received_user_id = #{userId,jdbcType=BIGINT}
+    <if test="keywords != null and keywords != ''">
+      and (url like concat('%', #{keywords,jdbcType=VARCHAR}, '%')
+      or `text` like concat('%', #{keywords,jdbcType=VARCHAR}, '%'))
+    </if>
+    <if test="start != null and start != ''">
+      and gmt_create_time >= #{start,jdbcType=BIGINT}
+    </if>
+    <if test="end != null and end != ''">
+      and gmt_create_time &lt;= #{end,jdbcType=BIGINT}
+    </if>
+    order by received_at desc
+  </select>
+</mapper>

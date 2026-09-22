@@ -1,0 +1,174 @@
+server:
+  port: 8080
+
+spring.application.name: cloudcmd-gateway
+
+spring.cloud.gateway:
+  discovery:
+    locator:
+      enabled: true
+      lower-case-service-id: true
+  httpclient:
+    connect-timeout: 10000
+    ssl:
+      useInsecureTrustManager: true
+  default-filters:
+    - PreflightGlobalFilter
+  routes:
+    - id: cloudcmd-base-service
+      uri: http://cloudcmd-base-service:8080/**
+      predicates:
+        - Path=/base/**
+    - id: cloudcmd-auth-service-2
+      uri: http://cloudcmd-auth-service:8080/**
+      predicates:
+        - Path=/admin/auth/**
+      filters:
+        - RewritePath=/admin/auth/(?<path>.*), /auth/$\{path}
+    - id: cloudcmd-auth-service-3
+      uri: http://cloudcmd-auth-service:8080/**
+      predicates:
+        - Path=/auth/**
+    - id: cloudcmd-auth-service-4
+      uri: http://cloudcmd-auth-service:8080/**
+      predicates:
+        - Path=/passport/**
+    - id: cloudcmd-im-jingxin-collaboration
+      uri: http://cloudcmd-im-jingxin:8080/**
+      predicates:
+        - Path=/collaboration/**
+    - id: cloudcmd-im-jingxin-openapi
+      uri: http://cloudcmd-im-jingxin:8080/**
+      predicates:
+        - Path=/openapi/**
+    - id: cloudcmd-im-jingxin-policeticket
+      uri: http://cloudcmd-im-jingxin:8080/**
+      predicates:
+        - Path=/policeticket/**
+    - id: cloudcmd-admin-service
+      uri: http://cloudcmd-admin-service:8080/**
+      predicates:
+        - Path=/admin/**
+    - id: cloudcmd-icp-proxy
+      uri: http://cloudcmd-icp-proxy:8080/**
+      predicates:
+        - Path=/proxy/icp/**
+    - id: linkx-dashboard-service
+      uri: http://linkx-dashboard-service:8080/**
+      predicates:
+        - Path=/dashboard/**
+    - id: linkx-third-service
+      uri: http://linkx-third-service:8080/**
+      predicates:
+        - Path=/third/**
+    - id: linkx-node-service
+      uri: http://linkx-node-service:8080/**
+      predicates:
+        - Path=/node/v1/**
+    - id: cloudcmd-ai-proxy
+      # 这里只是一个占位符，实际逻辑在 AiProxyGlobalFilter。
+      # Filter 会剥掉 /XA-ics-agent 入口前缀，再把剩余路径拼到 GROUP_AI_HOST 后面，
+      # 与 ReactAiAgentClient 的 GROUP_AI_HOST + deepseek-zjk/... 行为保持一致。
+      uri: http://ai-proxy-placeholder.invalid
+      predicates:
+        - Path=/XA-ics-agent/**,/linkx/desktop/XA-ics-agent/**,/linkx/h5portal/XA-ics-agent/**,/linkx/admin/XA-ics-agent/**
+  globalcors:
+    cors-configurations:
+      '[/**]':
+        allowedOrigins: "*"
+        allowedMethods: "*"
+        allowedHeaders: "*"
+    add-to-simple-url-handler-mapping: true
+
+spring.redis:
+  host: ${cloudcmd.redis.host}
+  port: ${cloudcmd.redis.port}
+  password: ${cloudcmd.redis.password}
+  database: ${cloudcmd.redis.database}
+  timeout: 3000
+
+spring.main:
+  allow-bean-definition-overriding: true
+
+spring.messages.basename: license,common_bean
+
+dubbo:
+  registry:
+    address: ${cloudcmd.zookeeper.conn-str}
+    protocol: zookeeper
+  scan:
+    base-packages: com.tdtech.cloudcmd
+  application:
+    name: ${spring.application.name}
+    serialize-check-status: DISABLE
+    check-serializable: false
+    register-mode: instance
+  consumer:
+    check: false
+    retries: 0
+  provider:
+    timeout: 10000
+    retries: 0
+    threads: 400
+  protocol:
+    name: dubbo
+    port: 18080
+    serialization: hessian2
+  metrics:
+    protocol: prometheus
+    enable: true
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      system: true
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+
+cloudcmd:
+  network:
+    internal:
+      ip: 127.0.0.1
+    external:
+      ip: 127.0.0.1
+    switch: false
+
+ccmd.secure:
+  tempUrl:
+    - /oauth/v2/changePwd
+  skip-url:
+    - /auth/.*
+    - /token/.*
+    - /base/.*
+    - /passport/.*
+    - /admin/static/.*
+    - /admin/staticFile/.*

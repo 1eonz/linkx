@@ -1,0 +1,15 @@
+FROM repo.rd.td-tech.com/docker-virtual/linkx/maven:3.9.11-eclipse-temurin-21 as maven
+WORKDIR /app
+COPY . .
+RUN mkdir -p /repo && \
+    mvn \
+    -DskipTests=true \
+    -s /app/settings.xml \
+    package
+
+FROM repo.rd.td-tech.com/docker-virtual/linkx/msip/jre:21.openeuler.openjre.amd64
+
+WORKDIR /app
+COPY --from=maven /app/target/cloudcmd-script-0.1.jar ./app.jar
+
+CMD java -jar /app/app.jar

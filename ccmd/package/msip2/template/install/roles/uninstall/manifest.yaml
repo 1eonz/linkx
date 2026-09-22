@@ -1,0 +1,13 @@
+order: 50030
+rollback_order: 50030
+name: uninstall
+error_ignore: false
+gather_facts: false
+always_exec_upgrade: true
+always_exec_rollback: true
+handler_host: kube_control_plane
+phases:
+  - upgrade
+  - rollback
+  - patch_rollback
+

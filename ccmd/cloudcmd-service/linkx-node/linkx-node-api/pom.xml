@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>linkx-node</artifactId>
+        <groupId>com.tdtech.cloudcmd</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>linkx-node-api</artifactId>
+    <name>linkx-node-api</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-boot</artifactId>
+            <version>${cloudcmd.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-common-util</artifactId>
+            <version>${cloudcmd.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+</project>

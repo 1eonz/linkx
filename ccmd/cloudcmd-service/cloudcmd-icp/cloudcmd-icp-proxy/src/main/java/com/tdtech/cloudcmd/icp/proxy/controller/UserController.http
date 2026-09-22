@@ -1,0 +1,12 @@
+### 分页查询用户
+GET {{baseUrl}}/icp/user?pageNum=1&pageSize=10&lp=30,100&rp=31,101
+Accept: application/json
+
+###
+
+### 同步用户数据
+POST {{baseUrl}}/icp/user/pull
+Content-Type: application/json
+Accept: application/json
+
+###

@@ -1,0 +1,37 @@
+# API相关配置
+api_url: "https://{{ hostvars[first_kube_master].ansible_host | default(first_kube_master) }}:7777/msiptool/vipConfig/upgrade/adapter"
+bind_vip_api_url: "https://{{ hostvars[first_kube_master].ansible_host | default(first_kube_master) }}:7777/msiptool/vipConfig/bindVip"
+
+# Kubernetes Secret配置
+secret_name: "kube-vip-token"
+secret_namespace: "platform"
+secret_key: "random-string"
+
+# VIP 配置路径（与 saas conf 一致）
+vip_config_path: /data/commonConfig/vipConfig
+vip_config_file: "{{ vip_config_path }}/vipConfig.conf"
+service_bind_config_file: "{{ vip_config_path }}/serviceBindConfig.conf"
+legacy_vip_file: /data/VirtualIP/virtualIP
+legacy_vip_backup_dir: /data/install/backup/saas/vip/legacy/VirtualIP
+
+# 老升新判定
+saas_vip_backup_marker: /data/install/backup/saas/vip/.backup_completed
+saas_vip_backup_meta: /data/install/backup/saas/vip/.backup_meta
+
+# 当前业务包名：优先 path，否则从 app_root 目录取名
+business_vip_install_root: /data/install
+business_vip_scan_relpath: conf/vip
+business_vip_current_app: >-
+  {%- if path | default('') | trim | length > 0 -%}
+  {{ path | trim }}
+  {%- elif app_root | default('') | trim | length > 0 -%}
+  {{ app_root | trim | regex_replace('^.*/', '') }}
+  {%- else -%}
+  {%- endif -%}
+business_vip_bind_retry: 3
+business_vip_msiptool_wait: 30
+business_vip_exclude_apps:
+  - saas
+  - paas
+  - maintainer
+  - apaas

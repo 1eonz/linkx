@@ -1,0 +1,57 @@
+#Fri Aug 01 07:18:49 UTC 2025
+micronaut.application.name: cloudcmd-script
+micronaut.context:
+  eager-init:
+    enabled: true
+# core configs
+micronaut.executors:
+  io:
+    type: fixed
+    n-threads: 75
+    virtual: true
+
+micronaut.server:
+  port: 8080
+  not-found-on-missing-body: false
+  cors:
+    enabled: true
+  error:
+    # 启用详细错误信息 (生产环境中应设为false)
+    include-stacktrace: false
+    # 配置错误响应格式
+    response-format: application/json
+
+# core configs ends
+# openapi3
+
+# openapi3 doc online, shall not open by default
+#micronaut.router.static-resources.swagger:
+#  path: classpath:META-INF/swagger
+#  mapping: /swagger/**
+
+micronaut:
+  openapi:
+    filename: openapi3
+
+
+# openapi3
+# repository
+
+kafka:
+  enabled: true
+  bootstrap:
+    servers: ${cloudcmd.kafka.brokers}
+
+r2dbc.datasources:
+  default:
+    url: r2dbc:mysql://${cloudcmd.mysql.host}/icp_collabs?allowPublicKeyRetrieval=true&useSSL=false&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&
+    username: ${cloudcmd.mysql.username}
+    password: ${cloudcmd.mysql.password}
+    dialect: mysql
+
+# repository ends
+
+logger.levels:
+  "io.micronaut.configuration.kafka": WARN
+  "org.apache.kafka": WARN
+

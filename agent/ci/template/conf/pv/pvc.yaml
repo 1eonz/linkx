@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agent-infra-pv
+  namespace: agent
+  labels:
+    type: local
+spec:
+  storageClassName: agent-infra-local-pv
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/agent/data/upload"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-infra-pv-claim
+  namespace: agent
+spec:
+  volumeName: agent-infra-pv
+  storageClassName: agent-infra-local-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

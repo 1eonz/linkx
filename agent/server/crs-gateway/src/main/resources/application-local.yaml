@@ -1,0 +1,127 @@
+spring:
+  data:
+    redis:
+      host: 172.16.23.30
+      port: 30002
+      database: 4
+      password: ${LOCAL_REDIS_PASSWORD:redisadmin}
+
+  cloud:
+    gateway:
+      globalcors:
+        # 本地开发跨域配置，覆盖 Vite 直连本地网关的预检请求
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      default-filters:
+        # 避免网关和后端同时写 CORS 响应头导致浏览器拒绝
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      routes:
+        # swagger knife
+        - id: system-api-docs
+          uri: grayLb://system-server
+          predicates:
+            - Path=/admin-api/proxy/ai/v1/system/v3/api-docs
+          filters:
+            - SetPath=/v3/api-docs
+        - id: infra-api-docs
+          uri: grayLb://infra-server
+          predicates:
+            - Path=/admin-api/proxy/ai/v1/infra/v3/api-docs
+          filters:
+            - SetPath=/v3/api-docs
+        - id: ai-agent-api-docs
+          uri: grayLb://ai-agent-server
+          predicates:
+            - Path=/admin-api/proxy/ai/v1/aiagent/v3/api-docs
+          filters:
+            - SetPath=/v3/api-docs
+        # 第三方请求
+        - id: ai-admin-api
+          uri: grayLb://ai-agent-server
+          predicates:
+            - Path=/agent/api/proxy/ai/v1/aiagent/**
+          filters:
+            # 本地等价生产 APISIX /agent/admin 去前缀，gateway 直连 /admin-api/aiagent
+            - RewritePath=/agent/api/proxy/ai/v1/aiagent/?(?<segment>.*), /admin-api/proxy/ai/v1/aiagent/$\{segment}
+        - id: ai-app-api
+          uri: grayLb://ai-agent-server
+          predicates:
+            - Path=/agent/api/proxy/ai/v1/deepseek-zjk/**
+          filters:
+            # 本地等价生产 APISIX /agent/api 去前缀 + gateway /deepseek-zjk 转 /app-api/deepseek-zjk
+            - RewritePath=/agent/api/proxy/ai/v1/deepseek-zjk/?(?<segment>.*), /app-api/proxy/ai/v1/deepseek-zjk/$\{segment}
+        - id: ai-agent-infra-websocket
+          uri: lb:ws://infra-server
+          predicates:
+            - Path=/agent/ws,/agent/ws/**
+          filters:
+            # 第三方前端只连接网关，最终转发到 infra 的 WebSocket 入口
+            - SetPath=/infra/ws
+        - id: ai-agent-infra-websocket-transfer
+          uri: lb:ws://infra-server
+          predicates:
+            - Path=/agent/api/transfer/ws,/agent/api/transfer/ws/**
+          filters:
+            # 兼容旧路径，目标仍保持 infra WebSocket 精确入口
+            - SetPath=/infra/ws
+        # 服务内请求
+        - id: system-admin-api-prod
+          uri: grayLb://system-server
+          predicates:
+            - Path=/agent/admin/admin-api/proxy/ai/v1/system/**
+          filters:
+            - RewritePath=/agent/admin/?(?<segment>.*), /$\{segment}
+        - id: infra-admin-api
+          uri: grayLb://infra-server
+          predicates:
+            - Path=/agent/admin/admin-api/proxy/ai/v1/infra/**
+          filters:
+            - RewritePath=/agent/admin/?(?<segment>.*), /$\{segment}
+        - id: ai-admin-api-prod
+          uri: grayLb://ai-agent-server
+          predicates:
+            - Path=/agent/admin/admin-api/proxy/ai/v1/aiagent/**
+          filters:
+            - RewritePath=/agent/admin/?(?<segment>.*), /$\{segment}
+        - id: system-app-api-prod
+          uri: grayLb://system-server
+          predicates:
+            - Path=/agent/api/app-api/proxy/ai/v1/system/**
+          filters:
+            - RewritePath=/agent/api/?(?<segment>.*), /$\{segment}
+        - id: infra-app-api-prod
+          uri: grayLb://infra-server
+          predicates:
+            - Path=/agent/api/app-api/proxy/ai/v1/infra/**
+          filters:
+            - RewritePath=/agent/api/?(?<segment>.*), /$\{segment}
+        - id: infra-file-api-prod
+          uri: grayLb://infra-server
+          predicates:
+            - Path=/agent/api/admin-api/proxy/ai/v1/infra/file/**
+          filters:
+            - RewritePath=/agent/api/?(?<segment>.*), /$\{segment}
+
+  boot:
+    admin:
+      client:
+        instance:
+          service-host-type: IP
+      context-path: /admin
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: '*'
+
+logging:
+  file:
+    path: ./logs

@@ -1,0 +1,34 @@
+haControl: "true"
+enableRestart: "true"
+ports:
+  - name: http
+    port: 8080
+    nodePort: 30016
+  - name: dubbo
+    port: 18080
+  - name: websocket
+    port: 30017
+    nodePort: 30017
+container:
+  strategy: Recreate
+  replicas: 1
+  vault: true
+  volumes:
+  envs:
+    env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: safebox:platform/platform-secret#mysql_password
+      - name: REDIS_PASSWORD
+        value: safebox:platform/platform-secret#redis_password
+      - name: P2P_LOCAL_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.hostIP
+      - name: P2P_VIP_IP
+        value: "{{vip}}"
+    env_from:
+      - configMapRef:
+          name: cloudcmd-profile
+  jvm:
+    xmx: 1g
+    xms: 1g

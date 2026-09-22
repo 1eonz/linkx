@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CoopLevelMapper">
+
+    <resultMap id="coopLevelResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.CoopLevel">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="parentId" column="parent_id" />
+        <result property="gmtCreated" column="gmt_created" />
+        <result property="hasChildren" column="count" />
+    </resultMap>
+
+    <select id="selectByNameCount" resultType="int">
+        SELECT COUNT(1) FROM tb_coop_level WHERE name = #{name} and is_deleted = 0
+    </select>
+
+    <select id="selectByParentId" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CoopLevelDO">
+        SELECT id, name, parent_id, is_deleted, gmt_created FROM tb_coop_level WHERE id = #{parentId} and is_deleted = 0
+    </select>
+
+    <select id="selectChildrenCount" resultType="int">
+        SELECT COUNT(1) FROM tb_coop_level WHERE parent_id = #{parentId} and is_deleted = 0
+    </select>
+
+    <select id="selectChildren" resultMap="coopLevelResultMap">
+        SELECT id, name, parent_id, gmt_created FROM tb_coop_level WHERE parent_id = #{parentId} and is_deleted = 0
+    </select>
+
+    <select id="selectInfoById" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CoopLevelDO">
+        SELECT id, name, parent_id, is_deleted, gmt_created FROM tb_coop_level WHERE id = #{id} and is_deleted = 0
+    </select>
+
+    <select id="selectAllChildrenCount" resultMap="coopLevelResultMap">
+        select parent_id AS id, IF(count(1) > 0, true, FALSE) AS count FROM tb_coop_level WHERE is_deleted = 0 AND
+        parent_id in
+        <foreach collection="ids" open="(" close=")" separator="," item="id">
+            #{id}
+        </foreach>
+        GROUP BY parent_id
+    </select>
+</mapper>

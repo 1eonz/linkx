@@ -1,0 +1,6 @@
+com.chinasoft.cloud.framework.apilog.config.CrsApiLogAutoConfiguration
+com.chinasoft.cloud.framework.jackson.config.CrsJacksonAutoConfiguration
+com.chinasoft.cloud.framework.swagger.config.CrsSwaggerAutoConfiguration
+com.chinasoft.cloud.framework.web.config.CrsWebAutoConfiguration
+com.chinasoft.cloud.framework.apilog.config.CrsApiLogRpcAutoConfiguration
+com.chinasoft.cloud.framework.banner.config.CrsBannerAutoConfiguration

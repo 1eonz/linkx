@@ -1,0 +1,1 @@
+echo "upgrade_post_handle_agent" >/home/test.txt

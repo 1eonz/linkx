@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.dashboard.mapper.StaticCreateGroupMapper">
+
+    <resultMap id="WatermarkResultMap" type="com.tdtech.cloudcmd.linkx.dashboard.support.SyncWatermark">
+        <result column="wm_time" property="time"/>
+        <result column="wm_id" property="id"/>
+    </resultMap>
+
+    <!-- 批量 upsert：按 uniq_group_id 去重 -->
+    <insert id="upsertBatch" parameterType="java.util.List">
+        INSERT INTO tb_static_create_group (
+            id, user_id, user_name, user_department_id, user_department_name,
+            group_id, group_name, group_type, group_sub_type, group_create_type,
+            gmt_create_time, group_updated_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.userId}, #{item.userName}, #{item.userDepartmentId}, #{item.userDepartmentName},
+                #{item.groupId}, #{item.groupName}, #{item.groupType}, #{item.groupSubType}, #{item.groupCreateType},
+                #{item.gmtCreateTime}, #{item.groupUpdatedTime}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            user_id = VALUES(user_id),
+            user_name = VALUES(user_name),
+            user_department_id = VALUES(user_department_id),
+            user_department_name = VALUES(user_department_name),
+            group_name = VALUES(group_name),
+            group_type = VALUES(group_type),
+            group_sub_type = VALUES(group_sub_type),
+            group_create_type = VALUES(group_create_type),
+            gmt_create_time = VALUES(gmt_create_time),
+            group_updated_time = VALUES(group_updated_time)
+    </insert>
+
+    <!-- 兜底回查水位线：(group_updated_time, group_id) DESC LIMIT 1 -->
+    <select id="selectMaxWatermark" resultMap="WatermarkResultMap">
+        SELECT group_updated_time AS wm_time, group_id AS wm_id
+        FROM tb_static_create_group
+        ORDER BY group_updated_time DESC, group_id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByCursor" resultType="com.tdtech.cloudcmd.linkx.dashboard.entity.StaticCreateGroup">
+        SELECT id, user_id, user_name, user_department_id, user_department_name,
+               group_id, group_name, group_type, group_sub_type, group_create_type,
+               gmt_create_time, group_updated_time
+        FROM tb_static_create_group
+        WHERE gmt_create_time &gt;= #{startTime} AND gmt_create_time &lt; #{endTime}
+        <if test="deptIds != null and deptIds.size() > 0">
+            AND user_department_id IN
+            <foreach collection="deptIds" item="deptId" open="(" separator="," close=")">
+                #{deptId}
+            </foreach>
+        </if>
+        <if test="lastTime != null">
+            AND (gmt_create_time &lt; #{lastTime} OR (gmt_create_time = #{lastTime} AND id &lt; #{lastId}))
+        </if>
+        ORDER BY gmt_create_time DESC, id DESC
+        LIMIT #{pageSize}
+    </select>
+</mapper>

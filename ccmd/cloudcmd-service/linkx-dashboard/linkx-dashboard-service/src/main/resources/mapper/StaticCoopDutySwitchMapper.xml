@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.dashboard.mapper.StaticCoopDutySwitchMapper">
+
+    <resultMap id="WatermarkResultMap" type="com.tdtech.cloudcmd.linkx.dashboard.support.SyncWatermark">
+        <result column="wm_time" property="time"/>
+        <result column="wm_id" property="id"/>
+    </resultMap>
+
+    <!-- 批量 upsert：按 uniq_attendance_id 去重；switch 是 MySQL 保留字，需反引号 -->
+    <insert id="upsertBatch" parameterType="java.util.List">
+        INSERT INTO tb_static_coop_duty_switch (
+            id, user_id, user_name, user_department_id, user_department_name,
+            coop_user_id, coop_user_name, swith_type, `switch`, gmt_create_time, attendance_id
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.userId}, #{item.userName}, #{item.userDepartmentId}, #{item.userDepartmentName},
+                #{item.coopUserId}, #{item.coopUserName}, #{item.swithType}, #{item.switchFlag},
+                #{item.gmtCreateTime}, #{item.attendanceId}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            user_id = VALUES(user_id),
+            user_name = VALUES(user_name),
+            user_department_id = VALUES(user_department_id),
+            user_department_name = VALUES(user_department_name),
+            coop_user_id = VALUES(coop_user_id),
+            coop_user_name = VALUES(coop_user_name),
+            swith_type = VALUES(swith_type),
+            `switch` = VALUES(`switch`),
+            gmt_create_time = VALUES(gmt_create_time)
+    </insert>
+
+    <!-- 兜底回查水位线：(gmt_create_time, attendance_id) DESC LIMIT 1 -->
+    <select id="selectMaxWatermark" resultMap="WatermarkResultMap">
+        SELECT gmt_create_time AS wm_time, attendance_id AS wm_id
+        FROM tb_static_coop_duty_switch
+        ORDER BY gmt_create_time DESC, attendance_id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByCursor" resultType="com.tdtech.cloudcmd.linkx.dashboard.entity.StaticCoopDutySwitch">
+        SELECT id, user_id, user_name, user_department_id, user_department_name,
+               coop_user_id, coop_user_name, swith_type, `switch`, gmt_create_time, attendance_id
+        FROM tb_static_coop_duty_switch
+        WHERE gmt_create_time &gt;= #{startTime} AND gmt_create_time &lt; #{endTime}
+        <if test="deptIds != null and deptIds.size() > 0">
+            AND user_department_id IN
+            <foreach collection="deptIds" item="deptId" open="(" separator="," close=")">
+                #{deptId}
+            </foreach>
+        </if>
+        <if test="lastTime != null">
+            AND (gmt_create_time &lt; #{lastTime} OR (gmt_create_time = #{lastTime} AND id &lt; #{lastId}))
+        </if>
+        ORDER BY gmt_create_time DESC, id DESC
+        LIMIT #{pageSize}
+    </select>
+</mapper>

@@ -1,0 +1,15 @@
+name: job-files
+namespace: linkx
+container:
+  strategy:
+  replicas: 1
+  vault: false
+  volumes:
+    - pvc: headshot-store
+      mount_path: /target/headshot/
+    - pvc: im-store
+      mount_path: /target/im/
+    - pvc: jingxin-file
+      mount_path: /target/file/
+    - pvc: mapbox-store
+      mount_path: /target/mapbox/

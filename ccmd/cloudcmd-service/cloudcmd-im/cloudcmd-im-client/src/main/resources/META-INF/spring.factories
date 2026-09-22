@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+    com.tdtech.cloudcmd.im.jingxin.client.ImClientAutoConfiguration,\
+    com.tdtech.cloudcmd.im.jingxin.client.WsClientScheduler

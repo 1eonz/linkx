@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: mysql-open
+  name: mysql-open
+  namespace: platform
+spec:
+  ipFamilies:
+    - IPv4
+  ports:
+    - port: 3306
+      protocol: TCP
+      targetPort: 3306
+  selector:
+    name: greatsql-standalone
+  type: ClusterIP
+  externalIPs:
+    - 10.28.15.61

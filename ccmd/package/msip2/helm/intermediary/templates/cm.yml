@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{.Release.Namespace}}
+  name: {{.Values.name}}-scripts
+data:
+  init.sh: |-
+    #!/bin/bash
+    set -euo pipefail
+    cd "$(dirname "$0")" || exit 1
+    status_code=1
+    for file in *.json ;do
+      echo "Processing $file..."
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" http://intermediary-service.platform.svc.cluster.local:8080/health/services -X POST -d "@$file")
+      if [ "$status_code" = "200" ] || [ "$status_code" = "201" ]; then
+          echo "$file status code is $status_code"
+      else
+          echo "$file upstream add failed!status_code:$status_code"
+          echo "file: ${file} json:""@$file"
+          exit 1
+      fi
+    done
+  {{- range $name,$conf := .Values.intermediary }}
+  {{$name}}.json: |-
+    {
+      "serviceName": "{{$.Release.Namespace}}-{{$name}}",
+      {{- if $conf.apiCheckUrls }}
+      "apiCheckUrls": {{toJson $conf.apiCheckUrls}},
+      {{- else}}
+      "apiCheckUrls": null,
+      {{- end }}
+      {{- if $conf.portChecks }}
+      "portChecks": {{toJson $conf.portChecks}},
+      {{- else}}
+      "portChecks": null,
+      {{- end }}
+      "processKeywords": null
+    }
+  {{- end }}

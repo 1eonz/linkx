@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.resource.mapper.DictionaryItemMapper">
+    <select id="getDictionaryItemListByTypeCode" resultType="com.tdtech.cloudcmd.admin.resource.entity.DictionaryItem">
+        SELECT tb_dictionary_item.id, tb_dictionary_item.type_id, tb_dictionary_item.name,
+               tb_dictionary_item.`value`, tb_dictionary_item.sort, tb_dictionary_item.is_default,
+               tb_dictionary_item.status, tb_dictionary_item.gmt_created, tb_dictionary_item.gmt_modified
+        FROM tb_dictionary_type
+                 LEFT JOIN tb_dictionary_item ON tb_dictionary_item.type_id = tb_dictionary_type.id
+        <where>
+            <if test="code!='' and code != null">
+                and tb_dictionary_type.code = #{code}
+            </if>
+            <if test="displayTarget == 0">
+                and tb_dictionary_item.id not in ('1289822872575731144','1289822872575731032')
+            </if>
+        </where>
+
+    </select>
+
+    <insert id="batchInsertDictionaryItem" parameterType="java.util.List">
+        INSERT INTO tb_dictionary_item(id, type_id, name, value, sort)
+        VALUES
+        <foreach collection="dictionaryItemList" item="dictionaryItem" separator=",">
+            (#{dictionaryItem.id},
+            #{dictionaryItem.typeId},
+            #{dictionaryItem.name},
+            #{dictionaryItem.value},
+            #{dictionaryItem.sort})
+        </foreach>
+    </insert>
+</mapper>

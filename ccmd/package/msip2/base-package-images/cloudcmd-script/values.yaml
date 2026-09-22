@@ -1,0 +1,41 @@
+haControl: "true"
+ports:
+  - name: http
+    port: 8080
+  - name: dubbo
+    port: 18080
+container:
+  strategy:
+  replicas: 1
+  vault: true
+  volumes:
+    - pvc: im-store
+      mount_path: /home/linkx/im/
+  envs:
+    env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: safebox:platform/platform-secret#mysql_password
+      - name: REDIS_PASSWORD
+        value: safebox:platform/platform-secret#redis_password
+    env_from:
+      - configMapRef:
+          name: cloudcmd-profile
+  cmd:
+    command: [ 'java' ]
+    args:
+      - -jar
+      - /app/app.jar
+  jvm:
+    xmx: 3g
+    xms: 1g
+  health_check:
+    readinessProbe:
+      tcpSocket:
+        port: 8080
+      initialDelaySeconds: 10
+      periodSeconds: 5
+    livenessProbe:
+      tcpSocket:
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 5

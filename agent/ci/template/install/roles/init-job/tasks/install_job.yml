@@ -1,0 +1,83 @@
+---
+- name: check if the virtualIP file exists
+  stat:
+    path: /data/VirtualIP/virtualIP
+  delegate_to: "{{ first_kube_master }}"
+  register: vip_file
+
+- name: read the VIP configured by the user in the IaaS layer
+  set_fact:
+    vip: "{{ lookup('file', '/data/VirtualIP/virtualIP') }}"
+  when: vip_file.stat.exists
+
+- name: display extracted VIP
+  debug:
+    msg: "{{ vip }}"
+  when: vip_file.stat.exists
+
+- name: set default VIP
+  set_fact:
+    vip: "{{ first_kube_master }}"
+  when: not vip_file.stat.exists
+
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: find init job files
+  find:
+    paths: "{{ deploy_path }}/job"
+    recurse: no
+    patterns:
+      - "*.yaml"
+      - "*.yml"
+  register: job_files
+
+- name: copy init job template file
+  template:
+    src: "{{item.path}}"
+    dest: "{{item.path}}"
+  with_items: "{{ job_files.files }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: deploy job
+  command: "kubectl apply -f  {{ item.path }} "
+  with_items: "{{ job_files.files }}"
+  when: job_files.matched > 0
+
+- name: get job names
+  command: "kubectl get job -n {{ namespace }} -o jsonpath='{$.items[*].metadata.name}'"
+  register: j_names
+  delegate_to: "{{ first_kube_master }}"
+
+- name: display job names
+  debug:
+    msg: "{{ j_names.stdout.split() }}"
+
+- name: check job status
+  command: "kubectl wait --for=condition=complete job/{{ item }} -n {{namespace}} --timeout=600s"
+  with_items: "{{ j_names.stdout.split() }}"
+  delegate_to: "{{ first_kube_master }}"

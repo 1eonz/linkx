@@ -1,0 +1,135 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-auth-service-openapi
+spec:
+  selector:
+    app: cloudcmd-auth-service
+  ports:
+    - port: 9090
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-admin-service-openapi
+spec:
+  selector:
+    app: cloudcmd-admin-service
+  ports:
+    - port: 9090
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-base-service-openapi
+spec:
+  selector:
+    app: cloudcmd-base-service
+  ports:
+    - port: 9090
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-im-jingxin-openapi
+spec:
+  selector:
+    app: cloudcmd-im-jingxin
+  ports:
+    - port: 9090
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-icp-proxy-openapi
+spec:
+  selector:
+    app: cloudcmd-icp-proxy
+  ports:
+    - port: 9090
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-im-openapi-openapi
+spec:
+  selector:
+    app: cloudcmd-im-openapi
+  ports:
+    - port: 9090
+      name: openapi
+      protocol: TCP
+      targetPort: 9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: knife4j-gateway
+  labels:
+    app: knife4j-gateway
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: knife4j-gateway
+      labels:
+        app: knife4j-gateway
+    spec:
+      containers:
+        - name: knife4j-gateway
+          image: imagerepo.td-tech.com:5001/knife4j-gateway
+          imagePullPolicy: Always
+          env:
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: knife4j-gateway
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: knife4j-gateway
+spec:
+  selector:
+    app: knife4j-gateway
+  ports:
+    - port: 2333
+      name: http
+      protocol: TCP
+      targetPort: 8080
+  type: ClusterIP
+  externalIPs:
+    - 10.28.15.61

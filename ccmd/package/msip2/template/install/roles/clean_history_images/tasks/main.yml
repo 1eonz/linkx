@@ -1,0 +1,117 @@
+---
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}" 
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Check if registry:2 image exists on this host
+  shell: "ctr -n k8s.io image list |grep registry:2"
+  register: registry_image
+  ignore_errors: yes  
+
+- name: Check if pause image exists on this host
+  shell: "ctr -n k8s.io image list |grep pause"
+  register: pause_image
+  ignore_errors: yes
+
+- name: import image if no registry or pause image found
+  shell: "ctr -n k8s.io image import /data/install/paas/images/paas.tar"
+  when: registry_image.rc != 0 or pause_image.rc != 0
+  ignore_errors: yes  
+
+- name: Load variables from app-info 
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data  
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get version_id
+  set_fact:
+    version_id: "{{ data['app-info'][0]['version_id'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: make sure backup image list exist
+  stat:
+    path: "{{ backup_images_path }}"
+  register: backup_file_status
+  delegate_to: "{{ first_kube_master }}" 
+  run_once: yes
+
+- name: Run the first find command (directories count excluding "addons")
+  shell: "find /data/install/backup -mindepth 1 -maxdepth 1 -type d ! -name 'addons' ! -name 'IaaS' ! -name 'images' | wc -l"
+  register: result_dirs
+  changed_when: false
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Run the second find command (count of "images.txt" files)
+  shell: "find /data/install/backup -type f -name 'images.txt' | wc -l"
+  register: result_files
+  changed_when: false
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Copy integrity verify shell to path
+  copy:
+    src: "{{ item }}"
+    dest: /home
+    owner: root
+    group: root
+    mode: '0700'
+  with_items:
+    - clean.sh
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Run the clean script
+  shell: /home/clean.sh
+  args:
+    chdir: /home
+  register: script_result
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: result_dirs.stdout == result_files.stdout
+
+- name: Check script result
+  fail:
+    msg: "Script clean.sh failed with return code {{ script_result.rc }}"
+  when: result_dirs.stdout == result_files.stdout and script_result.rc != 0
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- debug:
+    var: script_result.stdout_lines
+  when: result_dirs.stdout == result_files.stdout  
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Wait for registry to reboot
+  pause:
+    minutes: 1
+  when: result_dirs.stdout == result_files.stdout
+
+- name: check registry | Wait for registry pods to run
+  command: "{{ bin_dir }}/kubectl -n platform get po -l app=registry"
+  register: pods_not_ready
+  until: pods_not_ready.stdout.find("1/1")!=-1
+  retries: 30
+  delay: 5
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: result_dirs.stdout == result_files.stdout

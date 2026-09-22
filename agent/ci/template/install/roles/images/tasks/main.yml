@@ -1,0 +1,27 @@
+---
+- name: find tar files
+  find:
+    paths: "{{ images_path }}"
+    patterns: "*.tar"
+  register: tar_files
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes   
+
+- name: import images
+  command: "ctr -n=k8s.io image import {{ item.path }} "
+  with_items: "{{ tar_files.files }}"
+  register: import_output
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes  
+
+- name: Push images to registry
+  shell: echo "{{ item }}" |awk -F ' ' '{print $2}'|xargs -n 1 ctr -n=k8s.io images push -k
+  loop: "{{ import_output.results | map(attribute='stdout_lines') | flatten(1) }}"  
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes   
+  ignore_errors: true
+  register: result  
+  retries: 3 
+  delay: 5  
+  until: result.rc == 0
+

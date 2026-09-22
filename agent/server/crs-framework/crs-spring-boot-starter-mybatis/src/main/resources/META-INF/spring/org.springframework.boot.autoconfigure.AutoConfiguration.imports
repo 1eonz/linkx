@@ -1,0 +1,4 @@
+com.chinasoft.cloud.framework.datasource.config.CrsDataSourceAutoConfiguration
+com.chinasoft.cloud.framework.mybatis.config.CrsMybatisAutoConfiguration
+com.chinasoft.cloud.framework.translate.config.CrsTranslateAutoConfiguration
+com.chinasoft.cloud.framework.utils.IdWorkerAutoConfiguration

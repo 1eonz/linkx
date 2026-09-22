@@ -1,0 +1,21 @@
+POST https://localhost:8080/oauth/v2/loginMessage
+Host: 10.28.12.44:30013
+Connection: keep-alive
+sec-ch-ua: " Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"
+TD-CloudCmd-Token: null
+applicationId: 1289822833455460001
+Accept-Language: zh-cn, zh;q=1, en;q=0,
+sec-ch-ua-mobile: ?0
+Authorization: token null
+Content-Type: application/json
+Accept: application/json;charset=UTF-8
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36
+sec-ch-ua-platform: "Windows"
+X-CloudCmd-AppKey: CDC-1000
+Origin: https://10.28.12.44:30013
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://10.28.12.44:30013/cloudcmd/login
+Accept-Encoding: gzip, deflate, br
+Cookie: oam-user=admin; ICP-X-Refresh-Device-Id=1638150133077; sidebarStatus=1; oam-session=f5754ff826d1b6e336251f6c7a117853d5e35bc2b9a1; oam-token=f5754ff826d1b6e336251f6c7a117853d5e35bc2b9a1

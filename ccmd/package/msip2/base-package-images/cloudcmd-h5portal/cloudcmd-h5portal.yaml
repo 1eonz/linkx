@@ -1,0 +1,90 @@
+---
+# Source: web/templates/cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: linkx
+  name: cloudcmd-h5portal-config
+data:
+  cloudcmd.h5portal.conf: |-
+    server {
+        listen 80;
+        location / {
+            if ($request_method = 'OPTIONS') {
+                return 200;
+            }
+            root   /usr/share/nginx/html;
+            try_files $uri $uri/ /index.html;
+        }
+    
+        location /ai_attachment/ {
+            alias /usr/share/nginx/html/ai_attachment/;
+            autoindex off;
+        }
+    }
+---
+# Source: web/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: linkx
+  name: cloudcmd-h5portal
+  labels:
+    app.kubernetes.io/name: cloudcmd-h5portal
+spec:
+  selector:
+    app: cloudcmd-h5portal
+  ports:
+    - port: 80
+      name: web
+      protocol: TCP
+      targetPort: 80
+---
+# Source: web/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: cloudcmd-h5portal
+  labels:
+    app: cloudcmd-h5portal
+    app.kubernetes.io/name: cloudcmd-h5portal
+    ha-service-stop/enable: "true"
+spec:
+  selector:
+    matchLabels:
+      app: cloudcmd-h5portal
+  replicas: 1
+  template:
+    metadata:
+      name: cloudcmd-h5portal
+      labels:
+        app: cloudcmd-h5portal
+        app.kubernetes.io/name: cloudcmd-h5portal
+        enableRestart: "true"
+      annotations:
+        helm.sh/chart: web-0.1.0
+        app.kubernetes.io/name: cloudcmd-h5portal
+        app.kubernetes.io/instance: cloudcmd-h5portal
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      volumes:
+        - name: cloudcmd-h5portal-config
+          configMap:
+            name: cloudcmd-h5portal-config
+        - name: ai-attachment
+          hostPath:
+            path: /data/agent/data/upload/ai_attachment
+      containers:
+        - name: cloudcmd-h5portal
+          image: imagerepo.td-tech.com:5001/cloudcmd-h5portal:{Version}.{Arch}.{BuildTime}
+          imagePullPolicy: Always
+          ports:
+            - name: web
+              containerPort: 80
+          volumeMounts:
+            - name: cloudcmd-h5portal-config
+              mountPath: /etc/nginx/conf.d/
+            - name: ai-attachment
+              mountPath: /usr/share/nginx/html/ai_attachment/

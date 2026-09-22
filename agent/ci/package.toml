@@ -1,0 +1,36 @@
+[third_imgs_prefix]
+
+[[modules]]
+path = "./ci/db-migrate"
+name = "db-migrate"
+image_name = "imagerepo.td-tech.com:5001/dbjob"
+
+[[modules]]
+path = "./server/crs-gateway"
+name = "crs-gateway"
+image_name = "imagerepo.td-tech.com:5001/agent-gateway"
+
+[[modules]]
+path = "./server/crs-module-infra/crs-module-infra-server"
+name = "crs-module-infra"
+image_name = "imagerepo.td-tech.com:5001/agent-infra"
+
+[[modules]]
+path = "./server/crs-module-system/crs-module-system-server"
+name = "crs-module-system"
+image_name = "imagerepo.td-tech.com:5001/agent-system"
+
+[[modules]]
+path = "./server/crs-module-ai-agent/crs-module-ai-agent-server"
+name = "crs-module-ai-agent"
+image_name = "imagerepo.td-tech.com:5001/agent-ai-agent"
+
+[[modules]]
+path = "./server/tools/mock-ai"
+name = "mock-ai"
+image_name = "imagerepo.td-tech.com:5001/mock-ai"
+
+[[modules]]
+path = "./web"
+name = "web"
+image_name = "imagerepo.td-tech.com:5001/agent-web"

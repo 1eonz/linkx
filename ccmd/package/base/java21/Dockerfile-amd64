@@ -1,0 +1,39 @@
+FROM swr.cn-north-4.myhuaweicloud.com/td_build_env/cnp/openeuler-openjre:21.0.2.4
+
+USER root
+
+ARG https_proxy="http://192.168.195.201:8080"
+ARG http_proxy="http://192.168.195.201:8080"
+ENV http_proxy=${http_proxy} https_proxy=${https_proxy}
+
+# 1. 装包：glibc-locale-source 提供 charmap，gzip+findutils 用于解压
+# 1. 一次性装所有包 + 配置 locale + 配置密码合规
+RUN echo "proxy=http://192.168.195.201:8080" >> /etc/dnf/dnf.conf && \
+    echo "sslverify=0" >> /etc/dnf/dnf.conf && \
+    mkdir -p /etc/curl && \
+    echo "insecure" > /etc/curl/curlrc && \
+    dnf clean all && dnf makecache && \
+    # ★ 一次性装所有包（libpwquality 合并进来）
+    dnf install -y fontconfig glibc-all-langpacks procps-ng zlib libpwquality && \
+    # 密码合规（直接写配置，不重新装包）
+    sed -i 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS    90/' /etc/login.defs && \
+    sed -i 's/^PASS_MIN_DAYS.*/PASS_MIN_DAYS    0/' /etc/login.defs && \
+    echo 'minlen = 8' >> /etc/security/pwquality.conf && \
+    echo 'minclass = 3' >> /etc/security/pwquality.conf && \
+    # locale 配置
+    echo 'LANG=en_US.UTF-8' > /etc/locale.conf && \
+    echo 'LC_ALL=en_US.UTF-8' >> /etc/locale.conf && \
+    mkdir /.local && chmod g+rwX /.local && \
+    # 时区
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo 'Asia/Shanghai' > /etc/timezone && \
+    # 清理（关键！）
+    sed -i '/^sslverify/d' /etc/dnf/dnf.conf && \
+    rm -f /etc/curl/curlrc && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV TZ=Asia/Shanghai
+ENV http_proxy="" https_proxy=""

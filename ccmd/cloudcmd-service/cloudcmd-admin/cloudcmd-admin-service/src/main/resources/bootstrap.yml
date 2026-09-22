@@ -1,0 +1,83 @@
+spring:
+  main:
+    allow-circular-references: true
+  application:
+    name: cloudcmd-admin-service
+  servlet:
+    multipart:
+      max-file-size: 6GB
+      max-request-size: 6GB
+  messages:
+    basename: admin_service,license,common_bean,auth_service
+  cloud:
+    stream:
+      bindings:
+        cloudcmd-cagent:
+          destination: cloudcmd-cagent
+          content-type: application/json
+  datasource:
+    url: jdbc:mysql://${cloudcmd.mysql.host}/icp_res?allowPublicKeyRetrieval=true&useSSL=false&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&
+    username: ${cloudcmd.mysql.username}
+    password: ${cloudcmd.mysql.password}
+    driver-class-name: com.mysql.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: mysql-res
+      connection-test-query: SELECT 1
+      is-auto-commit: true
+      min-idle: 3
+      max-pool-size: 30
+electron:
+  file:
+    path: /opt/cloudcmd/third-apps/electron Setup 1.0.0.exe
+mybatis-plus:
+  type-handlers-package: com.tdtech.cloudcmd
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    map-underscore-to-camel-case: true
+    call-setters-on-nulls: true
+  global-config:
+    db-config:
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+
+dubbo:
+  metrics:
+    protocol: prometheus
+    enable: true
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      system: true
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState

@@ -1,0 +1,149 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: agent
+  name: agent-ai-agent
+  labels:
+    app: agent-ai-agent
+    app.kubernetes.io/name: agent-ai-agent
+    ha-service-stop/enable: "true"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: agent-ai-agent
+      labels:
+        app: agent-ai-agent
+        app.kubernetes.io/name: agent-ai-agent
+        enableRestart: "true"
+      annotations:
+        safebox/enable: "true"
+    spec:
+      volumes:
+        - name: agent-profile
+          configMap:
+            name: agent-profile
+            items:
+              - key: application.yml
+                path: application.yml
+        - name: infra-upload
+          persistentVolumeClaim:
+            claimName: agent-infra-pv-claim
+      containers:
+        - name: agent-ai-agent
+          image: imagerepo.td-tech.com:5001/agent-ai-agent:{{ .Values.version }}.{{ .Values.arch }}
+          command: [ 'java' ]
+          args:
+            - -jar
+            - -Dfile.encoding=UTF-8
+            - -Xmx4096m
+            - -Xms4096m
+            - -XX:+UseZGC
+            - -XX:+ZGenerational
+            - -XX:ZUncommitDelay=300
+            - -XX:+UseLargePages
+            - -XX:+UseTransparentHugePages
+            - -Dserver.port=8080
+            - -Dspring.profiles.active=prod
+            - /app/app.jar
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9090
+          volumeMounts:
+            - name: agent-profile
+              mountPath: /app/config/
+            - name: infra-upload
+              mountPath: /home/agent/upload
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 9090
+            failureThreshold: 12
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 9090
+            failureThreshold: 6
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          env:
+            - name: NACOS_ADDRESS
+              value: nacos.platform:8848
+            - name: NACOS_GROUP
+              value: agent
+            - name: MYSQL_HOST
+              value: cnp-leader.platform.svc
+            - name: MYSQL_PORT
+              value: "3306"
+            - name: MYSQL_USER
+              value: cnp
+            - name: MYSQL_PASSWORD
+              value: safebox:platform/platform-secret#mysql_password
+            - name: REDIS_HOST
+              value: redis.platform.svc
+            - name: REDIS_POST
+              value: "6379"
+            - name: REDIS_PASSWORD
+              value: safebox:platform/platform-secret#redis_password
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka-service.platform.svc.cluster.local:9092
+            - name: cloudcmd.service.name
+              value: agent-ai-agent
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: pod.name
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: agent-ai-agent
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: agent
+  name: agent-ai-agent
+spec:
+  selector:
+    app: agent-ai-agent
+  ports:
+    - port: 8080
+      name: http
+      protocol: TCP
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: agent
+  name: actuator-prometheus-agent-ai-agent
+  annotations:
+    platform.prometheus: "/actuator/prometheus"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+  selector:
+    app: agent-ai-agent

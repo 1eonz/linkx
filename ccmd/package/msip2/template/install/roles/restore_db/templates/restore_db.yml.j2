@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-bis-entrypoint
+  namespace: platform
+data:
+  restore_db.sh: |-
+    #!/bin/bash
+    set -eo pipefail
+    set -e
+    RESTORE_DIR="/restore"
+    MY_SQL="mysql --host=$HOST --port=$PORT --user=$BACKUPUSER --password=$USERPASSWD"
+    DBFILE_LIST="$RESTORE_DIR/database_list.txt"
+    import_sql="$RESTORE_DIR/import_sql.sql"
+    discard_sql="$RESTORE_DIR/discard_sql.sql"
+    old_dblist="$RESTORE_DIR/db_list.sort"
+    old_tablelist="$RESTORE_DIR/table_list.sort"
+    current_dblist="$RESTORE_DIR/current_db_list.sort"
+    current_tablelist="$RESTORE_DIR/current_table_list.sort"
+
+    echo "===== $(date) Prepare: get current dbs & tables ====="
+    $MY_SQL -Nse "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('mysql','performance_schema','information_schema','sys','msip');" | sort > $current_dblist
+    $MY_SQL -Nse "SELECT CONCAT(table_schema,'.',table_name) FROM information_schema.tables WHERE table_schema NOT IN ('mysql','performance_schema','information_schema','sys','msip') AND table_type='BASE TABLE';" | sort > $current_tablelist
+    sort $RESTORE_DIR/db_list.txt > $old_dblist
+    sort $RESTORE_DIR/table_list.txt > $old_tablelist
+    echo "compare extra dbs"
+    comm -13 "$old_dblist" "$current_dblist" > "$RESTORE_DIR/db_extra.txt"
+    echo $(cat $RESTORE_DIR/db_extra.txt)
+    echo "compare extra tables"
+    comm -13 "$old_tablelist" "$current_tablelist" > "$RESTORE_DIR/table_extra.txt"
+    echo $(cat $RESTORE_DIR/table_extra.txt)
+
+    echo "drop extra tables"
+    while read full; do
+      [ -z "$full" ] && continue
+      db=${full%%.*}
+      tb=${full##*.}
+      echo "DROP TABLE $db.$tb"
+      $MY_SQL -e "DROP TABLE $db.$tb"
+    done < "$RESTORE_DIR/table_extra.txt"
+
+    echo "drop extra dbs"
+    while read db; do
+      [ -z "$db" ] && continue
+      echo "DROP DATABASE $db"
+      $MY_SQL -e "DROP DATABASE $db "
+    done < "$RESTORE_DIR/db_extra.txt"
+
+
+    echo "===== $(date) Step 1: Decompress backup data ====="
+    xtrabackup --decompress --target-dir="$RESTORE_DIR"
+
+    echo "===== $(date) Step 2: Prepare backup (apply-log-only) ====="
+    xtrabackup --prepare --apply-log-only --target-dir="$RESTORE_DIR"
+
+    echo "===== $(date) Step 3: Output discard and import sql file ====="
+    echo "SET FOREIGN_KEY_CHECKS=0;" > "$discard_sql"
+    echo "SET GLOBAL super_read_only = OFF;" > "$import_sql"
+    echo "SET GLOBAL read_only = OFF;" >> "$import_sql"
+    echo "SET FOREIGN_KEY_CHECKS=0;" >> "$import_sql"
+    echo "show /restore list $(ls -l /restore)"
+
+    # declare an associative array
+    declare -A DB_MAP
+
+    # loop through dbfiles.txt, format: db.table
+    while IFS= read -r entry; do
+        [ -z "$entry" ] && continue
+
+        DB="$(echo "$entry" | cut -d'.' -f1)"
+        TABLE="$(echo "$entry" | cut -d'.' -f2)"
+
+        DB_MAP[$DB]="${DB_MAP[$DB]} $TABLE"
+    done < "$DBFILE_LIST"
+
+    for DB in "${!DB_MAP[@]}"; do
+        echo "USE ${DB};" >> "$discard_sql"
+        echo "USE ${DB};" >> "$import_sql"
+        for TABLE in ${DB_MAP[$DB]}; do
+            echo "ALTER TABLE ${TABLE} DISCARD TABLESPACE;" >>$discard_sql
+            echo "ALTER TABLE ${TABLE} IMPORT TABLESPACE;" >>$import_sql
+        done
+    done
+    echo "SET FOREIGN_KEY_CHECKS=1;" >> "$discard_sql"
+    echo "SET FOREIGN_KEY_CHECKS=1;" >> "$import_sql"
+    echo "SET GLOBAL super_read_only = ON;" >> "$discard_sql"
+    echo "SET GLOBAL read_only = ON;" >> "$discard_sql"
+
+    echo "===== $(date) Step 4: Execute discard sql file ====="
+    mysql --host=$HOST --port=$PORT --user=$BACKUPUSER --password=$USERPASSWD < $discard_sql
+    echo "discard sql ret:$?"
+    echo "===== $(date) Step 5: Copy idb file to db directory discard sql file ====="
+    BACKUP_DIR=$RESTORE_DIR
+    DATADIR="/var/lib/mysql"
+    while IFS= read -r entry; do
+        [ -z "$entry" ] && continue
+        DB="$(echo "$entry" | cut -d'.' -f1)"
+        TABLE="$(echo "$entry" | cut -d'.' -f2)"
+        mkdir -p "$DATADIR/$DB"
+        echo "[INFO] Restoring $DB.$TABLE"
+        if [ -f "$BACKUP_DIR/$DB/$TABLE.ibd" ]; then
+            cp -f "$BACKUP_DIR/$DB/$TABLE.ibd" "$DATADIR/$DB/$TABLE.ibd"
+            cp -f "$BACKUP_DIR/$DB/$TABLE.cfg" "$DATADIR/$DB/$TABLE.cfg"
+            echo "cp $BACKUP_DIR/$DB/$TABLE.ibd $DATADIR/$DB/$TABLE.ibd"
+            chown 1001:1001 "$DATADIR/$DB/$TABLE.ibd"
+            chown 1001:1001 "$DATADIR/$DB/$TABLE.cfg"
+        else
+            echo "[WARN] Missing IBD file: $BACKUP_DIR/$DB/$TABLE.ibd"
+        fi
+    done < "$DBFILE_LIST"
+

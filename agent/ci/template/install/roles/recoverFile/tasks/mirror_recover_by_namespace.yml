@@ -1,0 +1,27 @@
+---
+# 统一生成事件戳
+- name: rename backup_svc_namespace
+  set_fact:
+    backup_svc_namespace: "{{ backup_namespace }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: recover by namespace======================================================== | {{ backup_svc_namespace }}
+  vars:
+    svc_name: "{{ ser_item.name }}"
+    svc_paths: "{{ ser_item.path }}"
+    svc_namespace: "{{ backup_svc_namespace }}"
+  include_tasks: mirror_recover_by_svc.yml
+  loop: "{{ backup_service }}"
+  loop_control:
+    label: "{{ svc_name }}"
+    loop_var: ser_item
+  register: _restore_namespace
+
+#  升级备份前先临时删除备份目录的文件
+- name:  clear backup mongodbfile
+  shell: rm -rf {{ upgrade_backup_dir }}/{{ backup_svc_namespace }}/mirrorFile/*
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+  when: _restore_namespace is succeeded

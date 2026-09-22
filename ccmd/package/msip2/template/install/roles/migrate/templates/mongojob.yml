@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{item}}-mongo-migrate-{{ job_uid }}
+  namespace: {{platform_namespace}}
+spec:
+  ttlSecondsAfterFinished: 36000
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: migrate    
+      annotations:
+        safebox/enable: "true"
+    spec:
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "4"
+      containers:
+        - name: migrate
+          image: {{image_repo_url}}/flyway:{{flyway_version}}
+          command: 
+          - flyway 
+          - migrate
+          - -X
+          env:
+            - name: FLYWAY_URL
+              value: "jdbc:mongodb://mongodb-0.mongodb-headless.platform:27017,mongodb-1.mongodb-headless.platform:27017,mongodb-2.mongodb-headless.platform:27017/"
+            - name: FLYWAY_USER
+              value: root
+            - name: FLYWAY_PASSWORD
+              value: "safebox:platform/platform-secret#mongo_password"
+            - name: environment
+              value: mongodb
+            - name: FLYWAY_DEFAULT_SCHEMA
+              value: "{{ item|regex_replace('-', '_') }}"              
+            - name: FLYWAY_DETECT_ENCODING
+              value: "true"
+            - name: FLYWAY_LOCATIONS
+              value: filesystem:/flyway/db/migration/{{ item }}/mongo
+            - name: FLYWAY_SQL_MIGRATION_SUFFIXES
+              value: ".js"
+            - name: FLYWAY_BASELINE_ON_MIGRATE
+              value: "true"
+            - name: FLYWAY_IGNORE_MIGRATION_PATTERNS
+              value: "*:missing"
+          volumeMounts:
+            - mountPath: /flyway/db/migration/{{ item }}/mongo
+              name: {{item}}-mongoscript
+            - name: localtime
+              mountPath: /etc/localtime
+      restartPolicy: Never
+      volumes:
+        - name: {{item}}-mongoscript
+          configMap:
+            name: {{item}}-mongoscript-{{job_uid}}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+  backoffLimit: 4

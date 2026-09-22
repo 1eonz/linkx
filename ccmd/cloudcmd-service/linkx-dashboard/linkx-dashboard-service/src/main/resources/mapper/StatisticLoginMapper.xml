@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.dashboard.mapper.StatisticLoginMapper">
+
+    <select id="selectByLoginTimeAndCursor" resultType="com.tdtech.cloudcmd.linkx.dashboard.entity.StatisticLogin">
+        SELECT id, user_id, app_id, client_type, os, browser, screen, login_time, login_result
+        FROM tb_statistic_login
+        WHERE login_time BETWEEN #{startTime} AND #{endTime}
+          AND id > #{lastId}
+        ORDER BY id ASC
+            LIMIT #{pageSize}
+    </select>
+</mapper>

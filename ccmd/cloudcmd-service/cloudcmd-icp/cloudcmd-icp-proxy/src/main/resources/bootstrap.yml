@@ -1,0 +1,120 @@
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    map-underscore-to-camel-case: true
+
+spring.main.web-application-type: servlet
+spring.application.name: cloudcmd-icp-proxy
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://${cloudcmd.mysql.host}/icp_icp?allowPublicKeyRetrieval=true&useSSL=false&allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&
+    username: ${cloudcmd.mysql.username}
+    password: ${cloudcmd.mysql.password}
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: mysql-collabs
+      connection-test-query: SELECT 1
+      connectionTimeout: 30000
+      idleTimeout: 600000
+      maxLifetime: 1800000
+      auto-commit: true
+      minimum-idle: 30
+      maximum-pool-size: 100
+
+spring.messages.basename: license,common_bean
+# 文件上传配置
+spring.servlet.multipart:
+  max-file-size: 100MB        # 单个文件最大大小
+  max-request-size: 200MB     # 总请求最大大小
+  enabled: true               # 启用文件上传
+spring.cloud.stream:
+  default-binder: kafka
+  function:
+    definition: onGlobalConfigChangeEvent;onIcpOnlineStatus;onIcpGisStatus;onIcpConfigChangeEvent
+
+spring.cloud.stream.kafka.bindings:
+  onIcpOnlineStatus-in-0:
+    consumer:
+      configuration:
+        max.poll.records: 50
+        fetch.min.bytes: 102400
+        fetch.max.bytes: 2048000
+        fetch.max.wait.ms: 1000
+  onIcpGisStatus-in-0:
+    consumer:
+      configuration:
+        max.poll.records: 50
+        fetch.min.bytes: 102400
+        fetch.max.bytes: 2048000
+        fetch.max.wait.ms: 1000
+
+spring.cloud.stream.bindings:
+  onGlobalConfigChangeEvent-in-0:
+    destination: cloudcmd-base-global
+    content-type: application/json
+    group: ${spring.application.name}-global-config
+  onIcpConfigChangeEvent-in-0:
+    destination: cloudcmd-icp-config
+    content-type: application/json
+    group: ${spring.application.name}-icp-config
+  onIcpOnlineStatus-in-0:
+    destination: icp-online-status
+    content-type: application/json
+    group: ${spring.application.name}-online-status
+    consumer:
+      batch-mode: true
+  onIcpGisStatus-in-0:
+    destination: icp-gis-status
+    content-type: application/json
+    group: ${spring.application.name}-gis-status
+    consumer:
+      batch-mode: true
+cloudcmd:
+  im:
+    jinxing:
+      coop:
+        httpclient:
+          enabled: true
+
+dubbo:
+  metrics:
+    protocol: prometheus
+    enable: true
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      system: true
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState

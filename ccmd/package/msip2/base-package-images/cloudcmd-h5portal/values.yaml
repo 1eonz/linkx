@@ -1,0 +1,32 @@
+haControl: "true"
+ports:
+  - name: web
+    port: 80
+container:
+  strategy:
+  replicas: 1
+  vault: false
+  volumes:
+    - name: ai-attachment
+      hostPath:
+        path: /data/agent/data/upload/ai_attachment
+      mountPath: /usr/share/nginx/html/ai_attachment/
+  config_map:
+    - name: config
+      mount_path: /etc/nginx/conf.d/
+      data:
+        cloudcmd.h5portal.conf: |-
+          server {
+              listen 80;
+              location / {
+                  if ($request_method = 'OPTIONS') {
+                      return 200;
+                  }
+                  root   /usr/share/nginx/html;
+                  try_files $uri $uri/ /index.html;
+              }
+              location /ai_attachment/ {
+                  alias /usr/share/nginx/html/ai_attachment/;
+                  autoindex off;
+              }
+          }

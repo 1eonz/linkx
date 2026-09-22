@@ -1,0 +1,15 @@
+order: 50600
+rollback_order: 50600
+name: after_action
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_upgrade: true
+always_exec_rollback: true
+phases:
+  - install
+  - upgrade
+  - patch_install
+  - rollback
+  - patch_rollback
+  

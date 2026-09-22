@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.dashboard.mapper.StaticTaskResponseMapper">
+
+    <resultMap id="WatermarkResultMap" type="com.tdtech.cloudcmd.linkx.dashboard.support.SyncWatermark">
+        <result column="wm_time" property="time"/>
+        <result column="wm_id" property="id"/>
+    </resultMap>
+
+    <!-- 批量 upsert：按 uniq_response_id 去重 -->
+    <insert id="upsertBatch" parameterType="java.util.List">
+        INSERT INTO tb_static_task_response (
+            id, task_id, response_user_id, response_user_name, response_user_department_id,
+            response_user_department_name, response_coop_user_id, response_coop_user_name,
+            response_time, response_msg_seqid, response_id
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.taskId}, #{item.responseUserId}, #{item.responseUserName},
+                #{item.responseUserDepartmentId}, #{item.responseUserDepartmentName},
+                #{item.responseCoopUserId}, #{item.responseCoopUserName},
+                #{item.responseTime}, #{item.responseMsgSeqid}, #{item.responseId}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            task_id = VALUES(task_id),
+            response_user_id = VALUES(response_user_id),
+            response_user_name = VALUES(response_user_name),
+            response_user_department_id = VALUES(response_user_department_id),
+            response_user_department_name = VALUES(response_user_department_name),
+            response_coop_user_id = VALUES(response_coop_user_id),
+            response_coop_user_name = VALUES(response_coop_user_name),
+            response_time = VALUES(response_time),
+            response_msg_seqid = VALUES(response_msg_seqid)
+    </insert>
+
+    <!-- 兜底回查水位线：(response_time, response_id) DESC LIMIT 1 -->
+    <select id="selectMaxWatermark" resultMap="WatermarkResultMap">
+        SELECT response_time AS wm_time, response_id AS wm_id
+        FROM tb_static_task_response
+        ORDER BY response_time DESC, response_id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByCursor" resultType="com.tdtech.cloudcmd.linkx.dashboard.entity.StaticTaskResponse">
+        SELECT id, task_id, response_user_id, response_user_name, response_user_department_id,
+               response_user_department_name, response_coop_user_id, response_coop_user_name,
+               response_time, response_msg_seqid, response_id
+        FROM tb_static_task_response
+        WHERE response_time &gt;= #{startTime} AND response_time &lt; #{endTime}
+        <if test="deptIds != null and deptIds.size() > 0">
+            AND response_user_department_id IN
+            <foreach collection="deptIds" item="deptId" open="(" separator="," close=")">
+                #{deptId}
+            </foreach>
+        </if>
+        <if test="lastTime != null">
+            AND (response_time &lt; #{lastTime} OR (response_time = #{lastTime} AND id &lt; #{lastId}))
+        </if>
+        ORDER BY response_time DESC, id DESC
+        LIMIT #{pageSize}
+    </select>
+</mapper>

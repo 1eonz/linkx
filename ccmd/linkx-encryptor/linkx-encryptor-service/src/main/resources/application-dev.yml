@@ -1,0 +1,60 @@
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+# SDK 配置（支持环境变量覆盖）
+sdk:
+  env: ${SDK_ENV:dev}
+  sm:
+    host: ${SM_HOST:http://docker.scm}
+    secret: ${SM_SECRET:secret_dev}
+  http-connector: ${HTTP_CONNECTOR:false}
+  bz-server-id: ${BZ_SERVERID:bz_server.oo}
+  bz-device-id: ${BZ_DEVICEID:1A-2B-3C-4D-5E-6F}
+  encrypt-type: ${ENCRYPT_TYPE:BOUNCYCASTLE}  # 开发环境默认使用 BOUNCYCASTLE
+  sm4-key: ${SM4_KEY:1234567890123456}  # SM4 密钥（16字节）
+  sm2-public-key: ${SM2_PUBLIC_KEY:}  # SM2 公钥（Base64，可选）
+  sm2-private-key: ${SM2_PRIVATE_KEY:}  # SM2 私钥（Base64，可选）
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      system: true
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+
+dubbo:
+  metrics:
+    protocol: prometheus
+    enable: true

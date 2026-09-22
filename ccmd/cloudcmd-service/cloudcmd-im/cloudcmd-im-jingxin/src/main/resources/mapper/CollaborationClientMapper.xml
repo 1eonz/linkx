@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CollaborationClientMapper">
+    <select id="selectClientPage"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationClient">
+        select id, client_id, client_secret, client_name, client_type, remark,
+               status, token_time, refresh_token_time
+        from tb_collaboration_client
+        <where>
+            <if test="client.clientName != null and client.clientName != ''">
+                AND client_name LIKE concat('%',#{client.clientName},'%')
+            </if>
+        </where>
+    </select>
+    <select id="selectClientByNameAndSecret"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationClient">
+        select id, client_id, client_secret, client_name, client_type, remark,
+               status, token_time, refresh_token_time
+        from tb_collaboration_client
+        <where>
+            <if test="clientId != null and clientId != ''">
+                AND client_id = #{clientId}
+            </if>
+            <if test="clientSecret != null and clientSecret != ''">
+                AND client_secret = #{clientSecret}
+            </if>
+        </where>
+    </select>
+</mapper>

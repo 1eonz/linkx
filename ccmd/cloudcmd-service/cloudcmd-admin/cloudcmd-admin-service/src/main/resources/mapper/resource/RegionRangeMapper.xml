@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.resource.mapper.RegionRangeMapper">
+
+    <select id="getRegionByIdOrParentId" resultType="com.tdtech.cloudcmd.admin.resource.entity.RegionRange" parameterType="java.lang.Long">
+        select a.id, a.gcs, a.category, a.code, a.name, a.short_name, a.polygon, a.parent_id,
+               a.full_path, a.full_name, a.level, a.sort, a.style, a.remark, a.status,
+               a.gmt_created, a.creator, a.gmt_modified
+        from tb_region_range a
+        where a.status = 0 and (
+         a.id = #{parentId} or a.parent_id = #{parentId}
+        )
+    </select>
+
+
+    <select id="getRegionByCode" resultType="java.lang.Long">
+        select count(1) as cou from tb_region_range a where a.status = 0 and code = #{code}
+    </select>
+
+
+    <select id="getRegionByOrgId" resultType="com.tdtech.cloudcmd.admin.resource.entity.RegionRange">
+        select b.id, b.gcs, b.category, b.code, b.name, b.short_name, b.polygon, b.parent_id,
+               b.full_path, b.full_name, b.level, b.sort, b.style, b.remark, b.status,
+               b.gmt_created, b.creator, b.gmt_modified
+        from tb_region_org_relation a
+        inner join tb_region_range b on a.region_id = b.id and a.status = 0 and b.status = 0
+        where a.org_id = #{orgId}
+    </select>
+
+
+</mapper>

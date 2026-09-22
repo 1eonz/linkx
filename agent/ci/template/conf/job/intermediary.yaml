@@ -1,0 +1,114 @@
+---
+# Source: mediary/templates/cm.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: agent
+  name: im-job-scripts
+data:
+  init.sh: |-
+    #!/bin/bash
+    set -euo pipefail
+    cd "$(dirname "$0")" || exit 1
+    status_code=1
+    for file in *.json ;do
+      echo "Processing $file..."
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" http://intermediary-service.platform.svc.cluster.local:8080/health/services -X POST -d "@$file")
+      if [ "$status_code" = "200" ] || [ "$status_code" = "201" ]; then
+          echo "$file status code is $status_code"
+      else
+          echo "$file upstream add failed!status_code:$status_code"
+          echo "file: ${file} json:""@$file"
+          exit 1
+      fi
+    done
+  agent-ai-agent.json: |-
+    {
+      "serviceName": "agent-agent-ai-agent",
+      "apiCheckUrls": null,
+      "portChecks": [
+        {
+          "checkSlave": false,
+          "enabled": true,
+          "host": "agent-ai-agent.agent.svc.cluster.local",
+          "port": 8080}],
+      "processKeywords": null
+    }
+  agent-gateway.json: |-
+    {
+      "serviceName": "agent-agent-gateway",
+      "apiCheckUrls": null,
+      "portChecks": [
+        {
+          "checkSlave": false,
+          "enabled": true,
+          "host": "agent-gateway.agent.svc.cluster.local",
+          "port": 8080}
+      ],
+      "processKeywords": null
+    }
+  agent-infra.json: |-
+    {
+      "serviceName": "agent-agent-infra",
+      "apiCheckUrls": null,
+      "portChecks": [
+        {
+          "checkSlave": false,
+          "enabled": true,
+          "host": "agent-infra.agent.svc.cluster.local",
+          "port": 8080
+        }
+      ],
+      "processKeywords": null
+    }
+  agent-system.json: |-
+    {
+      "serviceName": "agent-agent-system",
+      "apiCheckUrls": null,
+      "portChecks": [
+        {
+          "checkSlave": false,
+          "enabled": true,
+          "host": "agent-system.agent.svc.cluster.local",
+          "port": 8080
+        }],
+      "processKeywords": null
+    }
+  agent-web.json: |-
+    {
+      "serviceName": "agent-agent-web",
+      "apiCheckUrls": null,
+      "portChecks": [
+        {
+          "checkSlave": false,
+          "enabled": true,
+          "host": "agent-web.agent.svc.cluster.local",
+          "port": 8081}
+      ],
+      "processKeywords": null
+    }
+---
+# Source: mediary/templates/job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: imjob-{{ .Values.now }}
+  namespace: agent
+spec:
+  template:
+    spec:
+      containers:
+        - name: curl
+          image: imagerepo.td-tech.com:5001/openeuler:22.03SP3.0
+          command:
+            - "sh"
+            - "/home/init.sh"
+          volumeMounts:
+            - mountPath: /home
+              name: im-job-scripts
+      restartPolicy: Never
+      volumes:
+        - configMap:
+            name: im-job-scripts
+          name: im-job-scripts
+  backoffLimit: 2

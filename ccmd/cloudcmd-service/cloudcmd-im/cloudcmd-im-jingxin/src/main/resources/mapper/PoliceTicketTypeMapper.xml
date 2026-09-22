@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.PoliceTicketTypeMapper">
+
+    <select id="selectByTag" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.PoliceTicketType">
+        SELECT id, tag, creator, creator_id, gmt_created
+        FROM icp_collabs.tb_police_ticket_type
+        WHERE tag = #{tag}
+    </select>
+</mapper>

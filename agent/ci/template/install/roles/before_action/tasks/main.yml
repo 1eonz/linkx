@@ -1,0 +1,11 @@
+- name: do upgrade_pre_shell
+  include_tasks: upgrade_pre_shell.yml
+  when:
+    - phase=="upgrade" or phase == "patch_install"
+    - inventory_hostname == first_kube_master
+
+- name: do degrade_pre_shell
+  include_tasks: degrade_pre_shell.yml
+  when:
+    - phase=="rollback" or phase == "patch_rollback"
+    - inventory_hostname == first_kube_master

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.offlinemap.repo.MapMapper">
+
+    <select id="getOldestMap" resultType="com.tdtech.cloudcmd.admin.offlinemap.repo.OfMap">
+        SELECT id, name, icon, status, type, activation, created, configuration, map_type, display_type
+        FROM tb_map
+        ORDER BY created ASC
+        LIMIT 1
+    </select>
+</mapper>

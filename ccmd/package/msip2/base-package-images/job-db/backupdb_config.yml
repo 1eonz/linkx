@@ -1,0 +1,30 @@
+# 模板文件，业务需要可获取后进行修改适配自己升级的数据备份恢复功能，文件命名不可修改
+db_backup:
+  databases:
+    - name: "icp_collabs"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "icp_icp"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "icp_res"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "linkx_auth"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "linkx_dashboard"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "linkx_third"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "linkx_node"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "linkx_open"
+      blacklist_tables: []
+      whitelist_tables: []
+    - name: "linkx_base"
+      blacklist_tables: []
+      whitelist_tables: []

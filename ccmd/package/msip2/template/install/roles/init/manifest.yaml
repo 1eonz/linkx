@@ -1,0 +1,15 @@
+order: 50050
+rollback_order: 50050
+name: init
+error_ignore: false
+gather_facts: false
+always_exec_upgrade: true
+always_exec_rollback: true
+handler_host: kube_control_plane
+phases:
+  - install
+  - upgrade
+  - rollback  
+  - patch_install 
+  - patch_rollback
+

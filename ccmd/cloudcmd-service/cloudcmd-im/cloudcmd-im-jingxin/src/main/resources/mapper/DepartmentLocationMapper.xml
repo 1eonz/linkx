@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.DepartmentLocationMapper">
+
+    <select id="selectPageByDepartmentName" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.DepartmentLocation">
+        SELECT id, department_name, department_code, location, create_time, update_time FROM tb_department_location
+        <where>
+            <if test="departmentName != null and departmentName != ''">
+                AND department_name LIKE CONCAT('%', #{departmentName}, '%')
+            </if>
+            <if test="orgIds != null and orgIds.size() > 0">
+                AND department_code IN
+                <foreach collection="orgIds" item="orgId" open="(" separator="," close=")">
+                    #{orgId}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY create_time ASC
+    </select>
+
+    <select id="countByDepartmentId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM tb_department_location
+        WHERE department_code = #{departmentCode}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+</mapper>

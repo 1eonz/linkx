@@ -1,0 +1,90 @@
+- name: Get total node count
+  ansible.builtin.set_fact:
+    total_nodes: "{{ groups['all'] | length }}"
+  run_once: true
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Show total number of nodes
+  ansible.builtin.debug:
+    msg: "Inventory 总节点数: {{ total_nodes }}"
+  delegate_to: "{{ first_kube_master }}"
+
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Set file restore path for rollback
+  set_fact:
+    file_restore_path: "{{ upgrade_backup_dir }}/{{ namespace }}/file"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: phase == "rollback"
+
+- name: Set file restore path for patch_rollback
+  set_fact:
+    file_restore_path: "{{ upgrade_backup_dir }}/patch/{{ namespace }}/file"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: phase == "patch_rollback"
+
+- name: Check if restore target directory exists and has backup data
+  stat:
+    path: "{{ file_restore_path }}"
+  register: restore_dir_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+
+# 1 版本宿主机文件回退
+- name: 1 recover backup file (host machine)
+  include_tasks: recover_backup_file_host.yml
+  register: recover_result
+  when:
+    - total_nodes | int == 1
+    - restore_dir_status.stat.exists
+
+## 2 根据标签找到POD，进入POD内部再进行文件恢复-----功能已验证，不适用冷备场景（如：主备）
+#- name: 2 recover backup file (mirror)
+#  include_tasks: recover_backup_file_mirror.yml
+
+# 1.1/2.1 临时文件删除 1/2步骤文件备份删除
+- name: delete backup file
+  shell: rm -rf {{ file_restore_path }}/*
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+  when:
+    - recover_result is succeeded
+    - total_nodes | int == 1
+    - restore_dir_status.stat.exists
+
+# 3 业务网元 通过共享pod恢复
+- name: 3 recover backup file (Shared Pod)
+  include_tasks: recover_backup_file_sharedPod.yml
+  when:
+    - phase == "rollback" or phase == "patch_rollback"
+    - total_nodes | int > 1
+    - restore_dir_status.stat.exists
+

@@ -1,0 +1,2 @@
+com.chinasoft.cloud.framework.env.config.CrsEnvWebAutoConfiguration
+com.chinasoft.cloud.framework.env.config.CrsEnvRpcAutoConfiguration

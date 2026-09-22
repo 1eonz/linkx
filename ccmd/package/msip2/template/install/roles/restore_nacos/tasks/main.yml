@@ -1,0 +1,3 @@
+# backup_nacos/tasks/main.yml
+- include_tasks: restore_nacos_db.yml
+  when: phase == "patch_rollback"

@@ -1,0 +1,92 @@
+---
+- name: check if the virtualIP file exists
+  stat:
+    path: /data/VirtualIP/virtualIP
+  delegate_to: "{{ first_kube_master }}"
+  register: vip_file
+
+- name: read the VIP configured by the user in the IaaS layer
+  set_fact:
+    vip: "{{ lookup('file', '/data/VirtualIP/virtualIP') }}"
+  when: vip_file.stat.exists
+
+- name: display extracted VIP
+  debug:
+    msg: "{{ vip }}"
+  when: vip_file.stat.exists
+
+- name: set default VIP
+  set_fact:
+    vip: "{{ first_kube_master }}"
+  when: not vip_file.stat.exists
+
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: find midware files
+  find:
+    paths: "{{ deploy_path }}/midware"
+    recurse: no
+    patterns:
+      - "*.yaml"
+      - "*.yml"
+  register: deploy_files
+
+- name: midware apply
+  command: "kubectl apply -f  {{ item.path }} "
+  with_items: "{{ deploy_files.files }}"
+  delegate_to: "{{ first_kube_master }}"
+  when: deploy_files.matched > 0
+
+- name: get deployment names
+  command: "kubectl get deployment -n {{ namespace }} -o jsonpath='{$.items[*].metadata.name}'"
+  register: dep_names
+  delegate_to: "{{ first_kube_master }}"
+
+- name: display deployment names
+  debug:
+    msg: "{{ dep_names.stdout.split() }}"
+
+- name: check deployment status
+  command: "kubectl rollout status  deployment/{{ item }} -n {{namespace}} --timeout=600s"
+  with_items: "{{ dep_names.stdout.split() }}"
+  delegate_to: "{{ first_kube_master }}"
+  when: dep_names.stdout.split() | length > 0
+
+- name: get statefulset names
+  command: "kubectl get statefulset -n {{ namespace }} -o jsonpath='{$.items[*].metadata.name}'"
+  register: ss_names
+  delegate_to: "{{ first_kube_master }}"
+
+- name: display statefulset names
+  debug:
+    msg: "{{ ss_names.stdout.split() }}"
+
+- name: check statefulset status
+  command: "kubectl rollout status  statefulset/{{ item }} -n {{namespace}} --timeout=600s"
+  with_items: "{{ ss_names.stdout.split() }}"
+  delegate_to: "{{ first_kube_master }}"
+  when: ss_names.stdout.split() | length > 0

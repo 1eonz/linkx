@@ -1,0 +1,2 @@
+com.chinasoft.cloud.framework.redis.config.CrsRedisAutoConfiguration
+com.chinasoft.cloud.framework.redis.config.CrsCacheAutoConfiguration

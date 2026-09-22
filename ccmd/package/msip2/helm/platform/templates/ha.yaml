@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{.Values.namespace}}
+  name: ha-mediary-conf-{{.Values.namespace}}
+  labels:
+    type: ha-mediary-conf
+data:
+  ha-mediary-conf-{{.Values.namespace}}: |
+    - namespace: {{.Values.namespace}}
+      failCount: 24

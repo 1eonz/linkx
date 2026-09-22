@@ -1,0 +1,139 @@
+---
+# 获取所需参数
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Define variables
+  set_fact:
+    cubefs_api_endpoint_phrase: "http://cubefs-tool-manager:8080/cubefs/pv/phrase"
+    cubefs_api_endpoint_backup: "http://cubefs-tool-manager:8080/cubefs/pv/backup"
+    # path 在补丁场景为 pim/patch，需去掉斜杠才能作为 Job/文件名
+    job_suffix: "{{ path | replace('/', '-') }}"
+    cubefs_tool_service: "cubefs-tool-manager"
+    cubefs_tool_port: "8080"
+    # 使用当前角色路径，避免写死 webdc
+    cubefs_job_tmp_dir: "{{ role_path }}/templates/tmp"
+
+- name: Load backup file  config
+  include_vars: "{{ app_file_backup_config_path }}"
+
+#Jinja2 在 playbook 中转换  请求参数
+- name: Transform config to CubeFS format (inline)
+  set_fact:
+    cubefs_ns_list: >-
+      [
+      {% for ns in file_backup %}
+        {
+          "ns": "{{ ns.namespace }}",
+          "pvcs": [
+          {% for pvc in ns.pvc %}
+            {
+              "name": "{{ pvc.name }}",
+              "size": "{{ pvc_sizes[pvc.name] | default('10Gi') }}",
+              "path": {{ pvc.path | default([]) | to_json }}
+            }{{ "," if not loop.last else "" }}
+          {% endfor %}
+          ]
+        }{{ "," if not loop.last else "" }}
+      {% endfor %}
+      ]
+
+- name: Build final request body
+  set_fact:
+    cubefs_request_body:
+      ns: "{{ cubefs_ns_list }}"
+
+- name: Debug request body
+  debug:
+    var: cubefs_request_body
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Ensure tmp directory exists on target node  | {{ cubefs_request_body }}
+  file:
+    path: "{{ cubefs_job_tmp_dir }}"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Generate Job YAML from template
+  template:
+    src: cubefs-backup-job.yml.j2
+    dest: "{{ cubefs_job_tmp_dir }}/cubefs-backup-job-{{ job_suffix }}.yml"
+  delegate_to: "{{ first_kube_master }}"
+
+
+- name: Delete existing Job if exists
+  command: >
+    kubectl delete job cubefs-backup-job-{{ job_suffix }} -n {{ platform_namespace }} --ignore-not-found=true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Apply CubeFS API Job
+  command: "{{ bin_dir }}/kubectl apply -f {{ cubefs_job_tmp_dir }}/cubefs-backup-job-{{ job_suffix }}.yml -n {{ platform_namespace }}"
+  register: apply_result
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Wait for Job completion  | {{ cubefs_api_endpoint_backup }}  {{ cubefs_api_endpoint_phrase }}
+  command: >
+    kubectl wait --for=condition=complete
+    job/cubefs-backup-job-{{ job_suffix }}
+    -n {{ platform_namespace }}
+    --timeout=300s
+  register: job_status
+  ignore_errors: yes
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Get Job logs
+  command: >
+    kubectl logs job/cubefs-backup-job-{{ job_suffix }}
+    --namespace {{ platform_namespace }}
+    --tail 100
+  register: job_logs
+  changed_when: false
+
+- name: Parse backup status from logs
+  set_fact:
+    backup_status: "{{ job_logs.stdout | regex_findall('Parsed STATUS: (\\d+)') | last | default('0', true) }}"
+    success_keyword_found: "{{ 'Backup completed successfully' in job_logs.stdout }}"
+
+- name: Determine final status
+  set_fact:
+    is_backup_successful: "{{ backup_status == '3' and success_keyword_found }}"
+
+- name: Show parsed status
+  debug:
+    msg: |
+      Parsed STATUS: {{ backup_status }}
+      Success keyword: {{ success_keyword_found }}
+      Final result: {{ 'SUCCESS' if is_backup_successful else 'FAILURE' }}
+
+- name: Assert backup success
+  assert:
+    that:
+      - is_backup_successful
+    fail_msg: "Backup failed! Status: {{ backup_status }}"
+    success_msg: "Backup completed successfully!"

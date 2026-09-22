@@ -1,0 +1,61 @@
+---
+# 老升新平台：为当前业务包（及未绑定项）自动绑定 VIP；新装业务包 install/upgrade 均会执行
+- name: legacy business vip bind | copy sync script
+  copy:
+    src: sync_business_vip_bind_legacy.sh
+    dest: "{{ vip_config_path }}/sync_business_vip_bind_legacy.sh"
+    mode: "0755"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: legacy business vip bind | run sync script
+  environment:
+    VIP_CFG: "{{ vip_config_file }}"
+    BIND_CFG: "{{ service_bind_config_file }}"
+    LEGACY_VIP_FILE: "{{ legacy_vip_file }}"
+    BACKUP_META: "{{ saas_vip_backup_meta }}"
+    BACKUP_MARKER: "{{ saas_vip_backup_marker }}"
+    LEGACY_VIP_BACKUP: "{{ legacy_vip_backup_dir }}"
+    INSTALL_ROOT: "{{ business_vip_install_root }}"
+    VIP_SCAN_REL: "{{ business_vip_scan_relpath }}"
+    BIND_API: "{{ bind_vip_api_url }}"
+    EXCLUDE_APPS: "{{ business_vip_exclude_apps | join(' ') }}"
+    CURRENT_APP: "{{ business_vip_current_app | trim }}"
+    BIND_RETRY: "{{ business_vip_bind_retry }}"
+    MSIPTOOL_WAIT: "{{ business_vip_msiptool_wait }}"
+  shell: |
+    SCRIPT="{{ vip_config_path }}/sync_business_vip_bind_legacy.sh"
+    if [ ! -x "${SCRIPT}" ]; then
+      chmod +x "${SCRIPT}" 2>/dev/null || true
+    fi
+    if [ -f "${SCRIPT}" ]; then
+      bash "${SCRIPT}"
+    else
+      echo "[sync_business_vip_bind] ERROR: script not found ${SCRIPT}"
+      exit 1
+    fi
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+  register: legacy_business_vip_bind_result
+
+- name: legacy business vip bind | log script output
+  debug:
+    msg: "{{ legacy_business_vip_bind_result.stdout_lines | default([]) }}"
+  when:
+    - legacy_business_vip_bind_result is defined
+    - legacy_business_vip_bind_result.stdout_lines is defined
+    - legacy_business_vip_bind_result.stdout_lines | length > 0
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: legacy business vip bind | warn on bind failure in script output
+  debug:
+    msg: "WARNING: business legacy vip bind reported failures, check MSIPTool and vip templates. output={{ legacy_business_vip_bind_result.stdout | default('') }}"
+  when:
+    - legacy_business_vip_bind_result is defined
+    - legacy_business_vip_bind_result.stdout is defined
+    - ("bind failed" in (legacy_business_vip_bind_result.stdout | default(''))) or ("template missing" in (legacy_business_vip_bind_result.stdout | default('')))
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true

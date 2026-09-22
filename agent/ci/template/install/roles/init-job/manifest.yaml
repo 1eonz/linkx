@@ -1,0 +1,11 @@
+order: 50401
+rollback_order: 50401
+name: init-job
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_upgrade: true
+always_exec_rollback: true
+phases:
+  - install
+  - upgrade

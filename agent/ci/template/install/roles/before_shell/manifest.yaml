@@ -1,0 +1,14 @@
+order: 50100
+rollback_order: 50100
+name: before_shell
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_upgrade: true
+always_exec_rollback: true
+phases:
+  - install
+  - upgrade
+  - patch_install 
+  - rollback
+  - patch_rollback

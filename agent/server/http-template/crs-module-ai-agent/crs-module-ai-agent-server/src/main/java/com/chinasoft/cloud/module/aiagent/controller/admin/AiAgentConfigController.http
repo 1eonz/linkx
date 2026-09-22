@@ -1,0 +1,64 @@
+### 新增智能体配置
+POST https://10.28.64.80:30014/admin-api/aiagent/management
+Content-Type: application/json
+tenant-id: 1
+tag: Yunai.local
+
+{
+  "name": "mock",
+  "url": "http://mock-ai:8080/ask",
+  "token": "23456789",
+  "priority": 0,
+  "avatar": "qwz3exrctvyunimo",
+  "desc": "desc"
+}
+
+### 更新智能体配置
+PUT https://10.28.64.80:30014/admin-api/aiagent/management/1935527541758324737
+Content-Type: application/json
+tenant-id: 1
+tag: Yunai.local
+
+{
+  "name": "223",
+  "url": "223",
+  "token": "323",
+  "priority": 0,
+  "avatar": "12345"
+}
+
+### 删除智能体配置
+DELETE https://10.28.64.80:30014/admin-api/aiagent/management/1935901359735123970
+tenant-id: 1
+tag: Yunai.local
+
+### 分页查询智能体配置
+GET https://10.28.64.80:30014/admin-api/aiagent/management/page?pageSize=10&pageNum=1
+tenant-id: 1
+tag: Yunai.local
+
+### 根据ID查询智能体配置
+GET https://10.28.64.80:30014/admin-api/aiagent/management/byid/1935528227661246466
+tenant-id: 1
+tag: Yunai.local
+
+### 查询所有智能体配置
+GET https://10.28.64.80:30014/admin-api/aiagent/management/all
+tenant-id: 1
+tag: Yunai.local
+
+### 查询记录
+GET https://10.28.64.80:30014/admin-api/aiagent/management/record?pageSize=10&pageNum=1
+tenant-id: 1
+tag: Yunai.local
+
+### 根据ID删除记录
+DELETE https://10.28.64.80:30014/admin-api/aiagent/management/record/1
+tenant-id: 1
+tag: Yunai.local
+
+### export
+GET https://10.28.64.80:30014/admin-api/aiagent/management/record/export?ids=1935912914577076226,1935937621189660674
+tenant-id: 1
+
+> @saveAs=ai_agent_records.xlsx

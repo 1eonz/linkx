@@ -1,0 +1,4 @@
+Application Version: ${crs.info.version}
+Spring Boot Version: ${spring-boot.version}
+Running on: ${pod.name} ${pod.ip}
+

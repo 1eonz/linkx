@@ -1,0 +1,84 @@
+---
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: backup greatsql | check size of /data partition
+  shell: df -h -T -BG /data | awk 'NR==2{print $5}' | sed 's/G//'
+  register: data_partition
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: yes
+
+- name: backup greatsql | Assert that /data partition size is meet minimum requirements
+  ansible.builtin.assert:
+    that:
+      - data_partition.stdout | int >= data_partition_remaining_space
+    fail_msg: "/data partition requires at least {{ data_partition_remaining_space }}GB of space."
+  run_once: yes
+  when: backdoor is not defined
+  delegate_to: "{{ first_kube_master }}"
+
+- name: set database container name
+  set_fact:
+    db_container: "greatsql-standalone"
+  when:
+    - model=="standalone"
+
+- name: set database container name
+  set_fact:
+    db_container: "mysql"
+  when:
+    - model=="cluster"
+
+- name: backup mongodb
+  include_tasks: backup_mongodb.yml
+  when:
+    - db_backup.enabled | default(true) | bool
+    - phase=="upgrade" or phase == "patch_install"
+    - inventory_hostname == first_kube_master
+
+- name: backup db
+  include_tasks: backup_db.yml
+  when:
+    - db_backup.enabled | default(true) | bool
+    - phase=="upgrade" or phase == "patch_install"
+    - inventory_hostname == first_kube_master
+
+# 补丁安装：备份完成后记录表清单，供回滚时删除新增表（方案2）
+- name: snapshot tables before patch
+  include_tasks: snapshot_tables.yml
+  when:
+    - db_backup.enabled | default(true) | bool
+    - phase == "patch_install"
+    - inventory_hostname == first_kube_master
+
+# 补丁安装：将 *.sql.rollback 副本存到 DB 备份目录，避免回滚 PRE_INSTALL 覆盖后找不到脚本
+- name: stash flyway rollback scripts for patch
+  include_tasks: stash_flyway_rollback.yml
+  when:
+    - db_backup.enabled | default(true) | bool
+    - phase == "patch_install"
+    - inventory_hostname == first_kube_master

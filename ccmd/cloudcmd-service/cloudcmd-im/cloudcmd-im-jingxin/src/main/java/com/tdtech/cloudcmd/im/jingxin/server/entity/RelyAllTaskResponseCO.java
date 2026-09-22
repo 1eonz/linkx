@@ -1,0 +1,87 @@
+package com.tdtech.cloudcmd.im.jingxin.server.entity;
+
+import lombok.Data;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import java.util.Date;
+
+/**
+ * @author cangPeng
+ * @date 2025/2/26
+ */
+@Valid
+@Data
+public class RelyAllTaskResponseCO {
+
+    /**
+     * 答复人ID
+     */
+    private Long userId;
+
+    /**
+     * 答复人姓名
+     */
+    private String userName;
+
+    /**
+     * 答复内容
+     */
+    private String content;
+
+    /**
+     * 答复人部门ID
+     */
+    private Long departmentId;
+
+    /**
+     * 答复人部门名称
+     */
+    private String departmentName;
+
+    /**
+     * 答复人在群组昵称
+     */
+    private String userNick;
+
+    /**
+     * IM消息序列号
+     */
+    private Long seqid;
+
+    /**
+     * IM附件ID
+     */
+    private String msgFileId;
+
+    /**
+     * 是否删除
+     */
+    private Integer isDeleted;
+
+    /**
+     * 最后修改时间
+     */
+    private Date gmtModified;
+
+    /**
+     * 创建时间
+     */
+    private Date gmtCreated;
+
+    /**
+     * 0:待办；1:忽略；2：跟踪；3：办结；4：答复
+     */
+    private Integer status;
+
+    /**
+     * 发送执行者
+     */
+    private Long fromExecutorId;
+
+    @NotNull(message = "postId不能为空")
+    private Long postId;
+
+    @NotNull(message = "groupId不能为空")
+    private Long groupId;
+}

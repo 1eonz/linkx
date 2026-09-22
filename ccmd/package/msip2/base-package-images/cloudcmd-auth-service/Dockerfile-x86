@@ -1,0 +1,7 @@
+FROM repo.rd.td-tech.com/docker-virtual/linkx/msip/jre:11.openeuler.openjre.amd64
+# 将targer目录下的jar包复制到docker容器/opt/app目录下面目录下面
+COPY ./cloudcmd-auth-service-1.0.0-SNAPSHOT.jar /app/app.jar
+# 设置工作目录
+WORKDIR /app
+# 执行命令
+ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app/app.jar"]

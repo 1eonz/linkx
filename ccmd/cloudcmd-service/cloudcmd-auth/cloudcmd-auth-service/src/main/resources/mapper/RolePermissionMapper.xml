@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.auth.mapper.RoleToPermissionMapper">
+
+
+    <select id="queryPermission" resultType="java.lang.String">
+        SELECT DISTINCT tb_action.action
+        FROM tb_action
+        WHERE tb_action.application_id = #{applicationId}
+          AND tb_action.`status` = 0
+    </select>
+
+    <select id="getLowerOrganizations" resultType="long">
+        select id
+        from tb_organization tbo
+        where tbo.full_path like concat((select full_path
+                                         from tb_organization tbo2
+                                         where tbo2.id = #{organizationId}), '%')
+    </select>
+    <select id="getOrganization" resultType="com.tdtech.cloudcmd.auth.entity.Organization">
+        select id, code, name, type_id, parent_id, short_name, full_path_name,
+               administrative_area, level, sort, remark, status, gmt_created, full_path, gmt_modified
+        from tb_organization
+        where id = #{id}
+    </select>
+
+</mapper>

@@ -1,0 +1,78 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.TasksFavoriteMapper">
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.api.entity.tasks.Tasks">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="number" jdbcType="VARCHAR" property="number"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="content" jdbcType="VARCHAR" property="content"/>
+        <result column="system_name" jdbcType="VARCHAR" property="systemName"/>
+        <result column="module" jdbcType="VARCHAR" property="module"/>
+        <result column="business_type" jdbcType="VARCHAR" property="businessType"/>
+        <result column="status" jdbcType="VARCHAR" property="status"/>
+        <result column="level" jdbcType="VARCHAR" property="level"/>
+        <result column="urgent" jdbcType="TINYINT" property="urgent"/>
+        <result column="approval_type" jdbcType="TINYINT" property="approvalType"/>
+        <result column="url" jdbcType="VARCHAR" property="url"/>
+        <result column="approval_url" jdbcType="VARCHAR" property="approvalUrl"/>
+        <result column="creator_name" jdbcType="VARCHAR" property="creatorName"/>
+        <result column="creator_id_card" jdbcType="VARCHAR" property="creatorIdCard"/>
+        <result column="creator_department" jdbcType="VARCHAR" property="creatorDepartment"/>
+        <result column="creator_department_id" jdbcType="VARCHAR" property="creatorDepartmentId"/>
+        <result column="creator_department_code" jdbcType="VARCHAR" property="creatorDepartmentCode"/>
+        <result column="start_time" jdbcType="TIMESTAMP" property="startTime"/>
+        <result column="end_time" jdbcType="TIMESTAMP" property="endTime"/>
+        <result column="complete_time" jdbcType="TIMESTAMP" property="completeTime"/>
+        <result column="extend" jdbcType="VARCHAR" property="extend"/>
+        <result column="operate_time" jdbcType="TIMESTAMP" property="operateTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectPageWithCondition" resultMap="BaseResultMap">
+        SELECT tt.id, tt.number, tt.name, tt.content, tt.system_name, tt.module,
+               tt.business_type, tt.status, tt.level, tt.urgent, tt.approval_type, tt.url, tt.approval_url,
+               tt.creator_name, tt.creator_id_card, tt.creator_department, tt.creator_department_id,
+               tt.creator_department_code, tt.start_time, tt.end_time, tt.complete_time,
+               tt.extend, tt.operate_time, tt.update_time
+        FROM tb_tasks_favorite tf INNER JOIN tb_tasks tt ON tf.task_id = tt.id
+        <where>
+            <if test="tasksQueryReq.keywords != null and tasksQueryReq.keywords != ''">
+                AND (tt.name LIKE concat('%',#{tasksQueryReq.keywords},'%')
+                OR tt.content LIKE concat('%',#{tasksQueryReq.keywords},'%')
+                OR tt.system_name LIKE concat('%',#{tasksQueryReq.keywords},'%')
+                OR tt.creator_name LIKE concat('%',#{tasksQueryReq.keywords},'%')
+                OR tt.creator_department LIKE concat('%',#{tasksQueryReq.keywords},'%')
+                )
+            </if>
+            <if test="tasksQueryReq.executor != null and tasksQueryReq.executor != ''">
+                AND EXISTS (SELECT 1 FROM tb_tasks_executors te WHERE tt.id = te.task_id AND te.id_card =
+                #{tasksQueryReq.executor})
+            </if>
+            <if test="tasksQueryReq.startTime != null and tasksQueryReq.endTime != null">
+                AND tt.end_time &gt;= #{tasksQueryReq.startTime} AND tt.start_time &lt;= #{tasksQueryReq.endTime}
+            </if>
+            <if test="tasksQueryReq.status != null and tasksQueryReq.status != ''">
+                AND tt.status =#{tasksQueryReq.status}
+            </if>
+            <if test="tasksQueryReq.businessTypeList != null and tasksQueryReq.businessTypeList.size()>0">
+                AND tt.business_type IN
+                <foreach collection="tasksQueryReq.businessTypeList" open="(" separator="," close=")"
+                         item="businessType">
+                    #{businessType}
+                </foreach>
+            </if>
+            <if test="tasksQueryReq.levelList != null and tasksQueryReq.levelList.size()>0">
+                AND tt.level IN
+                <foreach collection="tasksQueryReq.levelList" open="(" separator="," close=")" item="level">
+                    #{level}
+                </foreach>
+            </if>
+            <if test="tasksQueryReq.urgent != null">
+                AND tt.urgent =#{tasksQueryReq.urgent}
+            </if>
+            <if test="tasksQueryReq.idCard != null and tasksQueryReq.idCard != ''">
+                AND tf.op_user_id =#{tasksQueryReq.idCard}
+            </if>
+        </where>
+        ORDER BY tf.operate_time DESC
+    </select>
+</mapper>

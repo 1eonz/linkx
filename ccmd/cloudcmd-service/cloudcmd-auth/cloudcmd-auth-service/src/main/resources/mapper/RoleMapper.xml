@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.auth.mapper.RoleMapper">
+
+<!--    不识别JacksonTypeHandler 暂时用resultMap顶替-->
+    <resultMap id="RoleResultMap" type="com.tdtech.cloudcmd.auth.entity.Role">
+        <result column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="type" property="type"/>
+        <result column="icc_priv_json" property="iccPrivJson" typeHandler="com.tdtech.cloudcmd.auth.entity.Role$StringListTypeHandler"/>
+        <result column="capp_priv_json" property="cappPrivJson" typeHandler="com.tdtech.cloudcmd.auth.entity.Role$StringListTypeHandler"/>
+        <result column="admin_priv_json" property="adminPrivJson" typeHandler="com.tdtech.cloudcmd.auth.entity.Role$StringListTypeHandler"/>
+        <result column="im_org_priv_json" property="imOrgPrivJson" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="status" property="status"/>
+        <result column="gmt_created" property="gmtCreated"/>
+        <result column="gmt_modified" property="gmtModified"/>
+    </resultMap>
+
+    <select id="getRoleListByUserId" resultMap="RoleResultMap">
+        SELECT tb_role.id, tb_role.name, tb_role.type, tb_role.icc_priv_json, tb_role.capp_priv_json,
+               tb_role.admin_priv_json, tb_role.im_org_priv_json, tb_role.status,
+               tb_role.gmt_created, tb_role.gmt_modified
+        FROM tr_user_role
+                 LEFT JOIN tb_role ON tb_role.id = tr_user_role.role_id
+        WHERE tb_role.status = 0
+          and tr_user_role.user_id = #{userId}
+    </select>
+
+    <select id="selectRoleByApplicationAndUserId" resultMap="RoleResultMap">
+        select tb_role.id, tb_role.name, tb_role.type, tb_role.icc_priv_json, tb_role.capp_priv_json,
+               tb_role.admin_priv_json, tb_role.im_org_priv_json, tb_role.status,
+               tb_role.gmt_created, tb_role.gmt_modified
+        from tb_role
+                 left join tr_user_role on tb_role.id = tr_user_role.role_id
+        where tb_role.id = #{roleId}
+          and tr_user_role.user_id = #{userId}
+    </select>
+
+    <select id="selectUserRoleIdByUserId" resultType="java.lang.Long">
+        select tr_user_role.role_id
+        from tb_role
+        left join tr_user_role on tb_role.id = tr_user_role.role_id
+        where tr_user_role.user_id = #{userId}
+        and tb_role.status = 0
+    </select>
+</mapper>

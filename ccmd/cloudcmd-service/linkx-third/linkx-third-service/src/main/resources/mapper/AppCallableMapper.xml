@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.third.mapper.AppCallableMapper">
+
+    <select id="pageAppData" resultType="com.alibaba.fastjson.JSONObject">
+        <bind name="start" value="(current - 1) * pageSize"/>
+        select * from ${tableName}
+         <where>
+             <if test="searchPair != null and searchPair.key != null and searchPair.value != null">
+                 and ${searchPair.key} like concat('%', #{searchPair.value}, '%')
+             </if>
+         </where>
+        order by `${timeColumn}` desc,linkx_id
+        limit #{start}, #{pageSize}
+    </select>
+    <select id="countAppData" resultType="java.lang.Long">
+        select count(*) from ${tableName}
+        <where>
+            <if test="searchPair != null and searchPair.key != null and searchPair.value != null">
+                and ${searchPair.key} like concat('%', #{searchPair.value}, '%')
+            </if>
+        </where>
+    </select>
+    <select id="getAppDataById" resultType="com.alibaba.fastjson.JSONObject">
+        select * from ${tableName} where linkx_id = #{linkxId}
+    </select>
+</mapper>

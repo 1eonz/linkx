@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.ImUserVirtualMapper">
+  <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.ImUserVirtual">
+    <!--@Table `linkx_auth`.`tb_im_user_virtual`-->
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+    <result column="contact_number" jdbcType="VARCHAR" property="contactNumber" />
+    <result column="app_id" jdbcType="VARCHAR" property="appId" />
+    <result column="app_secret" jdbcType="VARCHAR" property="appSecret" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="created_by" jdbcType="BIGINT" property="createdBy" />
+    <result column="default_user" jdbcType="TINYINT" property="defaultUser" />
+    <result column="deleted" jdbcType="BIGINT" property="deleted" />
+    <result column="created_at" jdbcType="TIMESTAMP" property="createdAt" />
+    <result column="updated_at" jdbcType="TIMESTAMP" property="updatedAt" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    `id`, `user_name`, `contact_number`, `app_id`, `app_secret`, `remark`, `created_by`, 
+    `default_user`, `deleted`, `created_at`, `updated_at`
+  </sql>
+  <update id="updateByPrimaryKey" parameterType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.ImUserVirtual">
+    update `linkx_auth`.`tb_im_user_virtual`
+    <set>
+      <if test="userName != null and userName != ''">
+        `user_name` = #{userName,jdbcType=VARCHAR},
+      </if>
+      <if test="contactNumber != null">
+        `contact_number` = #{contactNumber,jdbcType=VARCHAR},
+      </if>
+      <if test="appId != null and appId != ''">
+        `app_id` = #{appId,jdbcType=VARCHAR},
+      </if>
+      <if test="appSecret != null and appSecret != ''">
+        `app_secret` = #{appSecret,jdbcType=VARCHAR},
+      </if>
+      <if test="remark != null">
+        `remark` = #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="createdBy != null">
+        `created_by` = #{createdBy,jdbcType=BIGINT},
+      </if>
+      <if test="defaultUser != null">
+        `default_user` = #{defaultUser,jdbcType=TINYINT},
+      </if>
+      <if test="virtualType != null">
+        `virtual_type` = #{virtualType,jdbcType=TINYINT},
+      </if>
+      <if test="deleted != null">
+        `deleted` = #{deleted,jdbcType=BIGINT},
+      </if>
+      <if test="createdAt != null">
+        `created_at` = #{createdAt,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updatedAt != null">
+        `updated_at` = #{updatedAt,jdbcType=TIMESTAMP}
+      </if>
+    </set>
+    where `id` = #{id,jdbcType=BIGINT} and deleted = 0
+  </update>
+  <insert id="batchInsert" parameterType="map">
+    insert into `linkx_auth`.`tb_im_user_virtual`
+    (`id`, `user_name`, `contact_number`, `app_id`, `app_secret`, `remark`, `created_by`,
+      `default_user`, `virtual_type`, `deleted`, `created_at`, `updated_at`)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.id,jdbcType=BIGINT}, #{item.userName,jdbcType=VARCHAR}, #{item.contactNumber,jdbcType=VARCHAR},
+        #{item.appId,jdbcType=VARCHAR}, #{item.appSecret,jdbcType=VARCHAR}, #{item.remark,jdbcType=VARCHAR},
+        #{item.createdBy,jdbcType=BIGINT}, #{item.defaultUser,jdbcType=TINYINT}, #{item.virtualType,jdbcType=TINYINT}, #{item.deleted,jdbcType=BIGINT},
+        #{item.createdAt,jdbcType=TIMESTAMP}, #{item.updatedAt,jdbcType=TIMESTAMP})
+    </foreach>
+  </insert>
+  <update id="deleteByPrimaryKeyIn">
+    update `linkx_auth`.`tb_im_user_virtual`
+    set deleted = 1
+    where `id` in
+    <foreach close=")" collection="list" item="id" open="(" separator=", ">
+      #{id,jdbcType=BIGINT}
+    </foreach>
+  </update>
+
+  <select id="selectByClientId" resultType="com.tdtech.cloudcmd.im.jingxin.server.aiclient.entity.AiVirtualUser">
+    select app_id as clientId, app_secret as clientSec, ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    left join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where app_id = #{appId} and deleted = 0 and ta.agent_id is not null
+  </select>
+
+  <select id="selectAiVirtualUserIncludeUnboundByAppId" resultType="com.tdtech.cloudcmd.im.jingxin.server.aiclient.entity.AiVirtualUser">
+    select app_id as clientId, app_secret as clientSec, ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    left join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where app_id = #{appId} and deleted = 0
+  </select>
+
+  <select id="selectAll" resultType="com.tdtech.cloudcmd.im.jingxin.server.aiclient.entity.AiVirtualUser">
+    select app_id as clientId, app_secret as clientSec, ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    left join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where deleted = 0 and ta.agent_id is not null
+  </select>
+
+  <select id="selectDefaultUser" resultType="com.tdtech.cloudcmd.im.jingxin.server.aiclient.entity.AiVirtualUser">
+    select app_id as clientId, app_secret as clientSec, ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    left join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where deleted = 0 and default_user = 1 and ta.agent_id is not null
+    order by u.created_at asc
+    limit 1
+  </select>
+  <select id="selectDefaultUsers" resultType="com.tdtech.cloudcmd.im.jingxin.server.aiclient.entity.AiVirtualUser">
+    select app_id as clientId, app_secret as clientSec, ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    left join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where deleted = 0 and default_user = 1 and ta.agent_id is not null
+    order by u.created_at asc
+  </select>
+
+  <select id="selectGroupAiBind" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.GroupAiBindEntity">
+    select u.id, u.user_name, u.contact_number, u.app_id, u.app_secret, u.default_user, ta.agent_id
+    from `linkx_auth`.`tb_im_user_virtual` u
+    left join `linkx_auth`.`tr_ai_assistant_agent` ta on ta.virtual_user_id = u.id
+    where u.deleted = 0 and u.app_id = #{appId}
+  </select>
+
+  <select id="selectAppIdByIds" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List"/>
+    from `linkx_auth`.`tb_im_user_virtual`
+    where id in
+    <foreach collection="ids" item="id" open="(" close=")" separator=",">
+      #{id,jdbcType=BIGINT}
+    </foreach> and deleted = 0
+  </select>
+
+  <select id="selectVirtualUser" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List"/>
+    from `linkx_auth`.`tb_im_user_virtual`
+    where deleted = 0 and (app_id = #{user.appId} or user_name = #{user.userName})
+  </select>
+
+  <select id="selectVirtualUserByUserName" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List"/>
+    from `linkx_auth`.`tb_im_user_virtual`
+    where deleted = 0 and user_name = #{userName}
+  </select>
+
+  <select id="selectVirtualUserByAppId" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List"/>
+    from `linkx_auth`.`tb_im_user_virtual`
+    where deleted = 0 and app_id = #{appId}
+  </select>
+
+  <update id="deleteUserById">
+    update `linkx_auth`.`tb_im_user_virtual`
+    set deleted = 1
+    where id = #{id}
+  </update>
+</mapper>

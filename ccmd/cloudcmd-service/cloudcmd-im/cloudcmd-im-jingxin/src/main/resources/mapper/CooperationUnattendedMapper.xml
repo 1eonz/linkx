@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CooperationUnattendedMapper">
+
+    <!--
+        取每个协同岗最近一条无人值守记录：
+        原写法 GROUP BY + MAX 自 JOIN 需两层派生表（嵌套≥3）；
+        改用 RANK() 窗口函数拍平为一层派生表，语义不变
+        （RANK 保留 create_time 并列的记录，与原 MAX 等值 JOIN 行为一致）。
+    -->
+    <select id="findPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CooperationUnattendedVO">
+        SELECT
+            t.id as id,
+            tcp.id AS postId,
+            tcp.post_name AS postName,
+            tcp.org_name AS orgName,
+            tcp.org_id AS orgId,
+            tcp.org_code AS orgCode,
+            t.create_time as createTime
+        FROM
+        (
+            SELECT
+                t.id, t.post_id, t.create_time,
+                RANK() OVER ( PARTITION BY t.post_id ORDER BY t.create_time DESC ) AS rn
+            FROM tb_cooperation_unattended t
+        ) t
+        LEFT JOIN tb_collaboration_post tcp ON t.post_id = tcp.id
+        WHERE t.rn = 1
+        AND tcp.deleted = 0
+        <if test="orgCodeList != null and orgCodeList.size() > 0">
+            AND tcp.org_code in
+            <foreach collection="orgCodeList" item="code" open="(" close=")" separator=",">
+                #{code}
+            </foreach>
+        </if>
+        <if test="startTime != null and startTime != ''">
+            AND t.create_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND t.create_time &lt;=CONCAT(#{endTime}, ' 23:59:59')
+        </if>
+        <if test="keywords != null and keywords != ''">
+            AND tcp.post_name LIKE concat('%',#{keywords},'%')
+        </if>
+        ORDER BY t.create_time DESC
+    </select>
+
+</mapper>

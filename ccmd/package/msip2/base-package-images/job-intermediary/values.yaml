@@ -1,0 +1,105 @@
+name: job-intermediary
+namespace: linkx
+intermediary:
+  cloudcmd-admin-service:
+    apiCheckUrls:
+      - url: http://cloudcmd-admin-service.linkx.svc.cluster.local:9090/actuator
+        enabled: true
+        checkSlave: false
+  cloudcmd-auth-service:
+    apiCheckUrls:
+      - url: http://cloudcmd-auth-service.linkx.svc.cluster.local:9090/actuator
+        enabled: true
+        checkSlave: false
+  cloudcmd-base-service:
+    apiCheckUrls:
+      - url: http://cloudcmd-base-service.linkx.svc.cluster.local:9090/actuator
+        enabled: true
+        checkSlave: false
+  cloudcmd-gateway:
+    apiCheckUrls:
+      - url: http://cloudcmd-gateway.linkx.svc.cluster.local:9090/actuator
+        enabled: true
+        checkSlave: false
+  cloudcmd-im-jingxin:
+    apiCheckUrls:
+      - url: http://cloudcmd-im-jingxin.linkx.svc.cluster.local:9090/actuator
+        enabled: true
+        checkSlave: false
+  cloudcmd-im-openapi:
+    apiCheckUrls:
+      - url: http://cloudcmd-im-openapi.linkx.svc.cluster.local:9090/actuator
+        enabled: true
+        checkSlave: false
+  cloudcmd-script:
+    portChecks:
+      - host: cloudcmd-script.linkx.svc.cluster.local
+        port: 8080
+        enabled: true
+        checkSlave: false
+  cloudcmd-cagent:
+    portChecks:
+      - host: cloudcmd-cagent.linkx.svc.cluster.local
+        port: 8867
+        enabled: true
+        checkSlave: false
+  cloudcmd-admin-web:
+    portChecks:
+      - host: cloudcmd-admin-web.linkx.svc.cluster.local
+        port: 8012
+        enabled: true
+        checkSlave: false
+  cloudcmd-h5portal:
+    portChecks:
+      - host: cloudcmd-h5portal.linkx.svc.cluster.local
+        port: 80
+        enabled: true
+        checkSlave: false
+  cloudcmd-web:
+    portChecks:
+      - host: cloudcmd-web.linkx.svc.cluster.local
+        port: 8011
+        enabled: true
+        checkSlave: false
+  egress-ai:
+    portChecks:
+      - host: egress-ai.linkx.svc.cluster.local
+        port: 8080
+        enabled: true
+        checkSlave: false
+  egress-pim:
+    portChecks:
+      - host: egress-pim.linkx.svc.cluster.local
+        port: 8080
+        enabled: true
+        checkSlave: false
+  cloudcmd-icp-proxy:
+    portChecks:
+      - host: cloudcmd-icp-proxy.linkx.svc.cluster.local
+        port: 8080
+        enabled: true
+        checkSlave: false
+  linkx-dashboard-service:
+    portChecks:
+      - host: linkx-dashboard-service.linkx.svc.cluster.local
+        port: 8080
+        enabled: true
+        checkSlave: false
+  linkx-third-service:
+    portChecks:
+      - host: linkx-third-service.linkx.svc.cluster.local
+        port: 8080
+        enabled: true
+        checkSlave: false
+  linkx-node-service:
+    portChecks:
+      - host: linkx-node-service.linkx.svc.cluster.local
+        port: 8080
+        enabled: true
+        checkSlave: false
+  zookeeper:
+    portChecks:
+      - host: zookeeper.linkx.svc.cluster.local
+        port: 2181
+        enabled: true
+        checkSlave: false

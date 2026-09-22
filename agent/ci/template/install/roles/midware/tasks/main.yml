@@ -1,0 +1,4 @@
+- name: do deploy
+  include_tasks: install_midware.yml
+  when:
+    - inventory_hostname == first_kube_master

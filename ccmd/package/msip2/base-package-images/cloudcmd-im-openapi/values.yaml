@@ -1,0 +1,27 @@
+haControl: "true"
+ports:
+  - name: http
+    port: 8080
+  - name: dubbo
+    port: 18080
+container:
+  strategy:
+  replicas: 1
+  vault: true
+  volumes:
+    - pvc: im-store
+      mount_path: /home/linkx/im/
+    - pvc: openapi-store
+      mount_path: /data/linkx/data/openapi
+  envs:
+    env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: safebox:platform/platform-secret#mysql_password
+      - name: REDIS_PASSWORD
+        value: safebox:platform/platform-secret#redis_password
+    env_from:
+      - configMapRef:
+          name: cloudcmd-profile
+  jvm:
+    xmx: 2g
+    xms: 1g

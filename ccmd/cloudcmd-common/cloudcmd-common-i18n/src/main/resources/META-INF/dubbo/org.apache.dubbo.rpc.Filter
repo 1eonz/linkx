@@ -1,0 +1,2 @@
+i18nConsumerFilter=com.tdtech.cloudcmd.i18n.I18nDubboConsumerFilter
+i18nProviderFilter=com.tdtech.cloudcmd.i18n.I18nDubboProviderFilter

@@ -1,0 +1,5 @@
+com.tdtech.cloudcmd.web.autoproperties.KafkaPropertiesCustomizer
+com.tdtech.cloudcmd.web.autoproperties.NacosPropertiesCustomizer
+com.tdtech.cloudcmd.web.autoproperties.RedisPropertiesCustomizer
+com.tdtech.cloudcmd.web.autoproperties.DubboPropertiesCustomizer
+com.tdtech.cloudcmd.web.autoproperties.CommonsPropertiesCustomizer

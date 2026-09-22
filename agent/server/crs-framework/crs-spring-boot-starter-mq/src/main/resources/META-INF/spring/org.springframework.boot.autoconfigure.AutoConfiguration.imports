@@ -1,0 +1,3 @@
+com.chinasoft.cloud.framework.mq.redis.config.CrsRedisMQProducerAutoConfiguration
+com.chinasoft.cloud.framework.mq.redis.config.CrsRedisMQConsumerAutoConfiguration
+com.chinasoft.cloud.framework.mq.rabbitmq.config.CrsRabbitMQAutoConfiguration

@@ -1,0 +1,31 @@
+---
+- name: execute outer shell 
+  command: "/bin/bash {{ before_shell_path }}/before.sh"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: yes  
+
+- name: define path
+  set_fact:
+    outer: "{{ before_shell_path }}/before.sh"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: find before shell files
+  find:
+    paths: "{{ before_shell_path }}"
+    recurse: yes
+    patterns: "before.sh"
+  register: before_shell_files
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes 
+
+- name: execute before shell 
+  command: "/bin/bash {{ item.path }}"
+  with_items: "{{ before_shell_files.files }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: before_shell_files.matched > 0 and item.path != outer
+    
+
+

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.LinkxAuthUserMapper">
+
+    <!--
+      批量 upsert（仅更新 IM 属性字段）
+      注意：本方法不会触发 EncryptionInnerInterceptor，调用方必须在 Service 层
+      手动调用 encryptionService.encrypt() 加密 name/mobile/idCard 后再传入。
+      新增时写入 password/pwd_time（默认密码哈希），更新时不覆盖 password/pwd_time/type/status；
+      gmt_created / gmt_updated 由数据库 DEFAULT / ON UPDATE 自动维护。
+    -->
+    <insert id="upsertBatch">
+        INSERT INTO `linkx_auth`.`tb_user_im`
+        (id, code, name, avatar, gender, mobile, email, isdn, id_card, district,
+         direct_leader_id, direct_leader_name, department_code, department_name, department_id,
+         password, pwd_time, gmt_created, gmt_updated)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.code}, #{item.name}, #{item.avatar}, #{item.gender},
+             #{item.mobile}, #{item.email}, #{item.isdn}, #{item.idCard}, #{item.district},
+             #{item.directLeaderId}, #{item.directLeaderName}, #{item.departmentCode},
+             #{item.departmentName}, #{item.departmentId},
+             #{item.password}, #{item.pwdTime}, NOW(), NOW())
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            code = VALUES(code),
+            name = VALUES(name),
+            avatar = VALUES(avatar),
+            gender = VALUES(gender),
+            mobile = VALUES(mobile),
+            email = VALUES(email),
+            isdn = VALUES(isdn),
+            id_card = VALUES(id_card),
+            district = VALUES(district),
+            direct_leader_id = VALUES(direct_leader_id),
+            direct_leader_name = VALUES(direct_leader_name),
+            department_code = VALUES(department_code),
+            department_name = VALUES(department_name),
+            department_id = VALUES(department_id),
+            gmt_updated = NOW()
+    </insert>
+
+    <!-- 根据部门ID集合查询用户（结果集自动解密） -->
+    <select id="selectByDeptIds" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.dto.LinkxAuthUserDO">
+        SELECT id, code, name, avatar, gender, mobile, email, isdn, id_card, district,
+               direct_leader_id, direct_leader_name, department_code, department_name, department_id,
+               type, status, gmt_created, gmt_updated
+        FROM `linkx_auth`.`tb_user_im`
+        WHERE department_id IN
+        <foreach collection="deptIds" item="deptId" open="(" separator="," close=")">
+            #{deptId}
+        </foreach>
+    </select>
+
+</mapper>

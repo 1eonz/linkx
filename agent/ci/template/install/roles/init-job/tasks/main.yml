@@ -1,0 +1,4 @@
+- name: do deploy
+  include_tasks: install_job.yml
+  when:
+    - inventory_hostname == first_kube_master

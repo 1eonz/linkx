@@ -1,0 +1,16 @@
+# 模板文件，业务需要可获取后进行修改适配自己升级的数据备份恢复功能，文件命名不可修改
+# ！！！！！！！！！注意：模版中，platform的配置请保留，不要删除  ！！！！！！！！！
+file_backup:
+  - namespace: "platform"
+    pvc:
+      - name: intermediary-pvc
+        path:
+          - conf.json
+      - name: registry-pvc-claim
+        path:
+          - config.yml
+          - docker/registry
+    service:
+      - name: "intermediary-service"
+        path:
+          - "/Intermediary/conf.json"

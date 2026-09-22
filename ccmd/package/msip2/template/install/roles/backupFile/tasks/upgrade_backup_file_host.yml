@@ -1,0 +1,205 @@
+---
+# 获取所需参数
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get version_id
+  set_fact:
+    version_id: "{{ data['app-info'][0]['version_id'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+#  备份前先临时删除备份目录的文件
+- name:  clear backup file
+  shell: rm -rf {{ file_backup_path }}/*
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: (0)Ensure the backup directory exists
+  file:
+    path: "{{ file_backup_path }}"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: (1)backupFile-host Extract the list file path
+  shell: grep '^backup_files_host_conf[[:space:]]*=' {{ app_root }}/backup_config/upgrade_adapter.conf | awk -F= '{print $2}' | tr -d ' '
+  register: list_file
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: (2)backupFile-host Default value handling
+  set_fact:
+    list_path: "{{ list_file.stdout | default('backup_files_host.conf', true) }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: (3)backupFile-host Read the list of files to be backed up
+  slurp:
+    src: "{{ app_root }}/backup_config/{{ list_path }}"
+  register: list_b64
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: (4)backupFile-host Decode and remove line breaks
+  set_fact:
+    files_list: "{{ (list_b64.content | b64decode).split('\n') | map('trim') | select | list }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: (5)backupFile-host Generate a unified timestamp
+  set_fact:
+    ubp_host_backup_ts: "{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+# 先过滤出真实存在的路径，并给出提示
+- name: (6-1)backupFile-host Check the existence of the backup list file
+  when: files_list | length > 0
+  loop: "{{ files_list }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  stat:
+    path: "{{ item }}"
+  register: st_result
+
+  # 新增：提取权限信息到单独变量
+- name: (6-1.5)backupFile-host Extract permission info
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  set_fact:
+    file_info_list: >-
+      {{
+        st_result.results | selectattr('stat.exists') | map('combine', {
+          'mode': item.stat.mode | default('0755'),
+          'pw_name': item.stat.pw_name | default('root'),
+          'gr_name': item.stat.gr_name | default('root')
+        }) | list
+      }}
+  vars:
+    # 为每个结果项添加权限字段
+    item: "{{ item }}"
+  loop: "{{ st_result.results | selectattr('stat.exists') | list }}"
+
+
+- name: (6-2)backupFile-host Provide missing prompts and generate a list of existing ones
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  set_fact:
+    exist_list: "{{ st_result.results | selectattr('stat.exists') | map(attribute='item') | list }}"
+    missing_list: "{{ st_result.results | rejectattr('stat.exists') | map(attribute='item') | list }}"
+
+- name: (6-3)backupFile-host Print missing path (warning level)
+  debug:
+    msg: "[WARNING] The following path does not exist, backup has been skipped：{{ missing_list | join(', ') }}"
+  when: missing_list | length > 0
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: (7-1)backupFile-host Obtain path size
+  when: exist_list | length > 0
+  loop: "{{ exist_list }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  stat:
+    path: "{{ item }}"
+  register: st_size
+
+- name: (7-2)Parse the single-file backup size limit parameter -> {{ single_file_backup_size }}
+  set_fact:
+    # 去掉空格，统一大写，再用正则拆数字和单位
+    single_bytes: "{{ (single_file_backup_size | upper | replace(' ', '')) | regex_replace('^(\\d+(?:\\.\\d+)?)(\\w+)$', '\\1') | float *
+        {'B': 1, 'KB': 1024, 'MB': 1024*1024, 'GB': 1024*1024*1024, 'TB': 1024*1024*1024*1024}[
+        (single_file_backup_size | upper | replace(' ', '')) | regex_replace('^(\\d+(?:\\.\\d+)?)(\\w+)$', '\\2')
+        ] }}"
+
+- name: (7-3)backupFile-host Generate ≤ {{ single_file_backup_size }} list
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  set_fact:
+    small_list: "{{ st_size.results | selectattr('stat.size', '<=', single_bytes | int) | map(attribute='item') | list }}"
+    skip_list:  "{{ st_size.results | selectattr('stat.size', '>',  single_bytes | int) | map(attribute='item') | list }}"
+
+- name: (7-4)Print skipping paths larger than the set file size
+  debug:
+    msg: "[INFO] The following path is larger than the set size and has skipped packaging：{{ skip_list | join(', ') }}"
+  when: skip_list | length > 0
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: (8)backupFile-host Parallel packaging by file pigz -> {{ upgrade_backup_dir }}
+  when: small_list | length > 0
+  loop: "{{ small_list }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  vars:
+    # 安全文件名：把 / 替换成 _，再拼时间戳避免重名
+    safe_name: "{{ item | regex_replace('^/|/$', '') | regex_replace('/', '_') }}_{{ ubp_host_backup_ts }}.tar.gz"
+  command: |
+    tar --use-compress-program="pigz -p 8" \
+        -C / \
+        -cf {{ file_backup_path }}/{{ safe_name }} \
+        {{ item | regex_replace('^/', '') }}
+  register: tar_out
+  changed_when: tar_out.rc == 0
+  failed_when: tar_out.rc != 0
+
+
+- name: (10)backupFile-host Generate decompression mapping list manifest.yml
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  copy:
+    dest: "{{ file_backup_path }}/manifest_{{ ubp_host_backup_ts }}.yml"
+    content: |
+      # 原路径 -> 包名（相对路径）+ 权限信息
+      {% for item in st_result.results | selectattr('stat.exists') %}
+      - original: "{{ item.item }}"
+        archive: "{{ item.item | regex_replace('^/|/$', '') | regex_replace('/', '_') }}_{{ ubp_host_backup_ts }}.tar.gz"
+        mode: "{{ item.stat.mode | default('0755', true) }}"
+        owner: "{{ item.stat.pw_name | default('root', true) }}"
+        group: "{{ item.stat.gr_name | default('root', true) }}"
+      {% endfor %}
+      {% for p in missing_list %}
+      - original: "{{ p }}"
+        archive: ""
+        mode: ""
+        owner: ""
+        group: ""
+      {% endfor %}
+    mode: '0644'
+
+
+- name: test print
+  debug:
+    msg: |
+      missing_list : {{ missing_list }}
+      skip_list : {{ skip_list }}
+      single_bytes : {{ single_bytes }}

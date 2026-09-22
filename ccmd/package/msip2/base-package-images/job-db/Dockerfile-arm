@@ -1,0 +1,14 @@
+FROM repo.rd.td-tech.com/docker-virtual/linkx/flyway:11.17.2-alpine.arm
+
+COPY ./icp_res/ /flyway/db/migration/icp_res/
+COPY ./icp_collabs/ /flyway/db/migration/icp_collabs/
+COPY ./icp_icp/ /flyway/db/migration/icp_icp/
+COPY ./linkx_auth/ /flyway/db/migration/linkx_auth/
+COPY ./linkx_dashboard/ /flyway/db/migration/linkx_dashboard/
+COPY ./linkx_third/ /flyway/db/migration/linkx_third/
+COPY ./linkx_node/ /flyway/db/migration/linkx_node/
+COPY ./linkx_open/ /flyway/db/migration/linkx_open/
+COPY ./linkx_base/ /flyway/db/migration/linkx_base/
+COPY ./database.txt/ /flyway/db/migration/database.txt
+COPY ./flyway.conf/ /flyway/conf/flyway.conf
+COPY ./docker_run.sh /usr/bin/docker_run.sh

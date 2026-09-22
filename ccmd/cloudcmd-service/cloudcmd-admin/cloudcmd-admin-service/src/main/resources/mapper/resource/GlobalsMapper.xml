@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.resource.mapper.GlobalsMapper">
+    <insert id="batchInsertGlobals" parameterType="java.util.List">
+        INSERT INTO tb_globals(id, name, value, remark)
+        VALUES
+        <foreach collection="globalsList" item="globals" separator=",">
+            (#{globals.id},
+            #{globals.name},
+            #{globals.value},
+            #{globals.remark})
+        </foreach>
+    </insert>
+
+    <update id="batchLogicDeleteGlobalsById">
+        UPDATE tb_globals
+        set status = 1
+        WHERE id = #{id}
+    </update>
+</mapper>

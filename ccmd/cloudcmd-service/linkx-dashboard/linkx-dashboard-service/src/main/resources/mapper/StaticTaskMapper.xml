@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.dashboard.mapper.StaticTaskMapper">
+
+    <resultMap id="WatermarkResultMap" type="com.tdtech.cloudcmd.linkx.dashboard.support.SyncWatermark">
+        <result column="wm_time" property="time"/>
+        <result column="wm_id" property="id"/>
+    </resultMap>
+
+    <!-- 批量 upsert：按 uniq_task_id 去重 -->
+    <insert id="upsertBatch" parameterType="java.util.List">
+        INSERT INTO tb_static_task (
+            id, task_id, from_user_id, from_user_name, from_user_department_id, from_user_department_name,
+            status, msg_sent_time, msg_seqid, post_id, post_name, create_time, expired_time,
+            response_time, response_user_id, response_user_name,
+            ignore_time, ignore_user_id, ignore_user_name,
+            track_time, track_user_id, track_user_name,
+            finish_time, finish_user_id, finish_user_name,
+            task_updated_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.id}, #{item.taskId}, #{item.fromUserId}, #{item.fromUserName},
+                #{item.fromUserDepartmentId}, #{item.fromUserDepartmentName},
+                #{item.status}, #{item.msgSentTime}, #{item.msgSeqid}, #{item.postId}, #{item.postName},
+                #{item.createTime}, #{item.expiredTime},
+                #{item.responseTime}, #{item.responseUserId}, #{item.responseUserName},
+                #{item.ignoreTime}, #{item.ignoreUserId}, #{item.ignoreUserName},
+                #{item.trackTime}, #{item.trackUserId}, #{item.trackUserName},
+                #{item.finishTime}, #{item.finishUserId}, #{item.finishUserName},
+                #{item.taskUpdatedTime}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            from_user_id = VALUES(from_user_id),
+            from_user_name = VALUES(from_user_name),
+            from_user_department_id = VALUES(from_user_department_id),
+            from_user_department_name = VALUES(from_user_department_name),
+            status = VALUES(status),
+            msg_sent_time = VALUES(msg_sent_time),
+            msg_seqid = VALUES(msg_seqid),
+            post_id = VALUES(post_id),
+            post_name = VALUES(post_name),
+            create_time = VALUES(create_time),
+            expired_time = VALUES(expired_time),
+            response_time = VALUES(response_time),
+            response_user_id = VALUES(response_user_id),
+            response_user_name = VALUES(response_user_name),
+            ignore_time = VALUES(ignore_time),
+            ignore_user_id = VALUES(ignore_user_id),
+            ignore_user_name = VALUES(ignore_user_name),
+            track_time = VALUES(track_time),
+            track_user_id = VALUES(track_user_id),
+            track_user_name = VALUES(track_user_name),
+            finish_time = VALUES(finish_time),
+            finish_user_id = VALUES(finish_user_id),
+            finish_user_name = VALUES(finish_user_name),
+            task_updated_time = VALUES(task_updated_time)
+    </insert>
+
+    <!-- 兜底回查水位线：(task_updated_time, task_id) DESC LIMIT 1 -->
+    <select id="selectMaxWatermark" resultMap="WatermarkResultMap">
+        SELECT task_updated_time AS wm_time, task_id AS wm_id
+        FROM tb_static_task
+        ORDER BY task_updated_time DESC, task_id DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByCursor" resultType="com.tdtech.cloudcmd.linkx.dashboard.entity.StaticTask">
+        SELECT id, task_id, from_user_id, from_user_name, from_user_department_id, from_user_department_name,
+               status, msg_sent_time, msg_seqid, post_id, post_name, create_time, expired_time,
+               response_time, response_user_id, response_user_name,
+               ignore_time, ignore_user_id, ignore_user_name,
+               track_time, track_user_id, track_user_name,
+               finish_time, finish_user_id, finish_user_name, task_updated_time
+        FROM tb_static_task
+        WHERE create_time &gt;= #{startTime} AND create_time &lt; #{endTime}
+        <if test="deptIds != null and deptIds.size() > 0">
+            AND from_user_department_id IN
+            <foreach collection="deptIds" item="deptId" open="(" separator="," close=")">
+                #{deptId}
+            </foreach>
+        </if>
+        <if test="lastTime != null">
+            AND (create_time &lt; #{lastTime} OR (create_time = #{lastTime} AND id &lt; #{lastId}))
+        </if>
+        ORDER BY create_time DESC, id DESC
+        LIMIT #{pageSize}
+    </select>
+</mapper>

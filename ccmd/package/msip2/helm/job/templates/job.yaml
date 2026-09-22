@@ -1,0 +1,105 @@
+{{ $value := .Values}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{.Values.name}}-{{ now | date "20060102150405" }}
+  namespace: {{.Values.namespace}}
+  labels:
+    app: {{.Values.name}}
+    app.kubernetes.io/name: {{ .Values.name }}
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      name: {{.Values.name}}
+      labels:
+        app: {{.Values.name}}
+        app.kubernetes.io/name: {{ .Values.name }}
+      annotations:
+{{ include "fragment.labels" . | indent 8}}
+        {{- if eq (.Values.container.vault | toString | default "true") "true" }}
+        safebox/enable: "true"
+        {{- end }}
+    spec:
+      restartPolicy: Never
+      {{- if (kindIs "slice" .Values.container.volumes)}}
+      volumes:
+        {{- range .Values.container.volumes }}
+        {{- if .pvc }}
+        - name: {{$value.name}}-{{.pvc}}
+          persistentVolumeClaim:
+            claimName: {{.pvc}}-pvc-claim
+        {{- end}}
+        {{- if .outPvc}}
+        - name: {{$value.name}}-{{.outPvc}}
+          persistentVolumeClaim:
+            claimName: {{.outPvc}}
+        {{- end}}
+        {{- if .host}}
+        - name: {{$value.name}}-{{.host.name}}
+          hostPath:
+            path: {{.host.path}}
+        {{- end}}
+        {{- if .cm}}
+        - name: {{$value.name}}-{{.cm}}
+          configMap:
+            name: {{.cm}}
+            defaultMode: 0700
+        {{- end}}
+        {{- end }}
+      {{- end}}
+      containers:
+        - name: {{.Values.name}}
+          image: {{.Values.register_host}}/{{ .Values.imageName | default .Values.name }}:{{ .Values.imageVersion | default (printf "%s.%s"  (toString .Values.version)  (toString .Values.arch)) }}
+          imagePullPolicy: Always
+          {{- if .Values.container.command }}
+          command:
+{{ toYaml .Values.container.command | indent 12}}
+          {{- end }}
+          {{- if kindIs "slice" .Values.container.volumes }}
+          volumeMounts:
+            {{- range .Values.container.volumes }}
+            {{- if .pvc }}
+            - name: {{$value.name}}-{{.pvc}}
+              mountPath: {{.mount_path}}
+            {{- end}}
+            {{- if .outPvc}}
+            - name: {{$value.name}}-{{.outPvc}}
+              mountPath: {{.mount_path}}
+            {{- end}}
+            {{- if .host}}
+            - name: {{$value.name}}-{{.host.name}}
+              mountPath: {{.mount_path}}
+            {{- end}}
+            {{- if .cm}}
+            - name: {{$value.name}}-{{.cm}}
+              mountPath: {{.mount_path}}
+              {{- if .subPath }}
+              subPath: {{.subPath}}
+              {{- end }}
+            {{- end}}
+            {{- end }}
+          {{- end}}
+          {{- if .Values.container.envs }}
+          {{- if .Values.container.envs.env_from}}
+          envFrom:
+{{ toYaml .Values.container.envs.env_from | indent 12}}
+          {{- end}}
+          {{- end}}
+          env:
+            - name: cloudcmd.service.name
+              value: {{ .Values.name }}
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            {{- if .Values.container.envs }}
+            {{- if .Values.container.envs.env }}
+{{ toYaml .Values.container.envs.env | indent 12}}
+            {{- end }}
+            {{- end }}

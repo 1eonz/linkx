@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CollaborationTaskMapper">
+    <update id="updateGroupName">
+        update tb_task
+        set group_name = #{groupName}
+        where group_id = #{groupId}
+    </update>
+    <update id="assignTask">
+        update tb_task set user_id = #{userId},gmt_modified = now(),status=#{targetStatus}
+        where post_id = #{postId} and status = #{rawStatus}
+    </update>
+
+    <select id="listPage" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationTask">
+        select ta.id, ta.ics_msg_id, ta.user_id, ta.post_id, ta.group_id, ta.group_name, ta.seqid,
+               ta.text, ta.from_user_id, ta.from_user_name, ta.from_user_nick,
+               ta.from_user_department_id, ta.from_user_department_name, ta.msg_sent_time,
+               ta.msg_file_id, ta.status, ta.is_deleted, ta.gmt_modified, ta.gmt_created, ta.reply
+        from tb_task ta
+
+        <where>
+            <if test="qo.type!=null and qo.type != ''">
+                <if test="qo.type != 5">
+                    and ta.status =#{qo.type}
+                </if>
+            </if>
+            <if test="qo.userId!=null and qo.userId != ''">
+                and ta.user_id =#{qo.userId}
+            </if>
+            <if test="qo.keywords!=null and qo.keywords != ''">
+                and ta.text like concat('%',#{keywords},'%')
+            </if>
+            <if test="qo.type!=null and qo.type != ''">
+                and ta.id is not null
+            </if>
+        </where>
+        order by ta.gmt_modified desc
+    </select>
+
+    <select id="getCollaborationTask"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationTask">
+        SELECT id, ics_msg_id, user_id, post_id, group_id, group_name, seqid,
+               text, from_user_id, from_user_name, from_user_nick,
+               from_user_department_id, from_user_department_name, msg_sent_time,
+               msg_file_id, status, is_deleted, gmt_modified, gmt_created, reply
+        FROM `tb_task`
+        WHERE id = #{id}
+    </select>
+    <select id="queryNumByStatus" resultType="java.lang.Integer">
+        select count(1) from tb_task
+        <where>
+            post_id in (select id from tb_collaboration_post)
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
+            <if test="postId != null and postId != ''">
+                and post_id = #{postId}
+            </if>
+            <if test="userIdList != null and userIdList.size()>0">
+                and user_id IN
+                <foreach collection="userIdList" open="(" separator="," close=")" item="id">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="statusList != null ">
+                and status IN
+                <foreach collection="statusList" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and gmt_modified &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+    </select>
+
+    <select id="findListByCondition" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CollaborationTask">
+        SELECT
+            tt.id, tt.ics_msg_id, tt.user_id, tt.post_id, tt.group_id, tt.group_name, tt.seqid,
+            tt.text, tt.from_user_id, tt.from_user_name, tt.from_user_nick,
+            tt.from_user_department_id, tt.from_user_department_name, tt.msg_sent_time,
+            tt.msg_file_id, tt.status, tt.is_deleted, tt.gmt_modified, tt.gmt_created, tt.reply
+        FROM
+        tb_task tt
+            LEFT JOIN tb_collaboration_post tcp ON tt.post_id = tcp.id
+        WHERE
+            tcp.deleted = 0
+        <if test="userId != null and userId != ''">
+            and tt.user_id = #{userId}
+        </if>
+        <if test="postIdList != null and postIdList.size()>0">
+            and tt.post_id IN
+            <foreach collection="postIdList" open="(" separator="," close=")" item="postId">
+                #{postId}
+            </foreach>
+        </if>
+        <if test="userIdList != null and userIdList.size()>0">
+            and tt.user_id IN
+            <foreach collection="userIdList" open="(" separator="," close=")" item="id">
+                #{id}
+            </foreach>
+        </if>
+        <if test="statusList != null ">
+            and tt.status IN
+            <foreach collection="statusList" item="status" open="(" separator="," close=")">
+                #{status}
+            </foreach>
+        </if>
+        <if test="startTime != null and startTime != ''">
+            and tt.gmt_modified &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and tt.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+        </if>
+    </select>
+
+    <!-- 对列套函数(TIMESTAMPDIFF)会导致索引失效，改为把时间阈值移到参数侧：
+         TIMESTAMPDIFF(HOUR, msg_sent_time, NOW()) = e（整数截断）
+           e < min            ⇔ msg_sent_time > NOW() - min 小时
+           min <= e <= max    ⇔ msg_sent_time <= NOW() - min 小时 AND msg_sent_time > NOW() - (max+1) 小时
+           e > max            ⇔ msg_sent_time <= NOW() - (max+1) 小时 -->
+    <select id="selectCountById" resultType="java.lang.Integer">
+        SELECT COUNT(1) FROM tb_task
+        <where>
+            user_id = #{userId}
+            AND status = #{status}
+            <choose>
+                <when test="min != null and max == null">
+                    AND msg_sent_time &gt; DATE_SUB(NOW(), INTERVAL #{min} HOUR)
+                </when>
+                <when test="min != null and max != null">
+                    AND msg_sent_time &lt;= DATE_SUB(NOW(), INTERVAL #{min} HOUR)
+                    AND msg_sent_time &gt; DATE_SUB(NOW(), INTERVAL (#{max} + 1) HOUR)
+                </when>
+                <when test="min == null and max != null">
+                    AND msg_sent_time &lt;= DATE_SUB(NOW(), INTERVAL (#{max} + 1) HOUR)
+                </when>
+            </choose>
+        </where>
+    </select>
+
+
+    <select id="replyDuration"
+            resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.CollaborationReplyDurationVO">
+        SELECT
+        cp.org_code AS departmentCode,
+        cp.org_name AS departmentName,
+        AVG(TIMESTAMPDIFF(SECOND, tb_task.gmt_created, tb_task.gmt_modified)) AS avgReplyDuration
+        FROM tb_task
+        join tb_collaboration_post cp on tb_task.post_id = cp.id
+        <where>
+            tb_task.is_deleted = 0 and tb_task.reply = 1
+            <if test="departmentCode != null and departmentCode.size()>0">
+                and cp.org_id IN
+                <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="postIdList != null and postIdList.size()>0">
+                and cp.id IN
+                <foreach collection="postIdList" open="(" separator="," close=")" item="id">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and tb_task.gmt_modified &gt;= CONCAT(#{startTime}, ' 00:00:00')
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and tb_task.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+        GROUP BY
+        cp.org_code , cp.org_name
+        ORDER BY
+        avgReplyDuration ASC
+        LIMIT 10;
+    </select>
+
+    <select id="replyCount"
+            resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.CollaborationReplyTotalVO">
+        SELECT
+        cp.org_code  AS departmentCode,
+        cp.org_name AS departmentName,
+        COUNT(CASE WHEN reply = 1 THEN 1 END) AS total
+        FROM
+        tb_task left join(
+        SELECT DISTINCT task_id, department_id, department_name, post_id
+        FROM tb_task_response
+        ) tr on tb_task.id=tr.task_id
+        left join tb_collaboration_post cp
+        on tr.post_id=cp.id
+        <where>
+            tb_task.is_deleted = 0 and tb_task.reply = 1
+            <if test="departmentCode != null and departmentCode.size()>0">
+                and tr.department_id IN
+                <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="postIdList != null and postIdList.size()>0">
+                and tr.post_id IN
+                <foreach collection="postIdList" open="(" separator="," close=")" item="id">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and tb_task.gmt_modified &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and tb_task.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+        GROUP BY
+        cp.org_code , cp.org_name
+        ORDER BY
+        total DESC
+        LIMIT 10;
+    </select>
+
+    <select id="dispositionCount"
+            resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.CollaborationDispositionVO">
+        SELECT
+        cp.post_name AS postName,
+        cp.icon_url AS iconUrl,
+        cp.org_name AS orgName,
+        COALESCE(SUM(CASE WHEN ct.reply = 1 THEN 1 ELSE 0 END), 0) AS replyCount
+        FROM
+        tb_collaboration_post cp
+        LEFT JOIN
+        tb_task ct
+        ON
+        cp.id = ct.post_id
+        <where>
+            cp.deleted = 0 AND (ct.is_deleted = 0 OR ct.is_deleted IS NULL)-- 过滤未删除的任务
+            <if test="departmentCode != null and departmentCode.size()>0">
+                and cp.org_code IN
+                <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and (ct.gmt_modified &gt;= #{startTime} OR ct.gmt_modified IS NULL)
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and (ct.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59') OR ct.gmt_modified IS NULL)
+            </if>
+        </where>
+        GROUP BY
+        cp.id, cp.post_name, cp.org_name
+        HAVING replyCount > 0
+        ORDER BY
+        replyCount DESC
+    </select>
+    <select id="dispositionReplyDuration"
+            resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.CollaborationDispositionVO">
+        SELECT
+        cp.id as postId,
+        cp.post_name AS postName,
+        cp.icon_url AS iconUrl,
+        cp.org_name AS orgName,
+        AVG(TIMESTAMPDIFF(SECOND, ct.gmt_created, ct.gmt_modified)) AS avgReplyDuration
+        FROM
+        tb_collaboration_post cp
+        JOIN
+        tb_task ct
+        ON
+        cp.id = ct.post_id
+        <where>
+            ct.is_deleted = 0 AND cp.deleted = 0
+            and ct.reply = 1
+            <if test="departmentCode != null and departmentCode.size()>0">
+                and cp.org_code IN
+                <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and ct.gmt_modified &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and ct.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+        GROUP BY
+        cp.id
+        ORDER BY
+        avgReplyDuration
+    </select>
+
+    <select id="getOverdueList"
+            resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.CollaborationOverdueVO">
+        SELECT
+        ct.from_user_name AS senderName,
+        ct.text AS questionContent,
+        ct.msg_sent_time AS questionTime,
+        ct.group_name AS groupName,
+        cp.post_name AS postName,
+        cp.org_name AS orgName,
+        cp.related_user_names AS postUserNames,
+        cp.related_user_ids as relatedUserIds,
+        ct.user_id as userId,
+        ct.gmt_modified as overDueTime
+        FROM
+        tb_collaboration_post cp
+        JOIN tb_task ct ON cp.id = ct.post_id
+        <where>
+            ct.is_deleted = 0 -- 过滤未删除的任务
+            AND ct.status = 8 -- 筛选状态为 8 的数据
+            <if test="departmentCode != null and departmentCode.size()>0">
+                and cp.org_code IN
+                <foreach collection="departmentCode" open="(" separator="," close=")" item="code">
+                    #{code}
+                </foreach>
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and ct.gmt_modified &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and ct.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+        ORDER BY
+        ct.msg_sent_time DESC
+    </select>
+
+    <select id="selectCountByUserIds"
+            resultType="com.tdtech.cloudcmd.im.jingxin.api.entity.collaborations.CollaborationTaskCountResponse">
+        SELECT
+        post_id AS postId,
+        COUNT(1) AS cnt
+        FROM
+        tb_task ct
+        <where>
+            <if test="collaborationIds != null and collaborationIds.size() > 0">
+                ct.post_id IN
+                <foreach collection="collaborationIds" item="collaborationId" open="(" separator="," close=")">
+                    #{collaborationId}
+                </foreach>
+            </if>
+            <!-- 时间范围过滤 -->
+            <if test="startTime != null and startTime != ''">
+                and ct.gmt_modified &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and ct.gmt_modified &lt;= CONCAT(#{endTime}, ' 23:59:59')
+            </if>
+        </where>
+        <!-- 按用户ID分组，统计每个用户的数量 -->
+        GROUP BY post_id
+    </select>
+
+    <!--
+        游标分页拉取协同任务统计明细（一条 SQL 关联出全部聚合字段）。
+        关联：tb_collaboration_post(post_name) + tb_task_expired(expired_time)
+              + tb_task_response 首次回复 + tb_task_status_history track/finish/ignore 各首条。
+        tb_task_status_history 同表只关联一次（派生表内窗口函数取各状态首条后行转列），
+        控制在 5 表关联以内；派生表按 task_id 聚合为一行，避免关联行膨胀。
+        双游标：(gmt_modified, id) > (timeAfter, idAfter)，首次拉取 timeAfter/idAfter 传 null。
+        多查 1 条（pageSize+1）用于判断 hasMore。
+        依赖 map-underscore-to-camel-case 将列名映射到 StaticTaskAggVO 字段。
+    -->
+    <select id="selectStaticTaskAggByCursor"
+            resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.StaticTaskAggVO">
+        SELECT
+            t.id,
+            t.id          AS task_id,
+            t.user_id,
+            t.from_user_id,
+            t.from_user_name,
+            t.from_user_department_id,
+            t.from_user_department_name,
+            t.status,
+            t.msg_sent_time,
+            t.seqid,
+            t.post_id,
+            t.gmt_created,
+            t.gmt_modified,
+            p.post_name   AS post_name,
+            e.create_time AS expired_time,
+            r.gmt_created AS response_time,
+            r.user_id     AS response_user_id,
+            r.user_name   AS response_user_name,
+            h.track_time,
+            h.track_user_id,
+            h.track_user_name,
+            h.finish_time,
+            h.finish_user_id,
+            h.finish_user_name,
+            h.ignore_time,
+            h.ignore_user_id,
+            h.ignore_user_name
+        FROM tb_task t
+        LEFT JOIN tb_collaboration_post p ON t.post_id = p.id
+        LEFT JOIN tb_task_expired e ON e.task_id = t.id
+        LEFT JOIN tb_task_response r ON r.id = (
+            SELECT id FROM tb_task_response
+            WHERE task_id = t.id
+            ORDER BY gmt_created ASC, id ASC
+            LIMIT 1
+        )
+        <!-- tb_task_status_history 单次关联：窗口函数取每个 (task_id, status) 首条记录，
+             再按 task_id 行转列聚合成一行，等价于原来 track/finish/ignore 三次独立 JOIN -->
+        LEFT JOIN (
+            SELECT task_id,
+                   MAX(CASE WHEN status = 2 THEN gmt_created END) AS track_time,
+                   MAX(CASE WHEN status = 2 THEN user_id END)     AS track_user_id,
+                   MAX(CASE WHEN status = 2 THEN user_name END)   AS track_user_name,
+                   MAX(CASE WHEN status = 3 THEN gmt_created END) AS finish_time,
+                   MAX(CASE WHEN status = 3 THEN user_id END)     AS finish_user_id,
+                   MAX(CASE WHEN status = 3 THEN user_name END)   AS finish_user_name,
+                   MAX(CASE WHEN status = 4 THEN gmt_created END) AS ignore_time,
+                   MAX(CASE WHEN status = 4 THEN user_id END)     AS ignore_user_id,
+                   MAX(CASE WHEN status = 4 THEN user_name END)   AS ignore_user_name
+            FROM (
+                SELECT x.task_id, x.status, x.gmt_created, x.user_id, x.user_name,
+                       ROW_NUMBER() OVER (PARTITION BY x.task_id, x.status
+                                          ORDER BY x.gmt_created ASC, x.id ASC) AS rn
+                FROM tb_task_status_history x
+                WHERE x.status IN (2, 3, 4)
+            ) ranked
+            WHERE ranked.rn = 1
+            GROUP BY ranked.task_id
+        ) h ON h.task_id = t.id
+        <where>
+            t.status != -1
+            <if test="timeAfter != null">
+               and (t.gmt_modified &gt; #{timeAfter}
+                    OR (t.gmt_modified = #{timeAfter} AND t.id &gt; #{idAfter}))
+            </if>
+        </where>
+        ORDER BY t.gmt_modified ASC, t.id ASC
+        LIMIT #{pageSize}
+    </select>
+</mapper>

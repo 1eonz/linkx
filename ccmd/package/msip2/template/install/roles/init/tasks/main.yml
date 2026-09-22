@@ -1,0 +1,115 @@
+---
+- name: check if the vipConfig file exists
+  stat:
+    path: /data/commonConfig/vipConfig/vipConfig.conf
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: vip_file
+
+- name: read the VIP configured by the user in the IaaS layer
+  set_fact:
+    vip: "{{ lookup('file', '/data/commonConfig/vipConfig/vipConfig.conf') | regex_search('vip:([^,]+)', '\\1') | first }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: vip_file.stat.exists
+
+- name: set default VIP
+  set_fact:
+    vip: "{{ first_kube_master }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: not vip_file.stat.exists
+
+- name: broadcast vip to all hosts
+  set_fact:
+    vip: "{{ hostvars[first_kube_master]['vip'] }}"
+  when: hostvars[first_kube_master]['vip'] is defined
+
+- name: display extracted VIP
+  debug:
+    msg: "{{ vip }}"
+  when: vip is defined
+
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}" 
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info 
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data  
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+  #创建集群模式cm
+- name: create default ns cluster model cm
+  command: "{{ bin_dir }}/kubectl create configmap install-model --from-literal=model={{ model }}"
+  ignore_errors: yes 
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: create platform ns cluster model cm
+  command: "{{ bin_dir }}/kubectl -n platform create configmap install-model --from-literal=model={{ model }}"
+  ignore_errors: yes 
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+#创建平台accesstoken
+- name: create platfrom accesstoken
+  command: "{{ bin_dir }}/kubectl -n platform create secret generic  accesstoken  --from-file=/root/.kube/config"
+  ignore_errors: yes 
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: label node
+  include_role:
+    name: labels
+  when:
+    - phase=="install" or phase=="upgrade"
+    - inventory_hostname == first_kube_master
+
+- name: find init files
+  find:
+    paths: "{{ init_path }}"
+    recurse: no
+    patterns: 
+    - "*.yaml"
+    - "*.yml"
+  register: init_files
+  delegate_to: "{{ first_kube_master }}" 
+
+- name: init namespace
+  command: "kubectl apply -f  {{ init_path }}/namespace.yaml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when: init_files.matched > 0
+
+- name: apply each init file 
+  command: "kubectl apply -f {{ item.path }}"
+  loop: "{{ init_files.files }}"
+  delegate_to: "{{ first_kube_master }}"
+  become: yes 
+  run_once: yes
+  ignore_errors: yes
+  when: init_files.matched > 0
+
+- name: create app ns cluster model cm 
+  command: "{{ bin_dir }}/kubectl -n {{ namespace }} create configmap install-model --from-literal=model={{ model }}"
+  ignore_errors: yes 
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes

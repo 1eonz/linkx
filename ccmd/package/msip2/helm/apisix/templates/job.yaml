@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-{{.Values.name}}-{{ now | date "20060102150405" }}
+  namespace: {{.Release.Namespace}}
+spec:
+  template:
+    metadata:
+      annotations:
+        safebox/enable: "true"
+    spec:
+      initContainers:
+        - name: wait-apisix-admin
+          image: imagerepo.td-tech.com:5001/busybox:1.28.0
+          command: [ 'sh', '-c', "until nc -z apisix-admin.platform 9180 ; do echo waiting for apisix-admin; sleep 2; done;" ]
+      containers:
+        - name: curl
+          image: imagerepo.td-tech.com:5001/busybox-curl:7.79.1.0
+          command:
+            - "sh"
+            - "/home/init.sh"
+          env:
+            - name: APISIX_TOKEN
+              value: "safebox:platform/platform-secret#apisixadmin_token"
+          volumeMounts:
+            - mountPath: /home
+              name: {{.Values.name}}-apisix-scripts
+      restartPolicy: Never
+      volumes:
+        - configMap:
+            name: {{.Values.name}}-apisix-scripts
+          name: {{.Values.name}}-apisix-scripts
+  backoffLimit: 2

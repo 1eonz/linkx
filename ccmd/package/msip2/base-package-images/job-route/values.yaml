@@ -1,0 +1,211 @@
+name: "route"
+
+upstreams:
+  cloudcmd-web:
+    "cloudcmd-web.linkx.svc:8011": 1
+  cloudcmd-admin-web:
+    "cloudcmd-admin-web.linkx.svc:8012": 1
+  cloudcmd-h5portal:
+    "cloudcmd-h5portal.linkx.svc:80": 1
+  cloudcmd-gateway:
+    "cloudcmd-gateway.linkx.svc:8080": 1
+  cloudcmd-cagent:
+    "cloudcmd-cagent.linkx.svc:8867": 1
+  cloudcmd-admin-service:
+    "cloudcmd-admin-service.linkx.svc:8080": 1
+  cloudcmd-im-jingxin:
+    "cloudcmd-im-jingxin.linkx.svc:8080": 1
+  cloudcmd-im-openapi:
+    "cloudcmd-im-openapi.linkx.svc:8080": 1
+  linkx-dashboard-service:
+    "linkx-dashboard-service.linkx.svc:8080": 1
+  linkx-third-service:
+    "linkx-third-service.linkx.svc:8080": 1
+  linkx-node-service:
+    "linkx-node-service.linkx.svc:8080": 1
+  linkx-node-p2p-ws:
+    "linkx-node-service.linkx.svc:30017": 1
+  egress-ai:
+    "egress-ai.linkx.svc:8080": 1
+  egress-pim:
+    "egress-pim.linkx.svc:8080": 1
+  mapbox:
+    "mapbox.linkx.svc:10101": 1
+
+routes:
+  "/linkx/desktop/":
+    bindings: [ 9443 ]
+    cors: true
+    xFrameOptions: ALLOWALL
+    config:
+      desktop-web:
+        upstream: cloudcmd-web
+        uris: [ "/linkx/desktop/cloudcmd/*","/linkx/desktop/actuator/*" ]
+        enableWs: false
+      desktop-gateway:
+        upstream: cloudcmd-gateway
+        uris: [ "/linkx/desktop/*" ]
+        enableWs: false
+      desktop-cagent:
+        upstream: cloudcmd-cagent
+        uris: [ "/linkx/desktop/cagent" ]
+        enableWs: true
+      desktop-jingxin:
+        upstream: cloudcmd-im-jingxin
+        uris: [ "/linkx/desktop/collaboration/static/*" ]
+        enableWs: false
+      desktop-dashboard:
+        upstream: linkx-dashboard-service
+        uris: [ "/linkx/desktop/dashboard/*" ]
+        enableWs: false
+      desktop-third:
+        upstream: linkx-third-service
+        uris: [ "/linkx/desktop/third/*" ]
+        enableWs: false
+      desktop-ai:
+        upstream: cloudcmd-gateway
+        uris: [ "/linkx/desktop/XA-ics-agent/*" ]
+        enableWs: true
+      desktop-pim:
+        upstream: egress-pim
+        uris: [ "/linkx/desktop/pim/*" ]
+        enableWs: false
+      desktop-mapbox:
+        upstream: mapbox
+        uris: [ "/linkx/desktop/map/v1/*" ]
+        enableWs: false
+      desktop-node:
+        upstream: linkx-node-service
+        uris: [ "/linkx/desktop/node/v1/*" ]
+        enableWs: true
+  "/linkx/h5portal":
+    bindings: [ 9080 ]
+    cors: true
+    xFrameOptions: ALLOWALL
+    config:
+      h5portal-web:
+        upstream: cloudcmd-h5portal
+        uris: [ "/linkx/h5portal/*"]
+        enableWs: false
+      h5portal-cagent:
+        upstream: cloudcmd-cagent
+        uris: [ "/linkx/h5portal/cagent" ]
+        enableWs: true
+      h5portal-admin-staticFile:
+        upstream: cloudcmd-admin-service
+        uris: [ "/linkx/h5portal/admin/staticFile/*" ]
+        enableWs: false
+      h5portal-gateway:
+        upstream: cloudcmd-gateway
+        uris:
+          - "/linkx/h5portal/base/*"
+          - "/linkx/h5portal/auth/*"
+          - "/linkx/h5portal/collaboration/*"
+          - "/linkx/h5portal/policeticket/*"
+          - "/linkx/h5portal/admin/*"
+          - "/linkx/h5portal/proxy/icp/*"
+          - "/linkx/h5portal/dashboard/*"
+          - "/linkx/h5portal/third/*"
+          - "/linkx/h5portal/node/*"
+        enableWs: false
+      h5portal-ai:
+        upstream: cloudcmd-gateway
+        uris: [ "/linkx/h5portal/XA-ics-agent/*" ]
+        enableWs: true
+      h5portal-mapbox:
+        upstream: mapbox
+        uris: [ "/linkx/h5portal/map/v1/*" ]
+        enableWs: false
+  "/linkx/admin/":
+    bindings: [ 9444 ]
+    config:
+      admin-web:
+        upstream: cloudcmd-admin-web
+        uris: [ "/linkx/admin/*"]
+        enableWs: false
+      # 前端页面路由 - 精确匹配，优先于 admin-gateway 的通配符匹配
+      admin-collaboration-page:
+        upstream: cloudcmd-admin-web
+        uris:
+          - "/linkx/admin/collaboration/collaboration"
+          - "/linkx/admin/collaboration/quick"
+          - "/linkx/admin/collaboration/index"
+        enableWs: false
+      admin-staticFile:
+        upstream: cloudcmd-admin-service
+        uris: [ "/linkx/admin/api/staticFile/*" ]
+        enableWs: false
+        rewrite:
+          source: "/linkx/admin/api/staticFile"
+          target: "/admin/staticFile"
+      admin-col-static:
+        upstream: cloudcmd-admin-service
+        uris: [ "/linkx/admin/api/static/*" ]
+        enableWs: false
+        rewrite:
+          source: "/linkx/admin/api/static"
+          target: "/admin/static"
+      admin-api:
+        upstream: cloudcmd-gateway
+        uris: [ "/linkx/admin/api/*" ]
+        enableWs: false
+        rewrite:
+          source: "/linkx/admin/api"
+          target: "/admin/v1"
+      admin-gateway:
+        upstream: cloudcmd-gateway
+        uris:
+          - "/linkx/admin/base/*"
+          - "/linkx/admin/auth/*"
+          - "/linkx/admin/collaboration/*"
+          - "/linkx/admin/policeticket/*"
+          - "/linkx/admin/proxy/icp/*"
+          - "/linkx/admin/third/*"
+          - "/linkx/admin/dashboard/*"
+        enableWs: false
+        rewrite:
+          source: "/linkx/admin"
+          target: ""
+      admin-node:
+        upstream: cloudcmd-gateway
+        uris:
+          - "/linkx/admin/node/*"
+        enableWs: false
+        rewrite:
+          source: "/linkx/admin/node"
+          target: "/node"
+      admin-node-proxy:
+        upstream: linkx-node-service
+        uris:
+          - "/linkx/admin/node/v1/p2p/*/proxy/*"
+        enableWs: false
+        rewrite:
+          source: "/linkx/admin/node"
+          target: "/node"
+      admin-mapbox:
+        upstream: mapbox
+        uris: [ "/linkx/h5portal/map/v1/*" ]
+        enableWs: false
+      admin-ai:
+        upstream: cloudcmd-gateway
+        uris: [ "/linkx/admin/XA-ics-agent/*" ]
+        enableWs: true
+      admin-p2p-ws:
+        upstream: linkx-node-p2p-ws
+        uris: [ "/linkx/admin/node/ws","/linkx/admin/node/ws/*" ]
+        enableWs: true
+        rewrite:
+          source: "/linkx/admin/node"
+          target: ""
+  "/linkx/openapi/":
+    bindings: [ 9443, 9080 ]
+    cors: true
+    xFrameOptions: ALLOWALL
+    config:
+      openapi:
+        upstream: cloudcmd-im-openapi
+        uris: [ "/linkx/openapi/*" ]
+        enableWs: false
+        rewrite:
+          source: "/linkx/openapi"
+          target: "/openapi"

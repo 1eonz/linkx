@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.CoopLevelMemberMapper">
+
+    <resultMap id="coopUserResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.CoopUser">
+        <id property="id" column="coop_user_id" />
+        <result property="name" column="post_name" />
+        <result property="uid" column="id" />
+        <result column="operate_time" property="operateTime"/>
+        <result column="org_name" property="orgName"/>
+        <result column="related_user_names" property="relatedUserNames"/>
+        <result column="icon_url" property="iconUrl"/>
+        <result column="level_name" property="levelName"/>
+        <result column="org_id" property="orgId"/>
+    </resultMap>
+
+    <select id="getMemberCountByLevelId" resultType="int">
+        SELECT COUNT(1) FROM tb_coop_level_member WHERE coop_level_id = #{levelId} and is_deleted = 0
+    </select>
+
+    <select id="getMembers" resultMap="coopUserResultMap">
+        SELECT coop_user_id, p.post_name, m.id, p.related_user_names, p.org_name, m.gmt_created as operate_time, p.icon_url, p.org_id
+        FROM tb_coop_level_member m
+        LEFT JOIN tb_collaboration_post p ON m.coop_user_id = p.id
+        WHERE coop_level_id = #{levelId} and m.is_deleted = 0 and p.deleted = 0
+        <if test="departments != null and departments.size != 0">
+            and p.org_id in
+            <foreach collection="departments" item="department" open="(" separator="," close=")">
+                #{department}
+            </foreach>
+        </if>
+        order by m.gmt_created desc
+    </select>
+
+    <select id="getMemberList" resultMap="coopUserResultMap">
+        SELECT coop_user_id, p.post_name, m.id, p.related_user_names, p.org_name, p.operate_time, p.org_id, p.icon_url
+        FROM tb_coop_level_member m
+        LEFT JOIN tb_collaboration_post p ON m.coop_user_id = p.id
+        WHERE coop_level_id = #{levelId} and m.is_deleted = 0 and p.deleted = 0
+    </select>
+
+    <insert id="insertBatch">
+         INSERT INTO tb_coop_level_member ( id, coop_user_id, coop_level_id, is_deleted, create_by )
+         VALUES
+         <foreach collection="coopLevelMembers" separator="," item="item">
+             ( #{item.id}, #{item.coopUserId}, #{item.coopLevelId}, 0, #{item.createBy} )
+         </foreach>
+    </insert>
+
+    <update id="deleteByCoopUserIds">
+         UPDATE tb_coop_level_member
+         SET is_deleted = 1
+         WHERE id IN
+         <foreach collection="ids" open="(" close=")" separator="," item="id">
+             #{id}
+         </foreach>
+    </update>
+
+    <select id="getMemberByLevelId" resultType="com.tdtech.cloudcmd.im.jingxin.server.entity.CoopLevelMemberDO">
+        SELECT id, coop_user_id, coop_level_id, is_deleted, create_by, gmt_created FROM tb_coop_level_member WHERE coop_level_id = #{levelId} and is_deleted = 0
+    </select>
+
+    <select id="getBindMember" resultType="java.lang.String">
+        SELECT tcp.post_name FROM tb_coop_level_member m
+        LEFT JOIN tb_collaboration_post tcp ON tcp.id = m.coop_user_id
+        WHERE is_deleted = 0 AND tcp.deleted = 0 AND coop_user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="searchMembers" resultMap="coopUserResultMap">
+        SELECT coop_user_id, p.post_name, m.id, p.related_user_names, p.org_name, m.gmt_created as operate_time, l.name as level_name, p.org_id, p.icon_url
+        FROM tb_coop_level_member m
+        LEFT JOIN tb_collaboration_post p ON m.coop_user_id = p.id
+        LEFT JOIN tb_coop_level l ON m.coop_level_id = l.id
+        WHERE m.is_deleted = 0 and p.deleted = 0 and l.is_deleted = 0 and p.post_name like concat('%', #{name}, '%')
+        <if test="levelId != null and levelId != ''">
+            and m.coop_level_id = #{levelId}
+        </if>
+        <if test="startTime != null and startTime != ''">
+            AND m.gmt_created &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND m.gmt_created &lt;=CONCAT(#{endTime}, ' 23:59:59')
+        </if>
+        <if test="departments != null and departments.size != 0">
+            and p.org_id in
+            <foreach collection="departments" item="department" open="(" separator="," close=")">
+                #{department}
+            </foreach>
+        </if>
+        order by m.gmt_created desc
+    </select>
+
+    <select id="getMemberWithoutPermission" resultMap="coopUserResultMap">
+        SELECT coop_user_id, p.post_name, m.id, p.related_user_names, p.org_name, p.operate_time, p.org_id
+        FROM tb_coop_level_member m
+        LEFT JOIN tb_collaboration_post p ON m.coop_user_id = p.id
+        WHERE m.is_deleted = 0 and p.deleted = 0 and m.id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        <if test="departments != null and departments.size != 0">
+            and p.org_id in
+            <foreach collection="departments" item="department" open="(" separator="," close=")">
+                #{department}
+            </foreach>
+        </if>
+    </select>
+</mapper>

@@ -1,0 +1,39 @@
+PUT {{sdkServer}}/sdkserver/v1/register/{{isdn}}/unifilogin
+Content-Type: application/json
+
+{
+  "password": "{{password}}",
+  "force": "true",
+  "localip": "127.0.0.1"
+}
+
+###
+POST {{sdkServer}}/sdkserver/v1/heartbeat/{{isdn}}
+session: {{session}}
+
+###
+GET {{sdkServer}}/sdkserver/v1/querylist/{{isdn}}/department
+session: {{session}}
+
+###
+GET {{sdkServer}}/sdkserver/v1/querylist/{{isdn}}/cameralevel
+session: {{session}}
+
+###
+POST {{sdkServer}}/sdkserver/v1/querylist/{{isdn}}/querylevelcameras
+session: {{session}}
+Content-Type: application/json
+
+{
+  "levelnumber": "1614477501841930",
+  "offset": "0",
+  "limit": "100"
+}
+
+###
+GET {{sdkServer}}/sdkserver/v2/{{isdn}}/user?offset=0&limit=100&departmentid=3662633
+session: {{session}}
+
+###
+GET {{sdkServer}}/sdkserver/v1/queryattribute/{{isdn}}/camera/1000001
+session: {{session}}

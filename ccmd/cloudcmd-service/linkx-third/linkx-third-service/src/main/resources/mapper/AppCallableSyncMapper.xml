@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.linkx.third.mapper.AppCallableSyncMapper">
+    <update id="executeUpdateDynamicSql" parameterType="java.lang.String">
+        ${sql}
+    </update>
+    <select id="checkTableExists" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT COUNT(*) FROM information_schema.tables  WHERE table_schema = DATABASE()
+          AND table_name   = #{tableName}
+    </select>
+    <select id="getColumnInfo" resultType="com.tdtech.cloudcmd.linkx.third.vo.AppCallableDataTableColumnInfoVo"
+            parameterType="java.lang.String">
+        select column_name as columnName,data_type as columnType from information_schema.`COLUMNS` c
+        where c.TABLE_SCHEMA = DATABASE()
+        AND table_name   = #{tableName}
+    </select>
+    <insert id="insertOrUpdateAppData">
+        INSERT INTO ${tableName}
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <foreach collection="columns" item="col">
+                `${col}`,
+            </foreach>
+        </trim>
+        VALUES
+        <foreach collection="dataList" item="data" separator=",">
+            <trim prefix="(" suffix=")" suffixOverrides=",">
+                <foreach collection="columns" item="col">
+                    #{data.${col}},
+                </foreach>
+            </trim>
+        </foreach>
+
+        ON DUPLICATE KEY UPDATE
+        <foreach collection="columns" item="col" separator=",">
+            <!-- 跳过不能更新的字段 -->
+            <if test="!unUpdatedColumns.contains(col)">
+                `${col}` = VALUES(`${col}`)
+            </if>
+        </foreach>
+    </insert>
+</mapper>

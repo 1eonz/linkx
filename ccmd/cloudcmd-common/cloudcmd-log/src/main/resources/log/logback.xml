@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径/opt/ccmd/logs/support和/opt/ccmd/logs/biz-->
+    <property name="LOG_HOME" value="/opt/cloudcmd/logs/"/>
+    <property name="LOG_FILENAME" value="${cloudcmd.service.name}"/>
+    <!-- 控制台输出 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>[%-5level]%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%file : %line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- spring log configure -->
+    <logger name="com.springframework" level="WARN"/>
+    <!-- 减少nacos日志 -->
+    <logger name="com.alibaba.nacos" level="ERROR"/>
+    <logger name="org.apache.dubbo" level="INFO"/>
+	<logger name="org.apache.kafka" level="WARN"/>    
+
+    <!-- 日志输出级别 -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

@@ -1,0 +1,2 @@
+com.chinasoft.cloud.framework.tenant.config.CrsTenantRpcAutoConfiguration
+com.chinasoft.cloud.framework.tenant.config.CrsTenantAutoConfiguration

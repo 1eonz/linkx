@@ -1,0 +1,140 @@
+# Flyway 逆向回滚（备选）：当无 DB tar 备份时，逆序执行 *.sql.rollback 并清理 flyway_schema_history
+# 脚本命名约定：升级脚本 AAA.sql 对应回滚脚本 AAA.sql.rollback
+# 查找路径优先：patch/{ns}/db/flyway_rollback（打补丁时缓存）；其次 app mysql_path
+---
+- name: flyway rollback | make sure app-info exists
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: flyway rollback | fail if app-info missing
+  fail:
+    msg: "patch_rollback: app-info not found at {{ app_info_path }}, cannot rollback database."
+  when: not file_status.stat.exists
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: flyway rollback | load app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: flyway rollback | get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: flyway rollback | set db container standalone
+  set_fact:
+    db_container: "greatsql-standalone"
+  when: model == "standalone"
+
+- name: flyway rollback | set db container cluster
+  set_fact:
+    db_container: "mysql"
+  when: model == "cluster"
+
+- name: flyway rollback | check tar backup exists
+  find:
+    paths: "{{ upgrade_backup_dir }}/patch/{{ namespace }}/db"
+    patterns: "*.tar.gz"
+  register: patch_db_tar_files
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  failed_when: false
+  when: namespace is defined
+
+# 优先查补丁包 mysql 目录；若 PRE_INSTALL 已用备份覆盖导致 script 丢失，
+# 再查打补丁时落到 DB 备份目录的副本
+- name: flyway rollback | find rollback scripts in app mysql_path
+  find:
+    paths: "{{ mysql_path }}"
+    patterns: "*.sql.rollback"
+    recurse: yes
+  register: rollback_sql_files_app
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  failed_when: false
+
+- name: flyway rollback | find rollback scripts in db backup copy
+  find:
+    paths: "{{ upgrade_backup_dir }}/patch/{{ namespace }}/db/flyway_rollback"
+    patterns: "*.sql.rollback"
+    recurse: yes
+  register: rollback_sql_files_backup
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  failed_when: false
+  when: namespace is defined
+
+# 优先使用打补丁时缓存到 DB 备份目录的副本（与补丁包一致，不受 PRE_INSTALL overlay 影响）；
+# 若无副本，再回退到当前 mysql_path（兼容未升级前的旧补丁包）
+- name: flyway rollback | merge rollback script lists
+  set_fact:
+    rollback_sql_files:
+      files: >-
+        {{ (rollback_sql_files_backup.files | default([]) | length > 0)
+           | ternary(rollback_sql_files_backup.files,
+                     rollback_sql_files_app.files | default([])) }}
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: flyway rollback | decide whether to run
+  set_fact:
+    # 无 tar 备份时走 Flyway 逆向；有 tar 则交给 restore_db 整库恢复
+    do_flyway_script_rollback: >-
+      {{ (patch_db_tar_files.files | default([]) | length == 0)
+         and (rollback_sql_files.files | default([]) | length > 0) }}
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: flyway rollback | skip because tar backup exists
+  debug:
+    msg: "DB tar backup exists, skip flyway .sql.rollback (restore_db will restore)."
+  when:
+    - patch_db_tar_files.files is defined
+    - patch_db_tar_files.files | length > 0
+
+- name: flyway rollback | fail when no tar and no rollback scripts
+  fail:
+    msg: >-
+      patch_rollback: no DB tar under {{ upgrade_backup_dir }}/patch/{{ namespace }}/db
+      and no *.sql.rollback found. Cannot rollback database.
+  when:
+    - namespace is defined
+    - (patch_db_tar_files.files | default([]) | length == 0)
+    - (rollback_sql_files.files | default([]) | length == 0)
+
+- name: flyway rollback | sort scripts reverse (逆序执行)
+  set_fact:
+    sorted_rollback_scripts: "{{ rollback_sql_files.files | sort(attribute='path') | reverse | list }}"
+  when: do_flyway_script_rollback | bool
+
+- name: flyway rollback | execute each .sql.rollback
+  shell: |
+    script_path="{{ item.path }}"
+    db_name="$(basename "$(dirname "$script_path")")"
+    base_script="$(basename "$script_path" .rollback)"
+    echo "Execute rollback script: $script_path for db=$db_name base=$base_script"
+    kubectl exec -i -n platform $(kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].metadata.name}') \
+      -c {{ db_container }} -- mysql -uroot "$db_name" < "$script_path"
+    # 清理 flyway 历史中对应升级脚本记录（精确匹配文件名，避免 LIKE 误删）
+    kubectl exec -i -n platform $(kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].metadata.name}') \
+      -c {{ db_container }} -- mysql -uroot "$db_name" -e \
+      "DELETE FROM flyway_schema_history WHERE script='${base_script}';"
+  loop: "{{ sorted_rollback_scripts | default([]) }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: do_flyway_script_rollback | bool
+
+- name: flyway rollback | mark done for restore_db
+  set_fact:
+    flyway_script_rollback_done: true
+  when: do_flyway_script_rollback | bool
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true

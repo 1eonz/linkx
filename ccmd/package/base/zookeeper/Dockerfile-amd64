@@ -1,0 +1,6 @@
+FROM 127.0.0.1:5000/jre:21.msjdk.minideb.trixie.amd64
+COPY apache-zookeeper-3.8.5-bin /opt/zookeeper
+ENV PATH="/opt/zookeeper/bin:$PATH"
+ENV ZOOCFGDIR="/opt/zookeeper/conf"
+
+ENTRYPOINT ["zkServer.sh", "start-foreground"]

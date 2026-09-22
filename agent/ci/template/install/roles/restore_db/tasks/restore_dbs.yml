@@ -1,0 +1,287 @@
+- name: restore greatsql | make sure restore file exist
+  ansible.builtin.find:
+    paths: "{{ restore_path }}"
+    patterns: "*.tar.gz"
+    use_regex: no
+  register: tar_files
+  delegate_to: "{{ first_kube_master }}"
+
+- name: restore greatsql | Debug result tar_files
+  ansible.builtin.debug:
+    msg: "Found {{ tar_files.files | length }} .tar.gz files"
+  delegate_to: "{{ first_kube_master }}"
+  when: tar_files.files | length == 1
+
+- name: restore greatsql | Fail *.tar.gz files not found
+  ansible.builtin.fail:
+    msg: "No .tar.gz files found in {{ restore_path }}"
+  delegate_to: "{{ first_kube_master }}"
+  when: tar_files.files | length == 0
+
+- name: restore greatsql | Decompress tar_files
+  ansible.builtin.unarchive:
+    src: "{{ item.path }}"
+    dest: "{{ restore_path }}"
+    remote_src: yes
+  delegate_to: "{{ first_kube_master }}"
+  loop: "{{ tar_files.files }}"
+  when: tar_files.files | length == 1
+
+- name: restore greatsql | get greatsql node ips
+  command: kubectl get node -l mysql=true -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}'
+  register: node_ips_output
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Convert node ips to array
+  set_fact:
+    greatsql_node_ips: "{{ node_ips_output.stdout.split() }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Debug Node ips
+  debug:
+    var: greatsql_node_ips
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | sync bkdb to nodes
+  shell: |
+    ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} root@{{ item }} "mkdir -p {{ restore_path }}"
+    scp -o StrictHostKeyChecking=no -P {{ ansible_ssh_port }} -r {{ restore_path }}/* root@{{ item }}:{{ restore_path }}/
+  loop: "{{ greatsql_node_ips }}"
+  when: first_kube_master != item
+  delegate_to: "{{ first_kube_master }}"
+
+- name:  restore greatsql | Execute kubectl command to get master1 node name
+  shell: kubectl get nodes -A -o wide --no-headers |grep {{ first_kube_master }} | awk '{print $1}'
+  register: node_master1
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name:  restore greatsql | Convert node names to array
+  set_fact:
+    backupnode: "{{ node_master1.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Get hostname
+  shell: hostname
+  register: hostname_output
+  delegate_to: "{{ first_kube_master }}"
+
+- name: set default hostname
+  set_fact:
+    backupnode: "{{ hostname_output.stdout_lines[0] }}"
+  delegate_to: "{{ first_kube_master }}"
+  when: backupnode == ""
+  run_once: true
+
+- name:  restore greatsql | Debug Node Names
+  debug:
+    var: backupnode
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Create restorejob manifests files
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ greatsql_manifest_folder }}/{{ item.file }}"
+  loop:
+    - {name: greatsql, file: restore_mysql_job.yml, type: job}
+    - {name: greatsql, file: restore_db.yml, type: cm}
+    - {name: greatsql, file: restore_ibd.yml, type: cm}
+  register: greatsql_manifests
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Execute kubectl command to get slave node name
+  shell: kubectl get nodes -A -o wide --no-headers |grep -v {{ first_kube_master }} | awk '{print $1}'
+  register: slavenodes
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Convert slave node names to array
+  set_fact:
+    slavenodes: "{{ slavenodes.stdout_lines }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | Execute kubectl command to delete job
+  command: kubectl delete job restore-db-job -n platform
+  delegate_to: "{{ first_kube_master }}"
+  ignore_errors: true
+
+- name: restore greatsql | create configmap
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/restore_db.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: restore greatsql | create copy ibd configmap
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/restore_ibd.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: restore greatsql | discard leader mysql and copy ibd
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/restore_mysql_job.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: restore greatsql | make sure discard complete
+  command: "kubectl wait --for=condition=complete job/restore-db-job -n platform"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: restore_result
+  until: restore_result.rc == 0
+  retries: 20
+  delay: 60
+
+- name: restore greatsql | copy ibd to slave node
+  block:
+    - name: generate slave node job
+      template:
+        src: copy_ibd_job.yml.j2
+        dest: "{{ greatsql_manifest_folder }}/copy_ibd_job_{{ item }}.yml"
+      loop: "{{ slavenodes }}"
+      vars:
+        slavenode: "{{ item }}"
+
+    - name: delete slave node job
+      command: "kubectl delete job copy-ibd-job-{{ item }} -n platform"
+      loop: "{{ slavenodes }}"
+      ignore_errors: true
+      delegate_to: "{{ first_kube_master }}"
+      run_once: true
+
+    - name: copy ibd file to slave node
+      command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/copy_ibd_job_{{ item }}.yml"
+      loop: "{{ slavenodes }}"
+      delegate_to: "{{ first_kube_master }}"
+      run_once: true
+
+    - name: make sure slave restore complete
+      command: "kubectl wait --for=condition=complete job/copy-ibd-job-{{ item }} -n platform"
+      loop: "{{ slavenodes }}"
+      ignore_errors: true
+      delegate_to: "{{ first_kube_master }}"
+      run_once: true
+      register: restore_result
+      until: restore_result.rc == 0
+      retries: 20
+      delay: 60
+
+- name: restore greatsql | import tablespace to master node
+  shell: |
+    kubectl exec -i -n platform $(kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].metadata.name}') -c {{ db_container }} -- mysql -uroot < {{ restore_path }}/import_sql.sql
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  timeout: 2100
+
+# 清理恢复产物，保留 table_snapshot.list 与 flyway_rollback/ 供后续兜底使用
+- name: restore greatsql | clean old backup data
+  shell: |
+    find "{{ restore_path }}" -mindepth 1 -maxdepth 1 \
+      ! -name 'table_snapshot.list' \
+      ! -name 'flyway_rollback' \
+      -exec rm -rf {} +
+  loop: "{{ greatsql_node_ips }}"
+  delegate_to: "{{ item }}"
+
+- name: restore greatsql | get leader mysql hostip
+  shell: kubectl get po -A -l role=LEADER -o jsonpath='{.items[0].status.hostIP}'
+  register: leader_ip_stdout
+  delegate_to: "{{ first_kube_master }}"
+
+- name: restore greatsql | set fact leader_ip
+  set_fact:
+    leader_ip: "{{ leader_ip_stdout.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: restore greatsql | debug leader_ip
+  debug:
+    msg: "{{ leader_ip }}"
+
+- name: restore greatsql | stop mysql
+  shell: |
+    kubectl -n platform  delete mysqlclusters.mysql.radondb.com cnp
+    kubectl -n platform  wait --for=delete pod -l app.kubernetes.io/component=database --timeout=30m
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+# 删除非mysql主节点上的mysql文件
+- name: restore greatsql | delete /data/msip/data/mysql
+  shell: |
+    rm -rf /data/msip/data/mysql/*
+  loop: "{{ greatsql_node_ips }}"
+  delegate_to: "{{ item }}"
+  when: item != leader_ip
+  run_once: true
+
+#删除sock文件
+- name: restore greatsql | delete sock file
+  shell: "rm -f /data/msip/data/mysql/*.sock"
+  delegate_to: "{{ leader_ip }}"
+  become: yes
+  run_once: true
+
+# 把mysql主节点的数据拷贝到first kube master
+- name: restore greatsql | copy mysql file to first kube master
+  command: "scp -o StrictHostKeyChecking=no -P {{ ansible_ssh_port }} -r root@{{ leader_ip }}:/data/msip/data/mysql /data/msip/data/ "
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master != leader_ip
+
+# 把mysql的数据拷到除leader主机和first_kube_master以外的机器
+- name: restore greatsql | sync data to slave mysql host
+  command: "scp -o StrictHostKeyChecking=no -P {{ ansible_ssh_port }} -r /data/msip/data/mysql root@{{ item }}:/data/msip/data/"
+  loop: "{{ slavenodes }}"
+  when: leader_ip == first_kube_master
+  delegate_to: "{{ first_kube_master }}"
+
+- name: restore greatsql | get filtered_slave_nodes
+  set_fact:
+    filtered_slave_nodes: >-
+      {{
+        slavenodes | reject('in', [first_kube_master, leader_ip])
+      }}
+
+- name: restore greatsql | debug filtered_slave_nodes
+  debug:
+    msg: "{{ filtered_slave_nodes }}"
+
+- name: restore greatsql | sync data to slave mysql host
+  command: "scp -o StrictHostKeyChecking=no -P {{ ansible_ssh_port }} -r /data/msip/data/mysql root@{{ item }}:/data/msip/data/"
+  loop: "{{ filtered_slave_nodes }}"
+  when: leader_ip != first_kube_master
+  delegate_to: "{{ first_kube_master }}"
+
+- name: restore greatsql | Change owner of MySQL data files on all nodes
+  ansible.builtin.command: "chown -R {{ mysql_uid }}:{{ mysql_gid }} {{ mysql_storage_data_path }}"
+  loop: "{{ greatsql_node_ips }}"
+  delegate_to: "{{ item }}"
+  when: leader_ip != item
+  become: yes
+  vars:
+    mysql_uid: 1001
+    mysql_gid: 1001
+
+# 删除auto.conf
+- name: restore greatsql | delete slave auto.conf
+  command: "rm -f /data/msip/data/mysql/auto.cnf"
+  loop: "{{ greatsql_node_ips }}"
+  when: leader_ip != item
+  delegate_to: "{{ item }}"
+
+- name: restore greatsql | start cnp mysql
+  shell: |
+    kubectl -n platform  apply -f /etc/kubernetes/addons/greatsql/cm.yml
+    kubectl -n platform  apply -f /etc/kubernetes/addons/greatsql/mysqlcluster.yaml
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Waiting for mysql start
+  pause:
+    minutes: 1

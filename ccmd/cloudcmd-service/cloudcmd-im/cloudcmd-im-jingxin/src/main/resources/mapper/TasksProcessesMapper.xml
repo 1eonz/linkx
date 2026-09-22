@@ -1,0 +1,34 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.TasksProcessesMapper">
+
+    <resultMap id="TasksProcessesResultMap" type="com.tdtech.cloudcmd.im.jingxin.api.entity.tasks.TasksProcesses">
+        <id column="id" property="id"/>
+        <result column="task_number" property="taskNumber"/>
+        <result column="action" property="action"/>
+        <result column="status" property="status"/>
+        <result column="next_executors" property="nextExecutors"
+                typeHandler="com.tdtech.cloudcmd.im.jingxin.api.entity.tasks.TasksProcesses$ObjectListTypeHandler"
+                jdbcType="VARCHAR"/>
+        <result column="operator_name" property="operatorName"/>
+        <result column="operator_id" property="operatorId"/>
+        <result column="remark" property="remark"/>
+        <result column="gmt_created" property="gmtCreated"/>
+    </resultMap>
+
+    <select id="selectProcessesPage" resultMap="TasksProcessesResultMap">
+        SELECT id, task_number, action, status, next_executors, operator_name, operator_id, remark, gmt_created
+        FROM tb_tasks_processes
+        WHERE task_number = #{taskNumber}
+        ORDER BY gmt_created DESC
+    </select>
+
+    <select id="selectProcessesList" resultMap="TasksProcessesResultMap">
+        SELECT id, task_number, action, status, next_executors, operator_name, operator_id, remark, gmt_created
+        FROM tb_tasks_processes
+        WHERE task_number = #{taskNumber}
+          AND remark IS NOT NULL
+          AND remark != ''
+        ORDER BY gmt_created DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,12 @@
+- name: do migrate
+  include_tasks: migrate.yml
+  when:
+    - inventory_hostname == first_kube_master
+    - phase == "install" or phase == "upgrade" or phase == "patch_install"
+
+# 补丁回滚：无 DB tar 时，备选执行 *.sql.rollback 逆向脚本
+- name: do flyway rollback scripts
+  include_tasks: rollback.yml
+  when:
+    - inventory_hostname == first_kube_master
+    - phase == "patch_rollback"

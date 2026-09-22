@@ -1,0 +1,59 @@
+---
+# 获取所需参数
+- name: make sure app-info files exist
+  stat:
+    path: "{{ app_info_path }}"
+  register: file_status
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: Fail if the file does not exist
+  fail:
+    msg: "The app-info file does not exist. Aborting!"
+  when: not file_status.stat.exists
+  run_once: yes
+
+- name: Load variables from app-info
+  include_vars:
+    file: "{{ app_info_path }}"
+    name: data
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: get namespace
+  set_fact:
+    namespace: "{{ data['app-info'][0]['namespace'] }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+
+- name: detect config yml file exist
+  stat:
+    path: "{{ app_file_backup_config_path }}"
+  delegate_to: "{{ first_kube_master }}"
+  register: __backup_config_stat
+  run_once: true
+
+- name: Load backup file  config
+  include_vars: "{{ app_file_backup_config_path }}"
+  when: __backup_config_stat.stat.exists
+
+- name: Ensure the backup root directory exists
+  file:
+    path: "{{ upgrade_backup_dir }}/{{ item.namespace }}/mirrorFile"
+    state: directory
+    mode: '0755'
+  loop: "{{ file_backup }}"
+  when:
+    - not restore | default(false) | bool
+    - __backup_config_stat.stat.exists
+
+- name: Process each namespace.
+  vars:
+    backup_namespace: "{{ item.namespace }}"
+    backup_service: "{{ item.service }}"
+  include_tasks: mirror_recover_by_namespace.yml
+  loop: "{{ file_backup }}"
+  loop_control:
+    label: "{{ backup_namespace }}"
+  when:
+    - __backup_config_stat.stat.exists

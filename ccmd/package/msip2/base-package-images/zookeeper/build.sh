@@ -1,0 +1,40 @@
+#!/bin/sh
+ logger() {
+  echo "$(date +'%Y-%m-%d %H:%M:%S').$2.$0 [Build] $1"
+}
+
+ usage() {
+  echo "==================usage====================="
+  echo "sh build.sh /opt/conf.conf cloudcmd-admin"
+  echo "============================================"
+}
+
+config_path=$1
+dir_name=$2
+target_dir=$3
+manifests_dir=$4
+namespace=$5
+
+main(){
+  script_path=$(cd "$(dirname "$0")" || exit 1;pwd)
+  source ${config_path}
+  mkdir -p "${target_dir}/conf/midware"
+  docker pull repo.rd.td-tech.com/docker-virtual/linkx/zookeeper:3.8.5.msjre21.minideb.trixie.${arch}
+  docker tag repo.rd.td-tech.com/docker-virtual/linkx/zookeeper:3.8.5.msjre21.minideb.trixie.${arch} ${register_host}/zookeeper:3.8.5.msjre21.minideb.trixie.${arch}.${LOCAL_TIME}
+  helm template zookeeper "${script_path}/../../helm/zookeeper" \
+    --debug \
+    --set "namespace=${namespace},zk.image=${register_host}/zookeeper:3.8.5.msjre21.minideb.trixie.${arch}.${LOCAL_TIME}" \
+    > "$target_dir/conf/midware/zookeeper.yaml"
+  if [ $? -ne 0 ]; then
+    cat "$target_dir/conf/midware/zookeeper.yaml"
+    exit 1
+  fi
+  echo "${register_host}/zookeeper:3.8.5.msjre21.minideb.trixie.${arch}.${LOCAL_TIME}" >> "${target_dir}/images.txt"
+}
+
+if [ $# -lt 2 ]; then
+  usage
+  exit 1
+fi
+
+main $@

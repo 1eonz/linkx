@@ -1,0 +1,1 @@
+echo "degrade_post_handle_linkx" >/home/test.txt

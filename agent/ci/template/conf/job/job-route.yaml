@@ -1,0 +1,379 @@
+---
+# Source: apisix/templates/cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: routes-apisix-scripts
+  namespace: agent
+data:
+  init.sh: |-
+    #!/bin/bash
+    set -euo pipefail
+    cd "$(dirname "$0")" || exit 1
+    status_code=1
+    for file in upstream* ;do
+      echo "Processing $file..."
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" http://apisix-admin.platform:9180/apisix/admin/upstreams/agent-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file")
+      if [ "$status_code" = "200" ] || [ "$status_code" = "201" ]; then
+          echo "$file status code is $status_code"
+      else
+          echo "$file upstream add failed!status_code:$status_code"
+          curl http://apisix-admin.platform:9180/apisix/admin/upstreams/agent-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file"
+          exit 1
+      fi
+    done
+    for file in route* ;do
+      echo "Processing $file..."
+      status_code=$(curl -o /dev/null -s -w "%{http_code}" http://apisix-admin.platform:9180/apisix/admin/routes/agent-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file")
+      if [ "$status_code" = "200" ] || [ "$status_code" = "201" ]; then
+          echo "$file status code is $status_code"
+      else
+          echo "$file route add failed!status_code:$status_code"
+          curl http://apisix-admin.platform:9180/apisix/admin/routes/agent-${file} -H "X-API-KEY: ${APISIX_TOKEN}" -X PUT -d "@$file"
+          exit 1
+      fi
+    done
+  upstream-agent-gateway: |-
+    {
+      "timeout": {
+        "connect": 10,
+        "send": 10,
+        "read": 60
+      },
+      "type": "roundrobin",
+      "scheme": "http",
+      "pass_host": "pass",
+      "name": "agent-upstream-agent-gateway",
+      "keepalive_pool": {
+        "idle_timeout": 60,
+        "requests": 50000,
+        "size": 1000
+      },
+      "nodes": {"agent-gateway.agent.svc:8080":1}
+    }
+  upstream-agent-web: |-
+    {
+      "timeout": {
+        "connect": 10,
+        "send": 10,
+        "read": 60
+      },
+      "type": "roundrobin",
+      "scheme": "http",
+      "pass_host": "pass",
+      "name": "agent-upstream-agent-web",
+      "keepalive_pool": {
+        "idle_timeout": 60,
+        "requests": 50000,
+        "size": 1000
+      },
+      "nodes": {"agent-web.agent.svc:8081":1}
+    }
+  route-admin-gateway: |-
+    {
+      "uris": ["/agent/admin/admin-api/*"],
+      "upstream_id": "agent-upstream-agent-gateway",
+      "enable_websocket": false,
+      "name": "agent-route-admin-gateway",
+      "vars": [
+          [
+            "server_port",
+            "IN",
+            [
+              "9444"
+            ]
+          ]
+      ],
+      "plugins": {
+        "proxy-rewrite": {
+          "regex_uri": ["^/agent/admin/(.*)", "/$1"]
+        },
+        "response-rewrite":{
+          "headers":{
+            "set":{
+              "X-Frame-Options": "DENY",
+              "X-Content-Type-Options": "nosniff",
+              "X-XSS-Protection": "1; mode=block",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+            },
+            "remove": ["server","vary"]
+          }
+        },
+        "gzip": {
+          "types": "*",
+          "min_length": 20,
+          "buffers": {
+            "number": 32,
+            "size": 65536
+          }
+        }
+      }
+    }
+  route-admin-web: |-
+    {
+      "uris": ["/agent/admin/*"],
+      "upstream_id": "agent-upstream-agent-web",
+      "enable_websocket": false,
+      "name": "agent-route-admin-web",
+      "vars": [
+          [
+            "server_port",
+            "IN",
+            [
+              "9444"
+            ]
+          ]
+      ],
+      "plugins": {
+        "proxy-rewrite": {
+          "regex_uri": ["^/agent/admin/(.*)", "/$1"]
+        },
+        "response-rewrite":{
+          "headers":{
+            "set":{
+              "X-Frame-Options": "DENY",
+              "X-Content-Type-Options": "nosniff",
+              "X-XSS-Protection": "1; mode=block",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+            },
+            "remove": ["server","vary"]
+          }
+        },
+        "gzip": {
+          "types": "*",
+          "min_length": 20,
+          "buffers": {
+            "number": 32,
+            "size": 65536
+          }
+        }
+      }
+    }
+  route-admin-web-images: |-
+    {
+      "uris": ["/agent/api/images/*"],
+      "upstream_id": "agent-upstream-agent-web",
+      "enable_websocket": false,
+      "name": "agent-route-admin-web-images",
+      "vars": [
+          [
+            "server_port",
+            "IN",
+            [
+              "9080"
+              ,
+              "9443"
+            ]
+          ]
+      ],
+      "plugins": {
+        "proxy-rewrite": {
+          "regex_uri": ["^/agent/api/(.*)", "/$1"]
+        },
+         "response-rewrite":{
+          "headers":{
+            "set":{
+              "Access-Control-Allow-Private-Network": "true",
+              "Access-Control-Request-Private-Network": "true",
+              "X-Frame-Options": "ALLOWALL",
+              "X-Content-Type-Options": "nosniff",
+              "X-XSS-Protection": "1; mode=block",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+            },
+            "remove": ["server","vary"]
+          }
+        },
+        "cors":{
+          "allow_origins": "*",
+          "allow_methods": "POST,GET,PUT,DELETE,PATCH,OPTIONS",
+          "allow_headers": "*",
+          "max_age": 1728000
+        },
+        "gzip": {
+          "types": "*",
+          "min_length": 20,
+          "buffers": {
+            "number": 32,
+            "size": 65536
+          }
+        }
+      }
+    }
+  route-api-gateway: |-
+    {
+      "uris": ["/agent/api/app-api/*","/agent/api/admin-api/proxy/ai/v1/infra/file/*",
+    "/agent/api/proxy/ai/v1/deepseek-zjk/*","/agent/api/deepseek-zjk/*"],
+      "upstream_id": "agent-upstream-agent-gateway",
+      "enable_websocket": false,
+      "name": "agent-route-api-gateway",
+      "vars": [
+          [
+            "server_port",
+            "IN",
+            [
+              "9080"
+              ,
+              "9443"
+            ]
+          ]
+      ],
+      "plugins": {
+        "proxy-rewrite": {
+          "regex_uri": ["^/agent/api/(.*)", "/$1"]
+        },
+        "response-rewrite":{
+          "headers":{
+            "set":{
+              "Access-Control-Allow-Private-Network": "true",
+              "Access-Control-Request-Private-Network": "true",
+              "X-Frame-Options": "ALLOWALL",
+              "X-Content-Type-Options": "nosniff",
+              "X-XSS-Protection": "1; mode=block",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+            },
+            "remove": ["server","vary"]
+          }
+        },
+        "cors":{
+          "allow_origins": "*",
+          "allow_methods": "POST,GET,PUT,DELETE,PATCH,OPTIONS",
+          "allow_headers": "*",
+          "max_age": 1728000
+        },
+        "gzip": {
+          "types": "*",
+          "min_length": 20,
+          "buffers": {
+            "number": 32,
+            "size": 65536
+          }
+        }
+      }
+    }
+  route-api-aiagent-gateway: |-
+    {
+      "uris": ["/agent/api/proxy/ai/v1/aiagent/*"],
+      "upstream_id": "agent-upstream-agent-gateway",
+      "enable_websocket": false,
+      "name": "agent-route-api-aiagent-gateway",
+      "vars": [
+          [
+            "server_port",
+            "IN",
+            [
+              "9080"
+              ,
+              "9443"
+            ]
+          ]
+      ],
+      "plugins": {
+        "proxy-rewrite": {
+          "regex_uri": ["^/agent/api/proxy/ai/v1/aiagent/?(.*)", "/admin-api/proxy/ai/v1/aiagent/$1"]
+        },
+        "response-rewrite":{
+          "headers":{
+            "set":{
+              "Access-Control-Allow-Private-Network": "true",
+              "Access-Control-Request-Private-Network": "true",
+              "X-Frame-Options": "ALLOWALL",
+              "X-Content-Type-Options": "nosniff",
+              "X-XSS-Protection": "1; mode=block",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+            },
+            "remove": ["server","vary"]
+          }
+        },
+        "cors":{
+          "allow_origins": "*",
+          "allow_methods": "POST,GET,PUT,DELETE,PATCH,OPTIONS",
+          "allow_headers": "*",
+          "max_age": 1728000
+        },
+        "gzip": {
+          "types": "*",
+          "min_length": 20,
+          "buffers": {
+            "number": 32,
+            "size": 65536
+          }
+        }
+      }
+    }
+  route-ws-gateway: |-
+    {
+      "uris": ["/agent/ws","/agent/ws/*","/agent/api/transfer/ws","/agent/api/transfer/ws/*"],
+      "upstream_id": "agent-upstream-agent-gateway",
+      "enable_websocket": true,
+      "name": "agent-route-ws-gateway",
+      "vars": [
+          [
+            "server_port",
+            "IN",
+            [
+              "9080"
+              ,
+              "9443"
+            ]
+          ]
+      ],
+      "plugins": {
+        "proxy-rewrite": {
+          "regex_uri": ["^/agent/(?:api/transfer/)?ws.*", "/infra/ws"]
+        },
+        "response-rewrite":{
+          "headers":{
+            "set":{
+              "Access-Control-Allow-Private-Network": "true",
+              "Access-Control-Request-Private-Network": "true",
+              "X-Frame-Options": "ALLOWALL",
+              "X-Content-Type-Options": "nosniff",
+              "X-XSS-Protection": "1; mode=block",
+              "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+            },
+            "remove": ["server","vary"]
+          }
+        },
+        "cors":{
+          "allow_origins": "*",
+          "allow_methods": "POST,GET,PUT,DELETE,PATCH,OPTIONS",
+          "allow_headers": "*",
+          "max_age": 1728000
+        }
+      }
+    }
+---
+# Source: apisix/templates/job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-routes-{{ .Values.now }}
+  namespace: agent
+spec:
+  template:
+    metadata:
+      annotations:
+        safebox/enable: "true"
+    spec:
+      initContainers:
+        - name: wait-apisix-admin
+          image: imagerepo.td-tech.com:5001/busybox:1.28.0
+          command: [ 'sh', '-c', "until nc -z apisix-admin.platform 9180 ; do echo waiting for apisix-admin; sleep 2; done;" ]
+      containers:
+        - name: curl
+          image: imagerepo.td-tech.com:5001/busybox-curl:7.79.1.0
+          command:
+            - "sh"
+            - "/home/init.sh"
+          env:
+            - name: APISIX_TOKEN
+              value: "safebox:platform/platform-secret#apisixadmin_token"
+          volumeMounts:
+            - mountPath: /home
+              name: routes-apisix-scripts
+      restartPolicy: Never
+      volumes:
+        - configMap:
+            name: routes-apisix-scripts
+          name: routes-apisix-scripts
+  backoffLimit: 2

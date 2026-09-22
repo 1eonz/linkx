@@ -1,0 +1,96 @@
+---
+- name: check if the vipConfig file exists
+  stat:
+    path: /data/commonConfig/vipConfig/vipConfig.conf
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: vip_file
+
+- name: read the VIP configured by the user in the IaaS layer
+  set_fact:
+    vip: "{{ lookup('file', '/data/commonConfig/vipConfig/vipConfig.conf') | regex_search('vip:([^,]+)', '\\1') | first }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: vip_file.stat.exists
+
+- name: find pv files
+  find:
+    paths: "{{ deploy_path }}/pv"
+    recurse: no
+    patterns:
+    - "*.yaml"
+    - "*.yml"
+  register: pv_files
+
+- name: copy pv template file
+  template:
+    src: "{{item.path}}"
+    dest: "{{item.path}}"
+  with_items: "{{ pv_files.files }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: set default VIP
+  set_fact:
+    vip: "{{ first_kube_master }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: not vip_file.stat.exists
+
+- name: broadcast vip to all hosts
+  set_fact:
+    vip: "{{ hostvars[first_kube_master]['vip'] }}"
+  when: hostvars[first_kube_master]['vip'] is defined
+
+- name: display extracted VIP
+  debug:
+    msg: "{{ vip }}"
+  when: vip is defined
+
+- name: deploy pv
+  command: "kubectl apply -f  {{ item.path }} "
+  with_items: "{{ pv_files.files }}"
+  when: pv_files.matched > 0
+  ignore_errors: true
+
+- name: broadcast vip to all hosts
+  set_fact:
+    vip: "{{ hostvars[first_kube_master]['vip'] }}"
+  when: hostvars[first_kube_master]['vip'] is defined
+
+- name: display extracted VIP
+  debug:
+    msg: "{{ vip }}"
+  when: vip is defined
+
+- name: find deploy files
+  find:
+    paths: "{{ deploy_path }}/manifests"
+    recurse: no
+    patterns: 
+    - "*.yaml"
+    - "*.yml"
+  register: deploy_files
+
+- name: copy deploy template file
+  template:
+    src: "{{item.path}}"
+    dest: "{{item.path}}"
+  with_items: "{{ deploy_files.files }}"  
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: deploy app
+  command: "kubectl delete -f  {{ item.path }} "
+  with_items: "{{ deploy_files.files }}"
+  loop_control:
+    pause: 5
+  when: deploy_files.matched > 0
+  ignore_errors: true
+
+- name: deploy app
+  command: "kubectl apply -f  {{ item.path }} "
+  with_items: "{{ deploy_files.files }}"
+  loop_control:
+    pause: 5
+  when: deploy_files.matched > 0

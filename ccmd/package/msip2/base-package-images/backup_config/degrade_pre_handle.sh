@@ -1,0 +1,1 @@
+echo "degrade_pre_handle_linkx" >/home/test.txt

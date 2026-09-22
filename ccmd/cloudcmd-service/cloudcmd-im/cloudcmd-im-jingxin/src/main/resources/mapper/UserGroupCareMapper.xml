@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.UserGroupCareMapper">
+
+    <!-- 根据用户ID查询关注的群组ID列表 -->
+    <select id="selectGroupIdsByUserId" parameterType="java.lang.Long" resultType="java.lang.Long">
+        SELECT group_id
+        FROM tb_group_care
+        WHERE user_id = #{userId}
+        ORDER BY gmt_created DESC
+    </select>
+
+    <!-- 检查用户是否已关注群组 -->
+    <select id="countByUserIdAndGroupId" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM tb_group_care
+        WHERE user_id = #{userId}
+          AND group_id = #{groupId}
+    </select>
+
+    <!-- 批量取消关注群组 -->
+    <delete id="deleteByUserIdAndGroupIds">
+        DELETE FROM tb_group_care
+        WHERE user_id = #{userId}
+        AND group_id IN
+        <foreach collection="groupIds" item="groupId" open="(" separator="," close=")">
+            #{groupId}
+        </foreach>
+    </delete>
+</mapper>

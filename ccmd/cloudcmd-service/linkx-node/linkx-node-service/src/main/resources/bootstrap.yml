@@ -1,0 +1,114 @@
+spring:
+  application:
+    name: linkx-node-service
+
+  messages:
+    basename: node_service,license,common_bean
+
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://${cloudcmd.mysql.host}/linkx_node?allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+    username: ${cloudcmd.mysql.username}
+    password: ${cloudcmd.mysql.password}
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: mysql-node
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+      auto-commit: true
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1500000
+      minimum-idle: 10
+      maximum-pool-size: 50
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# P2P节点配置
+p2p:
+  local:
+    ip: ${P2P_LOCAL_IP:}
+    vip: ${P2P_VIP_IP:}
+    port: ${P2P_LOCAL_PORT:30016}
+    name: ${P2P_NODE_NAME:}
+    tag: ${P2P_NODE_TAG:}
+
+  # WebSocket服务端配置
+  server:
+    enabled: true
+    port: ${P2P_WS_PORT:30017}
+
+  # WebSocket客户端配置
+  client:
+    heartbeat-interval: 10000
+    reconnect-interval: 60000
+
+  # JWT配置
+  jwt:
+    secret: 6XhiLJLUhXZo7YcZ9gSX9AOV13T+UP0SAEDIYFNo8jg=
+    expire-seconds: 3600
+
+  # 挑战码配置
+  challenge:
+    expire-seconds: 30
+
+  # proxy 路由配置：originURI 前缀 → 微服务 K8s service name
+  # proxy 端收到 originURI 后，按前缀匹配，通过 service name 直连微服务（绕过 APISIX 与网关）
+  proxy:
+    routes:
+      - prefix: /collaboration
+        service: cloudcmd-im-jingxin
+      - prefix: /dashboard
+        service: linkx-dashboard-service
+      - prefix: /third
+        service: linkx-third-service
+      - prefix: /admin
+        service: cloudcmd-admin-service
+
+mybatis-plus:
+  type-handlers-package: com.tdtech.linkx.node
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    map-underscore-to-camel-case: true
+
+dubbo:
+  metrics:
+    protocol: prometheus
+    enable: true
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      system: true
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+        descriptions: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState

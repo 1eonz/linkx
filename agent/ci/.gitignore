@@ -1,0 +1,9 @@
+tmp
+poetry.lock
+maven/repo
+k3s.yaml
+.venv
+.idea
+__pycache__
+ci_env.toml
+*.s

@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: copy-ibd-job-{{ slavenode }}
+  namespace: {{ platform_namespace }}
+  labels:
+    app.kubernetes.io/instance: copy-ibd-job-{{ slavenode }}
+    app.kubernetes.io/name: copy-ibd-job
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        k8s-app: copy-ibd-job-{{ slavenode }}
+        app.kubernetes.io/instance: copy-ibd-job-{{ slavenode }}
+        app.kubernetes.io/name: copy-ibd-job
+      annotations:
+        safebox/enable: "true"
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: "{{ slavenode }}"
+      initContainers:
+        - name: wait-safebox-webhook
+          image: {{ greatsql_repo }}/checkme:1.0.4
+          command: ["/usr/bin/checkme"]
+      containers:
+      - name: copy-ibd-job
+        command: ["/bin/sh",  "/copy_ibd.sh"]
+        env:
+          - name: HOST
+            value: "cnp-leader.platform.svc.cluster.local"
+          - name: PORT
+            value: "3306"
+          - name: BACKUPUSER
+            value: "cnp"
+          - name: USERPASSWD
+            value: "safebox:platform/platform-secret#mysql_password"
+        image: "{{ greatsql_repo }}/xtrabackup:{{ greatsql_backup_version }}"
+        #image: "cmc.centralrepo.rnd.huawei.com/td_cloudnative/cnp/xtrabackup:8.0.35-31"
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: log
+            mountPath: /data/logs/job
+          - name: targetdir
+            mountPath: /restore
+          - name: datadir
+            mountPath: /var/lib/mysql
+          - name: localtime
+            mountPath: /etc/localtime
+          - name: mysql-bin
+            mountPath: /copy_ibd.sh
+            subPath: copy_ibd.sh
+            readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: log
+          hostPath:
+            path: /data/logs/job
+        - name: datadir
+          hostPath:
+            path: {{ mysql_storage_data_path }}
+        - name: targetdir
+          hostPath:
+            path: {{ restore_path }}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: mysql-bin
+          configMap:
+            name: mysql-copy-ibd
+            defaultMode: 0555

@@ -1,0 +1,2 @@
+com.chinasoft.cloud.framework.quartz.config.CrsXxlJobAutoConfiguration
+com.chinasoft.cloud.framework.quartz.config.CrsAsyncAutoConfiguration

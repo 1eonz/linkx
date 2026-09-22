@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{item}}-mysql-migrate-{{ job_uid }}
+  namespace: {{ platform_namespace }}
+spec:
+  ttlSecondsAfterFinished: 36000
+  template:
+    metadata:
+      annotations:
+        safebox/enable: "true"
+    spec:
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "4"
+      containers:
+      - name: migrate
+        image: {{image_repo_url}}/flyway:{{flyway_version}}
+        command: 
+        - flyway 
+        - migrate
+        - -X
+        env:
+          - name: FLYWAY_URL
+            value: jdbc:mysql://cnp-leader:3306?allowPublicKeyRetrieval=true&useSSL=false
+          - name: FLYWAY_USER
+            value: cnp
+          - name: FLYWAY_PASSWORD
+            value: "safebox:platform/platform-secret#mysql_password"
+          - name: environment
+            value: mysql
+          - name: FLYWAY_LOCATIONS
+            value: filesystem:/flyway/db/migration/*
+          - name: FLYWAY_SQL_MIGRATION_SUFFIXES
+            value: ".sql"
+          - name: FLYWAY_DEFAULT_SCHEMA
+            value: "{{ item|regex_replace('-', '_') }}"
+          - name: FLYWAY_INIT_SQL
+            value: "CREATE DATABASE IF NOT EXISTS {{ item|regex_replace('-', '_') }} DEFAULT charset UTF8MB4"
+          - name: FLYWAY_BASELINE_ON_MIGRATE
+            value: "true"
+          - name: FLYWAY_IGNORE_MIGRATION_PATTERNS
+            value: "*:missing"
+        volumeMounts:
+            - mountPath: /flyway/db/migration/{{ item }}/
+              name: {{ item }}-mysqlscript
+            - name: localtime
+              mountPath: /etc/localtime
+      restartPolicy: Never
+      volumes:
+        - name: {{ item }}-mysqlscript
+          configMap:
+            name: {{ item }}-mysqlscript-{{ job_uid }}
+        - name: localtime
+          hostPath:
+            path: /etc/localtime

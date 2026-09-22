@@ -1,0 +1,28 @@
+- name: Check if degrade script exists
+  ansible.builtin.stat:
+    path: "{{ app_root }}/backup_config/degrade_pre_handle.sh"
+  register: degrade_pre_script_stat
+  run_once: true
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Set fact - script exists flag
+  ansible.builtin.set_fact:
+    degrade_script_exists: "{{ degrade_pre_script_stat.stat.exists }}"
+    cacheable: true
+  run_once: true
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Ensure degrade script has execute permission
+  ansible.builtin.file:
+    path: "{{ app_root }}/backup_config/degrade_pre_handle.sh"
+    mode: '0755'
+    state: file
+  run_once: true
+  delegate_to: "{{ first_kube_master }}"
+  when: degrade_script_exists | bool
+
+- name: Execute degrade pre handle script | {{ degrade_script_exists }}
+  shell: "{{ app_root }}/backup_config/degrade_pre_handle.sh"
+  run_once: true
+  delegate_to: "{{ first_kube_master }}"
+  when: degrade_script_exists | bool

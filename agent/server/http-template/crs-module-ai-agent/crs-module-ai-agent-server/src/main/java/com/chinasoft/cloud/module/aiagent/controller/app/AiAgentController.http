@@ -1,0 +1,39 @@
+### 发起询问
+POST http://10.28.64.80:30013/deepseek-zjk/xa/dk/contend
+Content-Type: application/json
+tenant-id: 1
+
+{
+  "content": "示例问题",
+  "agent": 1935960963979102209,
+  "userID": "123id",
+  "userName": "223name"
+}
+
+### 询问结果（需要轮询）
+GET http://10.28.64.80:30015/deepseek-zjk/xa/dk/detail?id=1936316961652905986
+Origin: http://10.28.64.80:8080
+
+### 智能体列表
+GET http://10.28.64.80:30013/deepseek-zjk/xa/dk/agents
+tenant-id: 1
+
+### 发起询问
+POST https://10.28.64.83:30021/XA-ics-agent/deepseek-zjk/xa/dk/contend
+Content-Type: application/json
+tenant-id: 1
+
+{
+  "content": "示例问题",
+  "agent": 1935960963979102209,
+  "userID": "123id",
+  "userName": "223name"
+}
+
+### 询问结果（需要轮询）
+GET http://10.28.64.80:30015/deepseek-zjk/xa/dk/detail?id=1936316961652905986
+Origin: http://10.28.64.80:8080
+
+### 智能体列表
+GET http://10.28.64.80:30013/deepseek-zjk/xa/dk/agents
+tenant-id: 1

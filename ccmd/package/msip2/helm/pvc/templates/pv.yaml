@@ -1,0 +1,24 @@
+{{ $value:=.Values }}
+{{ range .Values.volume }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $value.namespace }}-{{ .name }}-pv-volume
+spec:
+  capacity:
+    storage: {{ .capacity }}
+  storageClassName: {{ $value.namespace }}-{{ .name }}-local-pv
+  accessModes:
+    - ReadWriteMany
+  local:
+    path: {{ .hostPath }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: {{ $value.namespace }}.pvHost
+              operator: In
+              values:
+                - "true"
+{{ end }}

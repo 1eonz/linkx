@@ -1,0 +1,144 @@
+---
+- name: find mysqldb files
+  find:
+    paths: "{{ mysql_path }}"
+    recurse: no
+    file_type: directory
+  register: mysqldb_file
+  delegate_to: "{{ first_kube_master }}" 
+
+- name: find mongodb files 
+  find:
+    paths: "{{ mongo_path }}"
+    recurse: no
+    file_type: directory
+  register: mongodb_file
+  delegate_to: "{{ first_kube_master }}" 
+
+- name: set app_db_name_origin
+  set_fact:
+    app_db_name_origin: >-
+      {% for item in mysqldb_file.files %} 
+      {{item.path | basename}}{% if not loop.last %},{% endif %}
+      {% endfor %}
+
+- name: set mongo_db_name_origin
+  set_fact:
+    mongo_db_name_origin: >-
+      {% for item in mongodb_file.files %} 
+      {{item.path | basename}}{% if not loop.last %},{% endif %}
+      {% endfor %}
+
+- name: set app_db_name
+  set_fact: 
+    app_db_name: "{{ app_db_name_origin | trim | regex_replace(' ', '') }}"
+
+- name: set mongo_db_name
+  set_fact: 
+    mongo_db_name: "{{ mongo_db_name_origin | trim | regex_replace(' ', '') }}"
+
+- name: log app_db_name
+  debug:
+    msg: "app_db_name is {{ app_db_name }}"
+
+- name: log mongo_db_name
+  debug:
+    msg: "mongo_db_name is {{ mongo_db_name }}"
+
+- name: set package_name
+  set_fact:
+    package_name: "{{ path }}"
+
+- name: make sure package_name is defined
+  assert:
+    that:
+      - "package_name is defined"
+    msg: "package_name is undefined!"
+
+- name: log package_name
+  debug:
+    msg: "package_name is {{ package_name }}"
+
+- name: mysql cm name process
+  set_fact:
+    app_db_cm_name: "{{ app_db_name | regex_replace('_', '-') }}"
+
+- name: mongo cm name process
+  set_fact:
+    mongo_db_cm_name: "{{ mongo_db_name | regex_replace('_', '-') }}"
+
+- name: Get the current epoch time using shell
+  shell: date +%s
+  register: current_epoch
+
+- name: job uid
+  set_fact:
+    job_uid: "{{ current_epoch.stdout }}"
+
+- name: log job_uid
+  debug:
+    msg: "job_uid is {{ job_uid }}"
+
+- name: log app_db_cm_name
+  debug:
+    msg: "app_db_cm_name is {{ app_db_cm_name }}"
+
+- name: log mongo_db_cm_name
+  debug:
+    msg: "mongo_db_cm_name is {{ mongo_db_cm_name }}"
+
+- name: Execute script | make sure script deploy folder exist
+  file:
+    path: "{{ app_script_path }}"
+    state: directory
+    mode: 0755
+    recurse: true
+
+- name: Execute script | make sure script deploy folder exist
+  file:
+    path: "/data/apps/flyway"
+    state: directory
+    mode: 0755
+    recurse: true
+
+- name: Execute script | make sure flyway sub directory exist
+  file:
+    path: "/data/apps/flyway/{{ package_name | dirname }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  when: "'/' in package_name"
+
+- name: Execute script | Create mysql job files
+  template:
+    src: "mysqljob.yml"
+    dest: "/data/apps/flyway/{{ package_name }}-{{ item }}-migrate-mysql-job-{{ job_uid }}.yml"
+  loop: "{{ app_db_cm_name.split(',') }}"
+
+- name: Execute script | Create mongo job files
+  template:
+    src: "mongojob.yml"
+    dest: "/data/apps/flyway/{{ package_name }}-{{ item }}-migrate-mongo-job-{{ job_uid }}.yml"
+  loop: "{{ mongo_db_cm_name.split(',') }}"
+
+- name: Execute script | create cm form mysql file
+  shell: "{{ bin_dir }}/kubectl create -n {{ platform_namespace }} configmap {{ item | regex_replace('_', '-') }}-mysqlscript-{{ job_uid }}  --from-file={{ mysql_path }}/{{ item }}"
+  loop: "{{ app_db_name.split(',') }}"
+  ignore_errors: true
+
+- name: Execute script | create cm form mongo file
+  shell: "{{ bin_dir }}/kubectl create -n {{ platform_namespace }} configmap {{ item | regex_replace('_', '-') }}-mongoscript-{{ job_uid }}  --from-file={{ mongo_path }}/{{ item }}"
+  ignore_errors: true
+  loop: "{{ mongo_db_name.split(',') }}"
+
+- name: Execute script | create  mysql migrate job
+  shell: "{{ bin_dir }}/kubectl apply -f /data/apps/flyway/{{ package_name }}-{{ item }}-migrate-mysql-job-{{ job_uid }}.yml"
+  loop: "{{ app_db_cm_name.split(',') }}"
+  loop_control:
+    pause: 5
+  ignore_errors: true
+
+- name: Execute script | create  mongo migrate job
+  shell: "{{ bin_dir }}/kubectl apply -f /data/apps/flyway/{{ package_name }}-{{ item }}-migrate-mongo-job-{{ job_uid }}.yml"
+  ignore_errors: true
+  loop: "{{ mongo_db_cm_name.split(',') }}"

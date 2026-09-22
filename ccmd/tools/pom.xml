@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>cloudcmd-parent</artifactId>
+        <groupId>com.tdtech.cloudcmd</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>tools</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+<!--        <module>clickhouse-dbm</module>-->
+<!--        <module>ftp-proxy</module>-->
+<!--        <module>socket-proxy</module>-->
+<!--        <module>uap-proxy</module>-->
+<!--        <module>fake-service</module>-->
+        <module>cnx/public/cloudcmd-cnx-public-wsserver</module>
+    </modules>
+</project>

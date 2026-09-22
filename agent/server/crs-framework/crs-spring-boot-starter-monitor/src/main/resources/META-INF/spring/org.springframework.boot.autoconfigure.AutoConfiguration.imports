@@ -1,0 +1,2 @@
+com.chinasoft.cloud.framework.tracer.config.CrsTracerAutoConfiguration
+com.chinasoft.cloud.framework.tracer.config.CrsMetricsAutoConfiguration

@@ -1,0 +1,120 @@
+---
+# Source: springboot-server/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: linkx
+  name: cloudcmd-script
+  labels:
+    app.kubernetes.io/name: cloudcmd-script
+spec:
+  selector:
+    app: cloudcmd-script
+  ports:
+    - port: 9090
+      name: healthz
+      protocol: TCP
+      targetPort: 9090
+    - port: 8080
+      name: http
+      protocol: TCP
+      targetPort: 8080
+    - port: 18080
+      name: dubbo
+      protocol: TCP
+      targetPort: 18080
+---
+# Source: springboot-server/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: linkx
+  name: cloudcmd-script
+  labels:
+    app: cloudcmd-script
+    app.kubernetes.io/name: cloudcmd-script
+    ha-service-stop/enable: "true"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cloudcmd-script
+      labels:
+        app: cloudcmd-script
+        app.kubernetes.io/name: cloudcmd-script
+        enableRestart: "true"
+      annotations:
+        helm.sh/chart: springboot-server-0.1.0
+        app.kubernetes.io/name: cloudcmd-script
+        app.kubernetes.io/instance: cloudcmd-script
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+        safebox/enable: "true"
+    spec:
+      volumes:
+        - name: cloudcmd-script-im-store
+          persistentVolumeClaim:
+            claimName: im-store-pvc-claim
+        - name: oom-dump
+          persistentVolumeClaim:
+            claimName: oom-dump-pvc-claim
+
+      initContainers:
+        - name: wait-zookeeper
+          image: imagerepo.td-tech.com:5001/busybox:1.28.0
+          imagePullPolicy: Always
+          command: [ 'sh', '-c', "until nc -z -v -w 20 zookeeper-0.zookeeper 2181; do echo waiting for zookeeper-0.zookeeper 2181; sleep 6; done" ]
+      containers:
+        - name: cloudcmd-script
+          image: imagerepo.td-tech.com:5001/cloudcmd-script:{Version}.{Arch}.{BuildTime}
+          
+          args:
+          - -jar
+          - /app/app.jar
+          command:
+          - java
+          
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: dubbo
+              containerPort: 18080
+          volumeMounts:
+            - name: cloudcmd-script-im-store
+              mountPath: /home/linkx/im/
+            - name: oom-dump
+              mountPath: /opt/dump/
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            tcpSocket:
+              port: 8080
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            tcpSocket:
+              port: 8080
+          envFrom:
+            - configMapRef:
+                name: cloudcmd-profile
+          env:
+            - name: cloudcmd.service.name
+              value: cloudcmd-script
+            - name: SERVER_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: pod.ip
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: MYSQL_ROOT_PASSWORD
+              value: safebox:platform/platform-secret#mysql_password
+            - name: REDIS_PASSWORD
+              value: safebox:platform/platform-secret#redis_password
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: cloudcmd-script

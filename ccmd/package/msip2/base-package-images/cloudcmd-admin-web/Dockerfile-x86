@@ -1,0 +1,8 @@
+# 该镜像需要依赖的基础镜像
+FROM repo.rd.td-tech.com/docker-virtual/linkx/nginx:1.29.4-alpine3.23-slim.amd64
+# 复制文件到容器中
+COPY dist /usr/share/nginx/html/
+# 声明服务运行端口
+EXPOSE 8012
+# 执行命令
+ENTRYPOINT ["nginx", "-g", "daemon off;"]

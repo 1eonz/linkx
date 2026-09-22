@@ -1,0 +1,31 @@
+#!/bin/bash
+TABLE_LIST_FILE="{{ backup_path }}/database_list.txt"
+OUT_SQL="{{ backup_path }}/table_schema.sql"
+
+SQL_POD=$(kubectl get pod -n platform -l role=LEADER -o jsonpath='{.items[0].metadata.name}')
+
+: > "$OUT_SQL"
+echo "SET FOREIGN_KEY_CHECKS = 0;" >> "$OUT_SQL"
+
+kubectl cp "{{ backup_path }}/database_list.txt" "platform/${SQL_POD}:/tmp/database_list.txt" -c {{ db_container }}
+
+kubectl exec -i -n platform $SQL_POD -c {{ db_container }} -- bash <<'EOF' >> "$OUT_SQL"
+cut -d. -f1 /tmp/database_list.txt | sort -u | while read db; do
+      mysqldump \
+          --user=root \
+          --single-transaction \
+          --no-data \
+          --skip-comments \
+          --set-gtid-purged=OFF \
+          --databases "$db"
+done
+EOF
+
+echo "SET FOREIGN_KEY_CHECKS = 1;" >> "$OUT_SQL"
+
+echo "backup db"
+kubectl exec -i $SQL_POD -n platform -c {{ db_container }} -- mysql -uroot -Nse "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('mysql','performance_schema','information_schema','sys','msip');" | sort > {{ backup_path }}/db_list.txt
+echo "backup_tables"
+kubectl exec -i $SQL_POD -n platform -c {{ db_container }} -- mysql -uroot -Nse "SELECT CONCAT(table_schema,'.',table_name) FROM information_schema.tables WHERE table_schema NOT IN ('mysql','performance_schema','information_schema','sys','msip') AND table_type='BASE TABLE';" | sort > {{ backup_path }}/table_list.txt
+
+

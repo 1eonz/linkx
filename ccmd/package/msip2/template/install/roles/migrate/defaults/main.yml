@@ -1,0 +1,6 @@
+app_script_path: "{{ app_root }}/script/install"
+mongo_path: "{{app_script_path}}/mongo"
+mysql_path: "{{app_script_path}}/mysql"
+app_info_path: "{{ app_root }}/app-info.yaml"
+# 与 backup_db / restore_db 一致，供 patch_rollback 判断 DB tar 是否存在
+upgrade_backup_dir: /data/msip/backup

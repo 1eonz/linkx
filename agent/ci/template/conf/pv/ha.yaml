@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: agent
+  name: ha-filesync-list-agent
+  labels:
+    type: ha_filesync_list
+data:
+  ha_filesync_list_agent: |
+    - label: agent
+      path: "/data/agent/data"
+      rescanIntervalS: 3600

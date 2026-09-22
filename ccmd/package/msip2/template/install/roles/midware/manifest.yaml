@@ -1,0 +1,12 @@
+order: 50402
+rollback_order: 50402
+name: midware
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_upgrade: true
+always_exec_rollback: true
+phases:
+  - install
+  - upgrade
+  - rollback  

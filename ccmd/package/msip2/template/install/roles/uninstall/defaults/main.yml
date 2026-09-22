@@ -1,0 +1,1 @@
+app_info_path: "{{ app_root }}/app-info.yaml"

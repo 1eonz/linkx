@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.tdtech.cloudcmd</groupId>
+        <artifactId>linkx-third</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>linkx-third-api</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-boot</artifactId>
+            <version>${cloudcmd.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-common-util</artifactId>
+            <version>${cloudcmd.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-common-bean</artifactId>
+            <version>${cloudcmd.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tdtech.cloudcmd</groupId>
+            <artifactId>cloudcmd-admin-api</artifactId>
+            <version>${cloudcmd.version}</version>
+        </dependency>
+    </dependencies>
+
+
+
+
+</project>

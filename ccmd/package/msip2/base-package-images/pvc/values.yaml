@@ -1,0 +1,30 @@
+haRoot: /data/linkx/data
+volume:
+  - name: headshot-store
+    hostPath: /data/linkx/data/headshot/
+    capacity: 500Gi
+  - name: log-store
+    hostPath: /data/linkx/data/log_store/
+    capacity: 500Gi
+  - name: oom-dump
+    hostPath: /data/linkx/data/oom-dump/
+    capacity: 500Gi
+  - name: im-store
+    hostPath: /data/linkx/data/im/
+    capacity: 500Gi
+  - name: jingxin-dump
+    hostPath: /data/linkx/data/archive/
+    capacity: 500Gi
+  - name: jingxin-file
+    hostPath: /data/linkx/data/file/
+    capacity: 500Gi
+  - name: mapbox-store
+    hostPath: /data/linkx/data/mapbox/
+    capacity: 500Gi
+  - name: device-icon
+    hostPath: /data/linkx/data/device-icon/
+    capacity: 500Gi
+
+  - name: openapi-store
+    hostPath: /data/linkx/data/openapi/
+    capacity: 500Gi

@@ -1,0 +1,13 @@
+rollback_order: 50350
+name: restore_db
+error_ignore: false
+gather_facts: false
+handler_host: kube_control_plane
+always_exec_rollback: true
+phases:
+  - rollback
+  - patch_rollback
+models:
+  - standalone
+  - three_nodes
+  - multi_nodes

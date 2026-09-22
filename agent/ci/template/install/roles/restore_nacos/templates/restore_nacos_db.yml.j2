@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-entrypoint
+  namespace: {{ platform_namespace }}
+data:
+  restore_nacos_db.sh: |-
+    #!/bin/bash
+    set -eo pipefail
+
+    BACKUP_FILE="/restore/nacos_db.sql.gz"
+    MD5_FILE="/restore/nacos_db.MD5"
+
+    echo "[INFO] begin to restore nacos db..."
+
+    # 1. 校验 MD5（可选，但推荐）
+    if [ -f "$MD5_FILE" ]; then
+        echo "[INFO] check MD5..."
+        current_md5=$(md5sum "$BACKUP_FILE" | awk '{print $1}')
+        saved_md5=$(cat "$MD5_FILE")
+        if [ "$current_md5" != "$saved_md5" ]; then
+            echo "[ERROR] MD5 check failed！The backup file might be corrupted。"
+            exit 1
+        fi
+    fi
+
+    # 2. 检查备份文件是否存在
+    if [ ! -s "$BACKUP_FILE" ]; then
+        echo "[ERROR] file not found: $BACKUP_FILE"
+        exit 1
+    fi
+    # 3. 删除存量数据再恢复（按配置过滤表和 group_id）
+    {% set _tables = (nacos_backup_tables | default([])) %}
+    TABLES=(
+    {%- for t in _tables %}
+      {{ t }}
+    {%- endfor %}
+    )
+
+    {% set _gids = (nacos_backup_group_ids | default([])) %}
+    WHERE_CLAUSE="group_id in ({% for gid in _gids %}'{{ gid }}'{% if not loop.last %},{% endif %}{% endfor %})"
+
+    has_group_id_column() {
+      local table_name="$1"
+      local cnt
+      cnt=$(mysql --host="$HOST" --port="$PORT" --user="$BACKUPUSER" --password="$USERPASSWD" -N -s -e \
+        "SELECT COUNT(1) FROM information_schema.columns WHERE table_schema='nacos' AND table_name='${table_name}' AND column_name='group_id';" 2>/dev/null || echo "0")
+      [ "${cnt}" -gt 0 ]
+    }
+
+    echo "[INFO] cleanup where: ${WHERE_CLAUSE}"
+    for t in "${TABLES[@]}"; do
+      if has_group_id_column "${t}"; then
+        mysql -h"$HOST" --port="$PORT" -u"$BACKUPUSER" -p"$USERPASSWD" -e "DELETE FROM nacos.${t} WHERE ${WHERE_CLAUSE};"
+      else
+        echo "[WARN] table=${t} has no group_id column, cleanup full table"
+        mysql -h"$HOST" --port="$PORT" -u"$BACKUPUSER" -p"$USERPASSWD" -e "DELETE FROM nacos.${t};"
+      fi
+    done
+    # 4. 执行恢复
+    echo "[INFO] starting import data to MySQL..."
+    gunzip -c "$BACKUP_FILE" | sed -e '/SET @@GLOBAL.GTID_PURGED/d' \
+                                 -e '/SET @@SESSION.SQL_LOG_BIN/d' \
+                                 -e '/SET @MYSQLDUMP_TEMP_LOG_BIN/d' | \
+    mysql --host="$HOST" \
+          --port="$PORT" \
+          --user="$BACKUPUSER" \
+          --password="$USERPASSWD" \
+          nacos
+
+    echo "[SUCCESS] Nacos restore success"
+
+

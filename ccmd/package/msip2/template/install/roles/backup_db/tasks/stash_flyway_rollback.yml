@@ -1,0 +1,44 @@
+# 将补丁包内 *.sql.rollback 副本落到 DB 备份目录
+# 原因：patch_rollback 的 PRE_INSTALL 会用 backup overlay 覆盖 /data/install/{ns}/patch，
+# 而 overlay 只覆盖 install/，不覆盖 script/，导致回滚时 mysql_path 下找不到逆向脚本
+---
+- name: stash flyway rollback scripts | ensure dest dir
+  file:
+    path: "{{ great_storage_backup_path }}patch/{{ namespace }}/db/flyway_rollback"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: stash flyway rollback scripts | clean old copies
+  shell: "rm -rf {{ great_storage_backup_path }}patch/{{ namespace }}/db/flyway_rollback/*"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: stash flyway rollback scripts | find in patch package
+  find:
+    paths: "{{ app_root }}/script/install/mysql"
+    patterns: "*.sql.rollback"
+    recurse: yes
+  register: patch_rollback_sqls
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  failed_when: false
+
+- name: stash flyway rollback scripts | copy each (keep relative db dir)
+  shell: |
+    src="{{ item.path }}"
+    db_name="$(basename "$(dirname "$src")")"
+    mkdir -p "{{ great_storage_backup_path }}patch/{{ namespace }}/db/flyway_rollback/${db_name}"
+    cp -f "$src" "{{ great_storage_backup_path }}patch/{{ namespace }}/db/flyway_rollback/${db_name}/"
+  loop: "{{ patch_rollback_sqls.files | default([]) }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  when: (patch_rollback_sqls.files | default([]) | length) > 0
+
+- name: stash flyway rollback scripts | debug
+  debug:
+    msg: "stashed {{ patch_rollback_sqls.files | default([]) | length }} *.sql.rollback under patch/{{ namespace }}/db/flyway_rollback"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true

@@ -1,0 +1,33 @@
+#name: "route"
+#
+#upstreams:
+#  agent-gateway:
+#    "agent-gateway.agent.svc:8080": 1
+#  agent-web:
+#    "agent-web.agent.svc:8081": 1
+#
+#routes:
+#  "/agent/api":
+#    bindings: [ 9080, 9443 ]
+#    cors: true
+#    xFrameOptions: ALLOWALL
+#    config:
+#      api-gateway:
+#        upstream: agent-gateway
+#        uris: [ "/agent/api/app-api/*","/agent/api/admin-api/infra/file/*", "/agent/api/deepseek-zjk" ]
+#        enableWs: false
+#      admin-web-images:
+#        upstream: agent-web
+#        uris: [ "/agent/api/images/*" ]
+#        enableWs: false
+#  "/agent/admin":
+#    bindings: [ 9444 ]
+#    config:
+#      admin-gateway:
+#        upstream: agent-gateway
+#        uris: [ "/agent/admin/admin-api/*" ]
+#        enableWs: false
+#      admin-web:
+#        upstream: agent-web
+#        uris: [ "/agent/admin/*" ]
+#        enableWs: false

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.admin.resource.mapper.MenuMapper">
+    <insert id="batchInsertMenu" parameterType="java.util.List">
+        INSERT INTO tb_menu(id, name, parent_id, application_id,
+        url,imgurl,isleaf,level,sort)
+        VALUES
+        <foreach collection="menuList" item="menu" separator=",">
+            (#{menu.id},
+            #{menu.name},
+            #{menu.parentId},
+            #{menu.applicationId},
+            #{menu.url},
+            #{menu.imgurl},
+            #{menu.isleaf},
+            #{menu.level},
+            #{menu.sort})
+        </foreach>
+    </insert>
+
+    <delete id="batchLogicDeleteMenu">
+        UPDATE tb_menu set status = 1
+        WHERE id in
+        <foreach collection="idList" item="id" separator="," open="(" close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+    <delete id="batchDeleteMenu">
+        delete from tb_menu
+        WHERE id in
+        <foreach collection="idList" item="id" separator="," open="(" close=")">
+            #{id,jdbcType=BIGINT}
+        </foreach>
+    </delete>
+
+    <update id="batchUpdateMenuSortIncrement" parameterType="java.util.List">
+        update tb_menu set sort = sort + 1
+        where id in
+        <foreach collection="idList" item="menuId" separator="," open="(" close=")">
+            #{menuId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+
+    <update id="batchUpdateMenuSortDecrement" parameterType="java.util.List">
+        update tb_menu set sort = sort - 1
+        where id in
+        <foreach collection="idList" item="menuId" separator="," open="(" close=")">
+            #{menuId,jdbcType=BIGINT}
+        </foreach>
+    </update>
+</mapper>

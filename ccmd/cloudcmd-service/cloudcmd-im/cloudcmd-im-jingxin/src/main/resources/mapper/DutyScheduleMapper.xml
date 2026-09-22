@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.im.jingxin.server.service.mapper.DutyScheduleMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.tdtech.cloudcmd.im.jingxin.server.entity.DutyScheduleVO">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="user_name" property="userName"/>
+        <result column="department_id" property="departmentId"/>
+        <result column="department_name" property="departmentName"/>
+        <result column="duty_start_date" property="dutyStartDate"/>
+        <result column="duty_start_time" property="dutyStartTime"/>
+        <result column="duty_end_date" property="dutyEndDate"/>
+        <result column="duty_end_time" property="dutyEndTime"/>
+        <result column="duty_type" property="dutyType"/>
+        <result column="duty_type_name" property="dutyTypeName"/>
+        <result column="duty_content" property="dutyContent"/>
+        <result column="import_batch" property="importBatch"/>
+        <result column="gmt_created" property="gmtCreated"/>
+        <result column="gmt_modified" property="gmtModified"/>
+        <result column="full_path_name" property="fullPathName"/>
+    </resultMap>
+
+    <!-- 查询当前正在值班的人员列表（支持跨天值班） -->
+    <!-- 查询条件：用行构造器对 (日期, 时间) 做字典序比较，等价于原来的
+         TIMESTAMP(CONCAT(date, ' ', time)) DATETIME 比较（日期优先、日期相等再比时间），
+         消除了对列套函数（TIMESTAMP/CONCAT）。注意：MySQL 不等式形式的行构造器
+         比较不走范围索引，与原写法同为全表扫描，此处改写目的是规范与可读性 -->
+    <select id="selectOnDutyPersonnel" resultMap="BaseResultMap">
+        SELECT ds.id, ds.user_id, ds.user_name, ds.department_id, ds.department_name,
+        ds.duty_start_date, ds.duty_start_time, ds.duty_end_date, ds.duty_end_time, ds.duty_type, dt.name AS duty_type_name,
+        ds.duty_content, ds.import_batch, ds.gmt_created, ds.gmt_modified, o.full_path_name
+        FROM tb_duty_schedule ds
+        left join tb_organization o on ds.department_id = o.id
+        left join tb_duty_type dt on ds.duty_type = dt.type and dt.deleted = 0
+        WHERE (ds.duty_start_date, ds.duty_start_time) &lt;= (#{dutyDate}, #{currentTime})
+          AND (ds.duty_end_date, ds.duty_end_time) &gt;= (#{dutyDate}, #{currentTime})
+        <if test="orgIds != null and orgIds.size() > 0">
+            AND department_id in
+            <foreach collection="orgIds" item="oid" open="(" close=")" separator=",">
+                #{oid}
+            </foreach>
+        </if>
+        ORDER BY duty_start_date ASC, duty_start_time ASC
+    </select>
+
+    <!-- 批量插入值班安排 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO tb_duty_schedule (
+        id, user_id, user_name, department_id, department_name,
+        duty_start_date, duty_start_time, duty_end_date, duty_end_time, duty_type, duty_content,
+        import_batch, import_user_id, import_user_name,
+        gmt_created, gmt_modified
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id}, #{item.userId}, #{item.userName}, #{item.departmentId}, #{item.departmentName},
+            #{item.dutyStartDate}, #{item.dutyStartTime}, #{item.dutyEndDate}, #{item.dutyEndTime}, #{item.dutyType},
+            #{item.dutyContent},
+            #{item.importBatch}, #{item.importUserId}, #{item.importUserName},
+            #{item.gmtCreated}, #{item.gmtModified}
+            )
+        </foreach>
+    </insert>
+
+</mapper>

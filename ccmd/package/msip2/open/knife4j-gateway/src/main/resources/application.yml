@@ -1,0 +1,110 @@
+spring:
+  application:
+    name: knife4j-gateway
+  cloud:
+    zookeeper:
+      connect-string: zookeeper-0.zookeeper:2181
+      discovery:
+        enabled: true
+        register: true
+        root: /openapi
+    gateway:
+      server:
+        webflux:
+          enabled: true
+          httpclient:
+            connect-timeout: 10000
+            response-timeout: 10s
+          routes:
+            - id: cloudcmd-auth-service-openapi
+              uri: http://cloudcmd-auth-service-openapi:9090/
+              predicates:
+                - Path=/auth/**
+              filters:
+                - StripPrefix=1
+            - id: cloudcmd-admin-service-openapi
+              uri: http://cloudcmd-admin-service-openapi:9090/
+              predicates:
+                - Path=/admin/**
+              filters:
+                - StripPrefix=1
+            - id: cloudcmd-base-service-openapi
+              uri: http://cloudcmd-base-service-openapi:9090/
+              predicates:
+                - Path=/base/**
+              filters:
+                - StripPrefix=1
+            - id: cloudcmd-im-jingxin-openapi
+              uri: http://cloudcmd-im-jingxin-openapi:9090/
+              predicates:
+                - Path=/im-jingxin/**
+              filters:
+                - StripPrefix=1
+            - id: cloudcmd-im-openapi-openapi
+              uri: http://cloudcmd-im-openapi-openapi:9090/
+              predicates:
+                - Path=/im-openapi/**
+              filters:
+                - StripPrefix=1
+            - id: cloudcmd-icp-proxy-openapi
+              uri: http://cloudcmd-icp-proxy-openapi:9090/
+              predicates:
+                - Path=/icp-proxy/**
+              filters:
+                - StripPrefix=1
+            - id: linkx-dashboard-openapi
+              uri: http://linkx-dashboard-openapi:9090/
+              predicates:
+                - Path=/dashboard/**
+              filters:
+                - StripPrefix=1
+            - id: linkx-third-openapi
+              uri: http://linkx-third-openapi:9090/
+              predicates:
+                - Path=/third/**
+              filters:
+                - StripPrefix=1
+
+knife4j:
+  # 聚合swagger文档
+  gateway:
+    enabled: true
+    # 排序规则(tag/operation排序自4.2.0版本新增)
+    # 取值：alpha-默认排序规则，官方swagger-ui默认实现,order-Knife4j提供的增强排序规则，开发者可扩展x-order，根据数值来自定义排序
+    tags-sorter: order
+    operations-sorter: order
+    # 指定手动配置的模式(默认为该模式)
+    strategy: manual
+    routes:
+      - name: auth
+        url: /auth/actuator/openapi
+        service-name: cloudcmd-auth-service
+        context-path: /
+      - name: admin
+        url: /admin/actuator/openapi
+        service-name: cloudcmd-admin-service-openapi
+        context-path: /
+      - name: base
+        url: /base/actuator/openapi
+        service-name: cloudcmd-base-service-openapi
+        context-path: /
+      - name: im-jingxin
+        url: /im-jingxin/actuator/openapi
+        service-name: cloudcmd-im-jingxin-openapi
+        context-path: /
+      - name: im-openapi
+        url: /im-openapi/actuator/openapi
+        service-name: cloudcmd-im-openapi-openapi
+        context-path: /
+      - name: icp-proxy
+        url: /icp-proxy/actuator/openapi
+        service-name: cloudcmd-icp-proxy-openapi
+        context-path: /
+      - name: dashboard
+        url: /dashboard/actuator/openapi
+        service-name: linkx-dashboard-openapi
+        context-path: /
+      - name: third
+        url: /third/actuator/openapi
+        service-name: linkx-third-openapi
+        context-path: /

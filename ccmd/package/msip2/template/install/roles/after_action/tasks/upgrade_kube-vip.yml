@@ -1,0 +1,102 @@
+- name: Generate a 32-bit random string
+  set_fact:
+    random_string: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Display the generated random string
+  debug:
+    var: random_string
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Display the generated random string
+  shell: |
+    kubectl get secret {{ secret_name }} -n {{ secret_namespace }} --ignore-not-found
+  register: secret_check
+  changed_when: false
+  ignore_errors: yes
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Create a temporary Secret YAML file
+  tempfile:
+    state: file
+    suffix: .yaml
+  register: secret_tempfile
+#  when: secret_check.stdout == ""
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Generate Secret YAML content
+  copy:
+    content: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: {{ secret_name }}
+        namespace: {{ secret_namespace }}
+      type: Opaque
+      data:
+        {{ secret_key }}: {{ random_string | b64encode }}
+    dest: "{{ secret_tempfile.path }}"
+#  when: secret_check.stdout == ""
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Use kubectl create Secret
+  shell: |
+    kubectl apply -f {{ secret_tempfile.path }}
+  register: create_result
+#  when: secret_check.stdout == ""
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Delete temporary files
+  file:
+    path: "{{ secret_tempfile.path }}"
+    state: absent
+  when: secret_tempfile.path is defined
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Verify the creation of the Secret
+  shell: |
+    kubectl get secret {{ secret_name }} -n {{ secret_namespace }}  -o json
+  register: secret_info
+  changed_when: false
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Display Secret information
+  debug:
+    msg: "Secret {{ secret_name }} created/exists"
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Prepare the API request parameters
+  set_fact:
+    api_payload:
+      userToken: "{{ random_string | b64encode }}"
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Call the API interface using curl
+  shell: |
+    curl -k -s -X POST \
+      -H "Content-Type: application/json" \
+      -d '{{ api_payload | to_json }}' \
+      "{{ api_url }}"
+  register: api_response
+  delegate_to: "{{ first_kube_master }}"
+  changed_when: false
+
+- name: Display API response
+  debug:
+    var: api_response.stdout
+  when: api_response is defined
+  delegate_to: "{{ first_kube_master }}"
+
+- name: Check the result of the API call
+  fail:
+    msg: "API call failed: {{ api_response.msg }}"
+  when:
+    - api_response.failed is defined
+    - api_response.failed
+    - fail_on_api_error | default(false)  # 根据需要决定是否因API失败而中止
+  delegate_to: "{{ first_kube_master }}"
+
+- name: The recording operation is completed.
+  debug:
+    msg: "Operation completed! A Secret has been created and the API has been called"
+  delegate_to: "{{ first_kube_master }}"

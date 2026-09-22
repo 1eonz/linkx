@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Log-Config>
+    <Namespace name="agent">
+        <Service name="agent-ai-agent" tracePath="/data/logs/fluentd-log/agent/agent_agent-ai-agent.log"/>
+        <Service name="agent-gateway" tracePath="/data/logs/fluentd-log/agent/agent_agent-gateway.log"/>
+        <Service name="agent-infra" tracePath="/data/logs/fluentd-log/agent/agent_agent-infra.log"/>
+        <Service name="agent-system" tracePath="/data/logs/fluentd-log/agent/agent_agent-system.log"/>
+        <Service name="agent-web" tracePath="/data/logs/fluentd-log/agent/agent_agent-web.log"/>
+        <Service name="ingress-30113-gateway-istio"
+                 tracePath="/data/logs/fluentd-log/agent/agent_ingress-30113-gateway-istio.log"/>
+        <Service name="ingress-30114-gateway-istio"
+                 tracePath="/data/logs/fluentd-log/agent/agent_ingress-30114-gateway-istio.log"/>
+        <Service name="ingress-30115-gateway-istio"
+                 tracePath="/data/logs/fluentd-log/agent/agent_ingress-30115-gateway-istio.log"/>
+        <Service name="dbjob" tracePath="/data/logs/fluentd-log/agent/agent_dbjob.log"/>
+    </Namespace>
+</Log-Config>

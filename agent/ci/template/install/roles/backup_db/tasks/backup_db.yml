@@ -1,0 +1,195 @@
+- name: backup greatsql | make sure greatsql deploy folder exist
+  file:
+    path: "{{ greatsql_manifest_folder }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup greatsql | make sure backup folder exist
+  file:
+    path: "{{ great_storage_backup_path }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup greatsql | make sure tmp1 folder exist
+  file:
+    path: "{{ great_storage_backup_tmp1_path }}"
+    state: directory
+    mode: 0755
+    recurse: true
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Execute kubectl command to delete job
+  command: kubectl delete job backup-db-job -n platform
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  ignore_errors: true
+
+- name: Execute kubectl command to get leader node name
+  command: kubectl get pod -A -l role=LEADER --no-headers -o custom-columns='NODE:.spec.nodeName'
+  register: node_mysql_leader
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Convert node names to array
+  set_fact:
+    backupnode: "{{ node_mysql_leader.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Debug Node Names
+  debug:
+    var: backupnode
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Load backup config
+  include_vars: "{{ backup_config_path }}"
+
+- name: backup greatsql | Create greatsql manifests files
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ greatsql_manifest_folder }}/{{ item.file }}"
+  loop:
+    - {name: greatsql, file: backupdb_job.yml, type: job}
+    - {name: greatsql, file: nodes_job.yml, type: job}
+    - {name: greatsql, file: backup_db.yml, type: cm}
+  register: greatsql_manifests
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup greatsql | apply cm
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/backup_db.yml"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: backup greatsql | execute backupdb_job
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/backupdb_job.yml"
+  delegate_to: "{{ first_kube_master }}"
+  when:
+    - model=="standalone"
+  run_once: true
+
+- name: backup mysql | execute nodes_job
+  command: "{{ bin_dir }}/kubectl apply -f {{ greatsql_manifest_folder }}/nodes_job.yml"
+  delegate_to: "{{ first_kube_master }}"
+  when:
+    - model=="cluster"
+  run_once: true
+
+- name: Wait for job setup
+  pause:
+    minutes: 1
+
+- name: backup greatsql | make sure backup complete
+  command: "kubectl wait --for=condition=complete job/backup-db-job -n platform"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+  register: backup_result
+  until: backup_result.rc == 0
+  retries: 30
+  delay: 60
+
+- name: Debug backup result
+  debug:
+    var: backup_result
+  when: backup_result.rc == 0
+
+- name: Fail if backup job failed
+  fail:
+    msg: "Backup job failed with return code {{ backup_result.rc }}"
+  when: backup_result.rc != 0
+
+- name: Execute kubectl command to get leader node ip
+  command: kubectl get node {{ backupnode }} -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}'
+  register: node_mysql_leader_ip
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Convert node ip to array
+  set_fact:
+    backupnodeip: "{{ node_mysql_leader_ip.stdout }}"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: Debug Node Ip
+  debug:
+    var: backupnodeip
+  delegate_to: "{{ first_kube_master }}"
+  run_once: true
+
+- name: get restore_path
+  set_fact:
+    backup_path: "{{ great_storage_backup_path }}{{namespace}}/db"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase=="upgrade"
+- name: get restore_path
+  set_fact:
+    backup_path: "{{ great_storage_backup_path }}patch/{{namespace}}/db"
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  when:
+    - phase == "patch_install"
+
+
+
+- name: backup greatsql | make backup file dir
+  file:
+    path: "{{ backup_path }}"
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ first_kube_master }}"
+  run_once: yes
+  ignore_errors: true
+
+- name: backup greatsql | copy backup data to master1
+  shell: "cp  {{ great_storage_backup_tmp1_path }}* {{ backup_path }}"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master == backupnodeip
+  run_once: true
+
+- name: backup greatsql | delete tmp backup data
+  shell: "rm -f {{ great_storage_backup_tmp1_path }}*"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master == backupnodeip
+  run_once: true
+
+- name: backup greatsql | copy backup data to master1
+  shell: "scp -o StrictHostKeyChecking=no -P {{ ansible_ssh_port }} -r root@{{ backupnodeip }}:{{ great_storage_backup_tmp1_path }}/* {{ backup_path }}"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master != backupnodeip
+  run_once: true
+
+- name: backup greatsql | delete tmp backup data
+  shell: "ssh -o StrictHostKeyChecking=no root@{{ backupnodeip }} 'rm -f {{ great_storage_backup_tmp1_path }}/*'"
+  delegate_to: "{{ first_kube_master }}"
+  when: first_kube_master != backupnodeip
+  run_once: true
+
+- name: Generate backup table structure script
+  delegate_to: "{{ first_kube_master }}"
+  template:
+    src: backup_tb_structure.sh.j2
+    dest: "/tmp/backup_tb_structure.sh"
+    mode: "0755"
+
+- name: Execute backup table structure script
+  shell: "/tmp/backup_tb_structure.sh"
+  register: backup_result
+  delegate_to: "{{ first_kube_master }}"
+  failed_when: backup_result.rc != 0
+
+- name: Debug script output
+  delegate_to: "{{ first_kube_master }}"
+  debug:
+    msg: |
+      stdout: "{{ backup_result.stdout }}"
+      stderr: "{{ backup_result.stderr }}"

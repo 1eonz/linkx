@@ -1,0 +1,36 @@
+haControl: "true"
+ports:
+  - name: ws
+    port: 8867
+container:
+  strategy:
+  replicas: 1
+  vault: true
+  volumes:
+  envs:
+    env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: safebox:platform/platform-secret#mysql_password
+      - name: REDIS_PASSWORD
+        value: safebox:platform/platform-secret#redis_password
+    env_from:
+      - configMapRef:
+          name: cloudcmd-profile
+  jvm:
+    xmx: 3g
+    xms: 1g
+  health_check:
+    readinessProbe:
+      httpGet:
+        path: /actuator
+        port: 9090
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      failureThreshold: 20
+    livenessProbe:
+      httpGet:
+        path: /actuator
+        port: 9090
+      initialDelaySeconds: 15
+      periodSeconds: 5
+      failureThreshold: 20

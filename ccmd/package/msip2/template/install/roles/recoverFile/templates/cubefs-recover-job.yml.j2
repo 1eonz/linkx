@@ -1,0 +1,182 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cubefs-recover-job-{{ job_suffix }}
+  namespace: {{ platform_namespace }}
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: cubefs-restore
+          image: imagerepo.td-tech.com:5001/busybox-curl:7.79.1.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: API_ENDPOINT
+              value: "{{ cubefs_api_endpoint_phrase }}"
+            - name: API_ENDPOINT_RESTORE
+              value: "{{ cubefs_api_endpoint_restore }}"
+            - name: REQUEST_BODY
+              value: '{{ cubefs_request_body | to_json }}'
+            - name: POLL_INTERVAL
+              value: "10"
+            - name: MAX_WAIT_TIME
+              value: "3600"  # 最大等待1小时
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e  # 遇到错误立即退出
+
+              echo "=== CubeFS Restore Job ==="
+              echo "Restore Endpoint: $API_ENDPOINT_RESTORE"
+              echo "Status Endpoint: $API_ENDPOINT"
+
+              # 检查请求体
+              if [ -z "$REQUEST_BODY" ]; then
+                echo "ERROR: REQUEST_BODY is empty"
+                exit 1
+              fi
+
+              printf '%s' "$REQUEST_BODY" > /tmp/request.json
+              echo "Request body: $(cat /tmp/request.json)"
+
+              # ==========================================
+              # 步骤1: 调用备份接口
+              # ==========================================
+              echo ""
+              echo "=== Step 1: Triggering Restore ==="
+
+              RESTORE_HTTP_CODE=$(curl -s -o /tmp/restore_response.json -w "%{http_code}" \
+                -X POST \
+                -H "Content-Type: application/json" \
+                --connect-timeout 10 \
+                --max-time 60 \
+                -d @/tmp/request.json \
+                "$API_ENDPOINT_RESTORE" 2>&1) || true
+
+              echo "Restore API HTTP_CODE: $RESTORE_HTTP_CODE"
+
+              if [ "$RESTORE_HTTP_CODE" != "200" ]; then
+                echo "ERROR: Restore API call failed with HTTP $RESTORE_HTTP_CODE"
+                if [ -f /tmp/restore_response.json ]; then
+                  echo "Response: $(cat /tmp/restore_response.json)"
+                fi
+                exit 1
+              fi
+
+              if [ ! -s /tmp/restore_response.json ]; then
+                echo "ERROR: Restore API returned empty response"
+                exit 1
+              fi
+
+              RESTORE_RESPONSE=$(cat /tmp/restore_response.json)
+              echo "Restore Response: $RESTORE_RESPONSE"
+
+              # 验证备份响应（可选：检查 message 字段）
+              if ! echo "$RESTORE_RESPONSE" | grep -q '"message"'; then
+                echo "WARNING: Unexpected restore response format"
+              fi
+
+              echo "Restore triggered successfully"
+              sleep 5  # 给系统一点初始化时间
+
+              # ==========================================
+              # 步骤2: 轮询状态接口
+              # ==========================================
+              echo ""
+              echo "=== Step 2: Polling Status ==="
+
+              START_TIME=$(date +%s)
+              MAX_WAIT=${MAX_WAIT_TIME:-3600}
+              INTERVAL=${POLL_INTERVAL:-10}
+              ATTEMPT=0
+
+              while true; do
+                ATTEMPT=$((ATTEMPT + 1))
+                CURRENT_TIME=$(date +%s)
+                ELAPSED=$((CURRENT_TIME - START_TIME))
+
+                echo ""
+                echo "--- Poll attempt #$ATTEMPT (elapsed: ${ELAPSED}s) ---"
+
+                # 检查超时
+                if [ $ELAPSED -gt $MAX_WAIT ]; then
+                  echo "ERROR: Polling timeout after ${MAX_WAIT}s"
+                  exit 1
+                fi
+
+                # 调用状态接口
+                STATUS_HTTP_CODE=$(curl -s -o /tmp/status_response.json -w "%{http_code}" \
+                  -X POST \
+                  -H "Content-Type: application/json" \
+                  --connect-timeout 10 \
+                  -d @/tmp/request.json \
+                  "$API_ENDPOINT" 2>&1) || true
+
+                echo "Status API HTTP_CODE: $STATUS_HTTP_CODE"
+
+                if [ "$STATUS_HTTP_CODE" != "200" ]; then
+                  echo "WARNING: Status API returned HTTP $STATUS_HTTP_CODE, retrying..."
+                  sleep $INTERVAL
+                  continue
+                fi
+
+                if [ ! -s /tmp/status_response.json ]; then
+                  echo "WARNING: Empty status response, retrying..."
+                  sleep $INTERVAL
+                  continue
+                fi
+
+                STATUS_RESPONSE=$(cat /tmp/status_response.json)
+                echo "Status Response: $STATUS_RESPONSE"
+
+                # 提取 status 值（处理带引号和不带引号的情况）
+                # 尝试匹配 "status":"3" 或 "status":3 或 "status": "3"
+                STATUS_VALUE=$(echo "$STATUS_RESPONSE" | grep -o '"status"[[:space:]]*:[[:space:]]*["]*[0-9]["]*' | grep -o '[0-9]' | head -1)
+
+                if [ -z "$STATUS_VALUE" ]; then
+                  echo "WARNING: Could not parse status from response, retrying..."
+                  sleep $INTERVAL
+                  continue
+                fi
+
+                echo "Parsed STATUS: $STATUS_VALUE"
+
+                # 状态判断
+                case "$STATUS_VALUE" in
+                  0)
+                    echo "INFO: Status 0 - Restore not started yet, waiting..."
+                    sleep $INTERVAL
+                    ;;
+                  1)
+                    echo "INFO: Status 1 - Restore in progress, waiting..."
+                    sleep $INTERVAL
+                    ;;
+                  3)
+                    echo "SUCCESS: Status 3 - Restore completed successfully"
+                    echo "Final response: $STATUS_RESPONSE"
+                    exit 0
+                    ;;
+                  2)
+                    echo "ERROR: Status 2 - Restore failed"
+                    echo "Final response: $STATUS_RESPONSE"
+                    exit 1
+                    ;;
+                  4)
+                    echo "ERROR: Status 4 - Restore failed (status 4)"
+                    echo "Final response: $STATUS_RESPONSE"
+                    exit 1
+                    ;;
+                  *)
+                    echo "WARNING: Unknown status '$STATUS_VALUE', retrying..."
+                    sleep $INTERVAL
+                    ;;
+                esac
+              done
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi

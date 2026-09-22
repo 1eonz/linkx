@@ -1,0 +1,28 @@
+name: linkx-appinfo-copy
+namespace: platform
+imageName: busybox-curl
+imageVersion: 7.79.1.0
+cm:
+  copy.sh: |
+    #!/bin/sh
+    mkdir -p /opt/version/linkx
+    #拷贝版本信息
+    cp /opt/deploy/linkx/app-info.yaml /opt/version/linkx/app-info.yaml
+    echo 'Copy file finished'
+    sleep 2
+    curl -X PUT http://msip-service:8445/msip/cmcenter/reloadMenu
+container:
+  vault: "false"
+  command:
+    - sh
+    - /opt/copy.sh
+  volumes:
+    - cm: linkx-appinfo-copy-cm
+      mount_path: /opt/copy.sh
+      subPath: copy.sh
+    - host:
+        name: source
+        path: /data/install/linkx/
+      mount_path: /opt/deploy/linkx/
+    - outPvc: version-pvc
+      mount_path: /opt/version

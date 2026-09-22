@@ -1,0 +1,28 @@
+spring:
+  main:
+    banner-mode: off
+  application:
+    name: data-tool
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST}/icp_collabs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASS}
+
+# MyBatis Plus 配置
+mybatis-plus:
+  # 配置 Mapper XML 文件路径
+  mapper-locations: classpath*:/mapper/**/*.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  type-aliases-package: com.cs.datatool
+  configuration:
+    # 开启驼峰命名转换
+    map-underscore-to-camel-case: true
+    # SQL 日志输出
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: off
+
+logging.level.root: warn
+

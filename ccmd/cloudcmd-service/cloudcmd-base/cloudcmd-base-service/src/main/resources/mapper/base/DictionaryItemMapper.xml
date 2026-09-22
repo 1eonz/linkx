@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tdtech.cloudcmd.base.mapper.DictionaryItemMapper">
+
+    <select id="getDictionaryItemListByTypeCode" resultType="com.tdtech.cloudcmd.base.entity.DictionaryItem">
+        SELECT tb_dictionary_item.id, tb_dictionary_item.type_id, tb_dictionary_item.name,
+               tb_dictionary_item.`value`, tb_dictionary_item.sort, tb_dictionary_item.is_default,
+               tb_dictionary_item.status, tb_dictionary_item.gmt_created, tb_dictionary_item.gmt_modified
+        FROM tb_dictionary_type
+                 LEFT JOIN tb_dictionary_item ON tb_dictionary_item.type_id = tb_dictionary_type.id
+        WHERE tb_dictionary_type.code = #{code}
+    </select>
+
+    <select id="getDictionaryItemByTypeAndValue" resultType="com.tdtech.cloudcmd.base.entity.DictionaryItem">
+        SELECT tb_dictionary_item.id, tb_dictionary_item.type_id, tb_dictionary_item.name,
+               tb_dictionary_item.`value`, tb_dictionary_item.sort, tb_dictionary_item.is_default,
+               tb_dictionary_item.status, tb_dictionary_item.gmt_created, tb_dictionary_item.gmt_modified
+        FROM tb_dictionary_type
+                 LEFT JOIN tb_dictionary_item ON tb_dictionary_item.type_id = tb_dictionary_type.id
+        WHERE tb_dictionary_type.code = #{type}
+          AND tb_dictionary_item.value = #{value}
+    </select>
+</mapper>
