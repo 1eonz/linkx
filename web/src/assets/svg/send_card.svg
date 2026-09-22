@@ -1,0 +1,19 @@
+<svg width="20.000000" height="20.000000" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<desc>
+			Created with Pixso.
+	</desc>
+	<defs>
+		<clipPath id="clip685_32130">
+			<rect id="icon/40/摄像头" width="12.000000" height="12.000000" transform="translate(4.000000 4.000000)" fill="white" fill-opacity="0"/>
+		</clipPath>
+		<clipPath id="clip685_32131">
+			<rect id="icon/16/麦克风" width="20.000000" height="20.000000" fill="white" fill-opacity="0"/>
+		</clipPath>
+	</defs>
+	<rect id="icon/16/麦克风" width="20.000000" height="20.000000" fill="#99CEFB" fill-opacity="0.600000"/>
+	<g clip-path="url(#clip685_32131)">
+		<g clip-path="url(#clip685_32130)">
+			<path id="减去顶层" d="M4.85 6L15.14 6C15.61 6 16 6.38 16 6.85L16 13.71C16 14.18 15.61 14.57 15.14 14.57L4.85 14.57C4.38 14.57 4 14.18 4 13.71L4 6.85C4 6.38 4.38 6 4.85 6ZM5.28 8.14L7.42 8.14C7.66 8.14 7.85 8.33 7.85 8.57C7.85 8.8 7.66 9 7.42 9L5.28 9C5.04 9 4.85 8.8 4.85 8.57C4.85 8.33 5.04 8.14 5.28 8.14ZM13.36 10.43C13.66 10.2 13.85 9.83 13.85 9.42C13.85 8.71 13.28 8.14 12.57 8.14C11.86 8.14 11.28 8.71 11.28 9.42C11.28 9.83 11.47 10.2 11.77 10.43C10.98 10.75 10.42 11.52 10.42 12.42L14.71 12.42C14.71 11.52 14.15 10.75 13.36 10.43ZM5.28 9.85L8.28 9.85C8.52 9.85 8.71 10.04 8.71 10.28C8.71 10.52 8.52 10.71 8.28 10.71L5.28 10.71C5.04 10.71 4.85 10.52 4.85 10.28C4.85 10.04 5.04 9.85 5.28 9.85Z" fill="#159AFF" fill-opacity="1.000000" fill-rule="evenodd"/>
+		</g>
+	</g>
+</svg>

@@ -1,0 +1,31 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16.000000" height="16.000000" fill="none" customFrame="#000000">
+	<mask id="mask_3" width="16.000000" height="16.000000" x="0.000000" y="0.000000" maskUnits="userSpaceOnUse">
+		<g filter="url(#pixso_custom_mask_type_outline)">
+			<path id="路径" d="M0 0L16 0L16 16L0 16L0 0Z" fill="rgb(255,255,255)" fill-rule="evenodd" />
+		</g>
+	</mask>
+	<defs>
+		<filter id="pixso_custom_mask_type_outline">
+			<feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 " />
+		</filter>
+	</defs>
+	<mask id="mask_2" width="16.000000" height="16.000000" x="0.000000" y="0.000000" maskUnits="userSpaceOnUse">
+		<g filter="url(#pixso_custom_mask_type_outline)">
+			<path id="路径" d="M0 0L16 0L16 16L0 16L0 0Z" fill="rgb(255,255,255)" fill-rule="evenodd" />
+		</g>
+	</mask>
+	<g id="列表_">
+		<g id="MaskGroup" showMaskRef="url(#show_mask_2)" mask="url(#mask_2)">
+			<path id="show_mask_2" d="M0 0L16 0L16 16L0 16L0 0Z" fill="rgb(196,196,196)" fill-opacity="0.00392156886" fill-rule="evenodd" />
+		</g>
+		<g showMaskRef="url(#show_mask_3)" mask="url(#mask_3)">
+			<path id="show_mask_3" d="M0 0L16 0L16 16L0 16L0 0Z" fill="rgb(196,196,196)" fill-opacity="0.00392156886" fill-rule="evenodd" />
+			<path id="路径 1" d="M3.33333 3.33268C3.33333 2.96449 3.03485 2.66602 2.66667 2.66602C2.29848 2.66602 2 2.96449 2 3.33268C2 3.70087 2.29848 3.99935 2.66667 3.99935C3.03485 3.99935 3.33333 3.70087 3.33333 3.33268Z" fill-rule="evenodd" stroke="rgb(51,51,51)" stroke-dasharray="0 0 " stroke-width="2" />
+			<path id="路径 2" d="M3.33333 8.00065C3.33333 7.63245 3.03486 7.33398 2.66667 7.33398C2.29848 7.33398 2 7.63245 2 8.00065C2 8.36885 2.29848 8.66732 2.66667 8.66732C3.03486 8.66732 3.33333 8.36885 3.33333 8.00065Z" fill-rule="evenodd" stroke="rgb(51,51,51)" stroke-dasharray="0 0 " stroke-width="2" />
+			<path id="路径 3" d="M3.33333 12.6667C3.33333 12.2985 3.03486 12 2.66667 12C2.29848 12 2 12.2985 2 12.6667C2 13.0349 2.29848 13.3333 2.66667 13.3333C3.03486 13.3333 3.33333 13.0349 3.33333 12.6667Z" fill-rule="evenodd" stroke="rgb(51,51,51)" stroke-dasharray="0 0 " stroke-width="2" />
+			<path id="路径 4" d="M6.66602 8L14.666 8" stroke="rgb(51,51,51)" stroke-dasharray="0 0 " stroke-width="2" />
+			<path id="路径 5" d="M6.66602 12.666L14.666 12.666" stroke="rgb(51,51,51)" stroke-dasharray="0 0 " stroke-width="2" />
+			<path id="路径 6" d="M6.66602 3.33398L14.666 3.33398" stroke="rgb(51,51,51)" stroke-dasharray="0 0 " stroke-width="2" />
+		</g>
+	</g>
+</svg>

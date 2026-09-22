@@ -1,0 +1,9 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" fill="none" clip-path="url(#clipPath_1)" customFrame="url(#clipPath_1)">
+	<defs>
+		<clipPath id="clipPath_1">
+			<rect width="32" height="32" x="0" y="0" rx="2" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="截图" width="32" height="32" x="0" y="0" rx="2" fill="rgb(91,96,114)" fill-opacity="0" />
+	<path id="合并" d="M11.3856 12.1006L11.3856 20.1869L19.9001 20.1869L19.9 12.1005L11.5026 12.1006L11.3856 12.1006ZM9.18565 12.1006L9.18565 22.3869L19.9001 22.3869L19.9001 25.5005L22.1001 25.5005L22.1001 22.3869L26.0002 22.3869L26.0002 20.1869L22.1001 20.1869L22.1 11.0005Q22.0999 10.5448 21.7778 10.2227Q21.4556 9.90048 20.9999 9.90049L11.5026 9.90057L11.3856 9.90057L11.3856 7.00098L9.18565 7.00098L9.18565 9.90058L6 9.90059L6.00001 12.1006L9.18565 12.1006Z" fill="rgb(91,96,114)" fill-rule="evenodd" />
+</svg>

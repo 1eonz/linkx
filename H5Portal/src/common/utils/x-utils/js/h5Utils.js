@@ -1,0 +1,1 @@
+export * from '@/uni_modules/x-tools/tools/h5Utils.js';

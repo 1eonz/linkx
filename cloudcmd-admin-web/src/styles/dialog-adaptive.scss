@@ -1,0 +1,73 @@
+/**
+ * 弹窗自适应样式
+ * 解决弹窗在页面宽度缩小时，内容区域无法支撑输入框+label的样式问题
+ */
+
+// 自适应弹窗样式
+.adaptive-dialog {
+  // 弹窗最小宽度保证
+  min-width: 600px;
+  
+  .el-dialog__header {
+    padding: 20px 30px 10px;
+  }
+  
+  .el-dialog__body {
+    padding: 20px 30px;
+    overflow-x: hidden;
+  }
+  
+  .el-dialog__footer {
+    padding: 15px 30px;
+  }
+}
+
+// 自适应表单样式
+.dialog-form {
+  width: 100%;
+  box-sizing: border-box;
+  
+  .el-form-item {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    
+    .el-form-item__label {
+      flex-shrink: 0;
+    }
+    
+    .el-form-item__content {
+      flex: 1;
+      // 重置 Element UI 默认的 margin-left（由 label-width 自动添加）
+      // flex 布局下不需要 margin-left，label 和 content 通过 flex 自动排列
+      margin-left: 0 !important;
+      min-width: 200px;
+      
+      .el-input,
+      .el-select,
+      .el-textarea,
+      .el-input-number {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// 宽弹窗样式（用于字段较多的表单）
+.adaptive-dialog-wide {
+  min-width: 600px;
+  
+  .el-dialog__header {
+    padding: 20px 30px 10px;
+  }
+  
+  .el-dialog__body {
+    padding: 20px 30px;
+    overflow-x: hidden;
+  }
+  
+  .el-dialog__footer {
+    padding: 15px 30px;
+  }
+}

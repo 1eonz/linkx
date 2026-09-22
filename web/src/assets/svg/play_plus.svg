@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" style="border-color: rgba(0,0,0,0);border-width: bpx;border-style: undefined" filter="none">
+    
+    <g>
+    
+<g fill="rgba(255,255,255,1)">
+	<path fill="rgba(255,255,255,1)" d="M128,128H0V0h128V128z M1.969,126.031h124.062V1.969H1.969V126.031z" stroke="none"></path>
+</g>
+<path fill="rgba(21, 158, 248, 1)" d="M93.127,68.945L40.764,99.491c-3.782,2.327-8.727-0.582-8.727-4.945V33.455c0-4.364,4.945-7.273,8.727-4.945
+	l52.364,30.545C96.909,61.091,96.909,66.909,93.127,68.945z" stroke="none"></path>
+
+    </g>
+  </svg>

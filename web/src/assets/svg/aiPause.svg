@@ -1,0 +1,16 @@
+<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36.000000" height="36.000000" fill="none" customFrame="url(#clipPath_4)">
+	<defs>
+		<clipPath id="clipPath_4">
+			<rect width="36.000000" height="36.000000" x="0.000000" y="0.000000" rx="18.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+		<clipPath id="clipPath_5">
+			<rect width="20.000000" height="20.000000" x="8.000000" y="8.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="pause" width="36.000000" height="36.000000" x="0.000000" y="0.000000" rx="18.000000" fill="rgb(38,78,209)" />
+	<g id="arrow-up-long" clip-path="url(#clipPath_5)" customFrame="url(#clipPath_5)">
+		<rect id="arrow-up-long" width="20.000000" height="20.000000" x="8.000000" y="8.000000" />
+		<path id="path" d="M10 0L16.6667 6.66675L10 13.3333M16.6667 6.66675L0 6.66675" stroke="rgb(255,255,255)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" transform="matrix(0,-1,1,0,11.3333,26.3333)" />
+		<path id="path (边框)" d="M10.2441 1.426C9.91409 1.09601 9.91409 0.577464 10.2441 0.247484C10.5741 -0.0824973 11.0926 -0.0824941 11.4226 0.247491L18.0893 6.91424C18.4821 7.30708 18.4821 7.69992 18.0893 8.09275L11.4226 14.7593C11.0926 15.0893 10.5741 15.0893 10.2441 14.7593C9.91409 14.4293 9.91409 13.9108 10.2441 13.5808L15.4881 8.33683L0.833333 8.33683C0.366666 8.33683 0 7.97016 0 7.50349C0 7.03683 0.366667 6.67016 0.833333 6.67016L15.4882 6.67016L10.2441 1.426Z" opacity="0" fill="rgb(255,255,255)" fill-rule="evenodd" transform="matrix(0,-1,1,0,10.4966,27.1667)" />
+	</g>
+</svg>

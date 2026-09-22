@@ -1,0 +1,34 @@
+{
+  "name": "@cs/stylelint-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./index.mjs",
+  "module": "./index.mjs",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "default": "./index.mjs"
+    }
+  },
+  "devDependencies": {
+    "@stylistic/stylelint-plugin": "catalog:",
+    "prettier": "catalog:",
+    "postcss": "catalog:",
+    "postcss-html": "catalog:",
+    "postcss-less": "catalog:",
+    "postcss-pxtorem": "catalog:",
+    "stylelint": "catalog:",
+    "stylelint-config-recess-order": "catalog:",
+    "stylelint-less": "catalog:",
+    "stylelint-config-recommended": "catalog:",
+    "stylelint-config-recommended-less": "catalog:",
+    "stylelint-config-recommended-vue": "catalog:",
+    "stylelint-config-standard": "catalog:",
+    "stylelint-order": "catalog:",
+    "stylelint-prettier": "catalog:"
+  }
+}

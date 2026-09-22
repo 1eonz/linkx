@@ -1,0 +1,15 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32.000000" height="32.000000" fill="none" customFrame="url(#clipPath_6)">
+	<defs>
+		<clipPath id="clipPath_6">
+			<rect width="32.000000" height="32.000000" x="0.000000" y="0.000000" rx="16.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+		<clipPath id="clipPath_7">
+			<rect width="20.000000" height="20.000000" x="6.000000" y="6.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="容器 30" width="32.000000" height="32.000000" x="0.000000" y="0.000000" rx="16.000000" fill="rgb(162,179,235)" />
+	<g id="svg 5" clip-path="url(#clipPath_7)" customFrame="url(#clipPath_7)">
+		<rect id="svg 5" width="20.000000" height="20.000000" x="6.000000" y="6.000000" />
+		<path id="矢量 331" d="M16.8333 24.3335L15.1668 24.3336L15.1668 10.857L11.8753 14.1484L10.6968 12.9699L16.0001 7.66663L21.3034 12.9699L20.1248 14.1484L16.8334 10.857L16.8333 24.3335Z" fill="rgb(255,255,255)" fill-rule="nonzero" />
+	</g>
+</svg>

@@ -1,0 +1,194 @@
+.el-picker-panel {
+  color: var(--color-white);
+  background: none;
+
+  .el-time-panel {
+    left: -20px;
+    width: 180px;
+    margin: 5px 0;
+    background: #fff;
+    border: none;
+  }
+
+  .el-picker-panel__sidebar {
+    // left: -40px;
+    width: 150px;
+    background: var(--el-popper-bg);
+    border-right: var(--el-picker-panel__sidebar) !important;
+  }
+
+  .el-picker-panel__shortcut {
+    color: var(--text-color);
+  }
+
+  .el-time-spinner__item {
+    height: 32px;
+    font-size: 12px;
+    line-height: 32px;
+    color: var(--color-white) !important;
+  }
+
+  .el-time-panel__btn {
+    color: var(--color-white);
+  }
+
+  .el-time-panel__btn.confirm {
+    font-weight: 800;
+    color: var(--color-white);
+  }
+
+  .el-time-spinner__item.active:not(.disabled) {
+    font-weight: 700;
+    color: var(--color-white);
+  }
+
+  .el-time-panel__footer {
+    box-sizing: border-box;
+    height: 36px;
+    padding: 4px;
+    line-height: 25px;
+    text-align: right;
+    border-top: 1px solid grey;
+  }
+
+  .el-time-spinner__item:hover:not(.disabled, .active) {
+    background: none;
+  }
+
+  .el-input__inner {
+    color: var(--text-title-second);
+    background: var(--background-simple);
+    border: 1px solid #4a535a;
+
+    &:focus {
+      border-color: #2663ff;
+    }
+  }
+
+  .el-input.is-disabled .el-input__inner {
+    color: var(--color-white);
+  }
+
+  .el-input__wrapper {
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  .el-picker-panel__footer {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    background: rgb(2 32 78 / 0%);
+    border-top: var(--background-frame);
+  }
+
+  .el-date-picker__header-label {
+    color: var(--color-white);
+  }
+
+  .el-date-picker__time-header {
+    border-bottom: var(--background-frame);
+  }
+
+  .el-picker-panel__icon-btn {
+    color: var(--color-white);
+  }
+
+  .el-date-table__row {
+    background: #fff !important;
+  }
+
+  .el-date-range-picker__header {
+    color: var(--text-color);
+
+    div {
+      color: var(--text-color);
+    }
+  }
+
+  .el-date-table {
+    padding: 0 8px;
+    background: var(--el-date-table-bg);
+    backdrop-filter: blur(8px);
+
+    td div {
+      &:hover {
+        background-color: var(--background-active);
+      }
+    }
+
+    td.in-range div {
+      background-color: var(--in-range-bg);
+    }
+
+    td.disabled div {
+      background-color: var(--td-disabled-bg);
+    }
+
+    .el-date-table-cell__text {
+      color: var(--text-color);
+    }
+
+    th {
+      font-size: 12px;
+      color: var(--item-text-color);
+      border-bottom: var(--background-frame);
+    }
+
+    td.prev-month {
+      color: #53606b;
+    }
+
+    td.next-month {
+      color: #53606b;
+    }
+
+    td span {
+      width: 26px;
+      height: 25px;
+      font-size: 14px;
+    }
+
+    tr {
+      background: none !important;
+    }
+  }
+
+  .el-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 32px;
+    margin-right: 16px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    border: 0;
+    border-radius: 0;
+
+    &:hover {
+      background: var(--button-color-guide-hover);
+    }
+  }
+
+  .el-button.el-button--text {
+    background: var(--button-color-guide-default);
+
+    &:hover {
+      background: var(--button-color-guide-hover);
+    }
+  }
+
+  .el-button.is-disabled.is-plain {
+    color: var(--color-white);
+    background: #fff;
+  }
+
+  .el-date-range-picker__content.is-left {
+    border: none;
+  }
+
+  .el-date-range-picker__time-header {
+    border: none;
+  }
+}

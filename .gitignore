@@ -1,0 +1,23 @@
+.idea/
+.rules/
+
+.codeartsdoer/
+.codebuddy/
+.claude/
+*.exe
+*.ps1
+Auto-Optimize
+.claw
+.claw-todos.json
+mockChatData.ts
+.codegraph
+
+docs-local
+project_rules.md
+node_modules
+.trae/review-passed
+.husky/_
+
+# 测试覆盖率报告
+coverage/
+**/coverage/

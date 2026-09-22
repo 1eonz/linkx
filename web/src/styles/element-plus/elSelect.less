@@ -1,0 +1,36 @@
+.el-select {
+  width: 100%;
+  background: transparent;
+
+  .el-select__wrapper {
+    background-color: transparent;
+    border: 1px solid rgba(255 255 255 / 20%);
+    box-shadow: none;
+  }
+
+  &:hover:not(.el-select--disabled) .el-input__wrapper {
+    box-shadow: none;
+  }
+
+  .el-input__suffix {
+    position: absolute;
+    top: 0;
+    right: 10px;
+  }
+
+  .el-input .el-select__caret {
+    color: var(--text-title-second);
+  }
+
+  .el-input.is-focus .el-input__wrapper {
+    box-shadow: none !important;
+  }
+
+  .el-input .el-input__wrapper.is-focus {
+    box-shadow: none !important;
+  }
+
+  .el-select__placeholder span {
+    color: #a3a3a3;
+  }
+}

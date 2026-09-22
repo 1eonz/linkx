@@ -1,0 +1,95 @@
+/**
+ * Shapes
+ */
+
+// ================ circle ================
+
+.shape-circle (@width) {
+  .shape-square(@width);
+
+  border-radius: 50px;
+}
+
+// ================ oval ================
+
+.shape-oval (@width, @height) {
+  .shape-rectangle(@width, @height);
+
+  border-radius: 50%;
+}
+
+// ================ rectangle ================
+
+.shape-rectangle (@width, @height) {
+  width: @width;
+  height: @height;
+}
+
+// ================ square ================
+
+.shape-square (@width) {
+  .shape-rectangle(@width, @width);
+}
+
+// ================ triangle ================
+
+.shape-triangle-up (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-right: @width / 2 solid transparent;
+  border-bottom: @width solid @color;
+  border-left: @width / 2 solid transparent;
+}
+
+.shape-triangle-down (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-top: @width / 2 solid @color;
+  border-right: @width / 2 solid transparent;
+  border-bottom: 0;
+  border-left: @width / 2 solid transparent;
+}
+
+.shape-triangle-left (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-top: @width / 2 solid transparent;
+  border-right: @width solid @color;
+  border-bottom: @width solid transparent;
+}
+
+.shape-triangle-right (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-top: @width / 2 solid transparent;
+  border-bottom: @width / 2 solid transparent;
+  border-left: @width solid @color;
+}
+
+.shape-triangle-top-left (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-top: @width solid @color;
+  border-right: @width solid transparent;
+}
+
+.shape-triangle-top-right (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-top: @width solid @color;
+  border-left: @width solid transparent;
+}
+
+.shape-triangle-bottom-left (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-right: @width solid transparent;
+  border-bottom: @width solid @color;
+}
+
+.shape-triangle-bottom-right (@width, @color: @shape-color) {
+  .shape-square(0);
+
+  border-bottom: @width solid @color;
+  border-left: @width solid transparent;
+}

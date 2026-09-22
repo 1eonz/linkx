@@ -1,0 +1,42 @@
+.el-date-editor {
+  background: rgb(173 204 240 / 7%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 0 !important;
+  box-shadow: none !important;
+
+  .el-range-input {
+    width: 51%;
+    color: var(--text-default);
+
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown */
+    &::input-placeholder {
+      color: var(--text-title-second);
+    }
+
+    &:focus-within {
+      color: var(--text-title-second);
+    }
+
+    &::placeholder {
+      color: var(--text-title-second);
+    }
+  }
+
+  .el-input__icon {
+    display: none;
+  }
+
+  .el-range-separator {
+    color: var(--text-title-second);
+  }
+}
+
+.el-range-editor.is-disabled {
+  background-color: none;
+  border: 1px solid rgb(255 255 255 / 20%);
+
+  input {
+    background: none;
+  }
+}

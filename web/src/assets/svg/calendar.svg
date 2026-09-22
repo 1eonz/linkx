@@ -1,0 +1,26 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16.000000" height="16.000000" fill="none" customFrame="#000000">
+	<mask id="mask_1" width="16.000000" height="16.000000" x="0.000000" y="0.000000" maskUnits="userSpaceOnUse">
+		<g filter="url(#pixso_custom_mask_type_outline)">
+			<path id="路径" d="M0 0L16 0L16 16L0 16L0 0Z" fill="rgb(255,255,255)" fill-rule="evenodd" />
+		</g>
+	</mask>
+	<defs>
+		<filter id="pixso_custom_mask_type_outline">
+			<feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0 " />
+		</filter>
+	</defs>
+	<mask id="mask_0" width="16.000000" height="16.000000" x="0.000000" y="0.000000" maskUnits="userSpaceOnUse">
+		<g filter="url(#pixso_custom_mask_type_outline)">
+			<path id="路径" d="M0 0L16 0L16 16L0 16L0 0Z" fill="currentColor" fill-rule="evenodd" />
+		</g>
+	</mask>
+	<g id="日历">
+		<g id="MaskGroup" showMaskRef="url(#show_mask_0)" mask="url(#mask_0)">
+			<path id="show_mask_0" d="M0 0L16 0L16 16L0 16L0 0Z" fill="rgb(196,196,196)" fill-opacity="0.00392156886" fill-rule="evenodd" />
+		</g>
+		<g showMaskRef="url(#show_mask_1)" mask="url(#mask_1)">
+			<path id="show_mask_1" d="M0 0L16 0L16 16L0 16L0 0Z" fill="rgb(196,196,196)" fill-opacity="0.00392156886" fill-rule="evenodd" />
+			<path id="拼合图形" d="M15.0002 15L1.2002 15L1.2002 2.42L5.1602 2.42L5.1602 1L6.7702 1L6.7702 2.42L9.4202 2.42L9.4202 1L11.0402 1L11.0402 2.42L15.0002 2.42L15.0002 15ZM6.7703 5.0293L6.7703 4.0293L9.4203 4.0293L9.4203 5.0293L11.0403 5.0293L11.0403 4.0293L13.3803 4.0293L13.3803 6.0793L2.8103 6.0793L2.8103 4.0293L5.1603 4.0293L5.1603 5.0293L6.7703 5.0293ZM2.8103 7.68945L5.1603 7.68945L5.1603 9.72945L2.8103 9.72945L2.8103 7.68945ZM9.43026 7.68945L9.43026 9.72945L6.77026 9.72945L6.77026 7.68945L9.43026 7.68945ZM11.0403 9.72945L11.0403 7.68945L13.3803 7.68945L13.3803 9.72945L11.0403 9.72945ZM5.1603 11.3398L5.1603 13.3798L2.8103 13.3798L2.8103 11.3398L5.1603 11.3398ZM9.43026 11.3398L9.43026 13.3798L6.77026 13.3798L6.77026 11.3398L9.43026 11.3398ZM11.0403 13.3798L11.0403 11.3398L13.3803 11.3398L13.3803 13.3798L11.0403 13.3798Z" fill="currentColor" fill-rule="evenodd" />
+		</g>
+	</g>
+</svg>

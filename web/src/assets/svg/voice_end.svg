@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="68" height="68" viewBox="0 0 68 68" fill="none">
+<g opacity="0.3">
+<circle cx="34" cy="34" r="34"   fill="url(#linear_fill_360_5185)" >
+</circle>
+</g>
+<g opacity="0.7">
+<circle cx="33.999755859375" cy="34" r="27.388916015625"   fill="url(#linear_fill_360_5186)" >
+</circle>
+</g>
+<ellipse cx="34.117919921875" cy="34.11804389953613" rx="24.673583984375" ry="24.673585891723633"   fill="url(#linear_fill_360_5191)" >
+</ellipse>
+<g  clip-path="url(#clip-path-376_447)">
+<rect  x="21.25244140625" y="24.54443359375" width="8.49993896484375" height="16.29165506287245" rx="4.249969482421875"    fill="#FFFFFF" >
+</rect>
+<path d="M32.4938 37.0303C32.4938 40.8912 29.3632 44.0211 25.5028 44.0211C21.7066 44.0211 18.618 40.996 18.5145 37.2261L18.5117 37.0303L18.5117 35.5343C18.5117 35.1435 18.8291 34.8263 19.2206 34.8263C19.5827 34.8263 19.8834 35.0994 19.9239 35.4525L19.9281 35.5343L19.9281 37.0303C19.9281 40.1087 22.4239 42.6042 25.5028 42.6042C28.5229 42.6042 30.9824 40.2016 31.0746 37.2041L31.0774 37.0303L31.0774 35.5343C31.0774 35.1435 31.3948 34.8263 31.7849 34.8263C32.1485 34.8263 32.4477 35.0994 32.4896 35.4525L32.4938 35.5343L32.4938 37.0303Z" fill-rule="evenodd"  fill="#FFFFFF" >
+</path>
+<path     fill="#FFFFFF"  d="M22.6691 45.7944L28.3358 45.7944C29.1182 45.7944 29.7524 46.4287 29.7524 47.2111L29.7524 47.2111L21.2524 47.2111L21.2524 47.2111C21.2524 46.4287 21.8867 45.7944 22.6691 45.7944Z">
+</path>
+<rect x="24.7939453125" y="43.66943359375" width="1.416656494140625" height="2.1249985892573022"   fill="#FFFFFF" >
+</rect>
+</g>
+<rect x="37.77783203125" y="43.4444580078125" width="4.12109375" height="1.888834834098816"   fill="#FFFFFF" >
+</rect>
+<rect x="37.77783203125" y="39.666748046875" width="6.86865234375" height="1.8888791799545288"   fill="#FFFFFF" >
+</rect>
+<rect x="37.77783203125" y="35.888916015625" width="9.6162109375" height="1.8888983726501465"   fill="#FFFFFF" >
+</rect>
+<rect x="37.77783203125" y="32.111083984375" width="12.36376953125" height="1.888908863067627"   fill="#FFFFFF" >
+</rect>
+<rect x="37.77783203125" y="28.333251953125" width="15.111328125" height="1.888916015625"   fill="#FFFFFF" >
+</rect>
+<defs>
+<linearGradient id="linear_fill_360_5185" x1="59.5068" y1="34" x2="0" y2="34" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#09A8C3"  />
+<stop offset="1" stop-color="#1AFFFB"  />
+</linearGradient>
+<linearGradient id="linear_fill_360_5186" x1="54.54692065429686" y1="34" x2="6.61083984375" y2="34" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#14B7CC"  />
+<stop offset="1" stop-color="#00EAFF"  />
+</linearGradient>
+<linearGradient id="linear_fill_360_5191" x1="49.61983926757812" y1="53.16605220794678" x2="18.132891801757815" y2="17.743171886634826" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#08A1BF"  />
+<stop offset="1" stop-color="#1AFFFB"  />
+</linearGradient>
+<clipPath id="clip-path-376_447">
+<path d="M14.167 47.2222L36.8336 47.2222L36.8336 24.5555L14.167 24.5555L14.167 47.2222Z" fill="white"/>
+</clipPath>
+</defs>
+</svg>

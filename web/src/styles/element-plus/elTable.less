@@ -1,0 +1,66 @@
+.el-table {
+  --el-table-border-color: var(--background-table-border) !important;
+
+  th {
+    background-color: var(--background-table-header);
+
+    &.el-table__cell {
+      background-color: var(--background-table-header) !important;
+      /* stylelint-disable-next-line prettier/prettier */
+
+      .cell {
+        color: var(--background-table-text) !important;
+      }
+    }
+
+    &.el-table-fixed-column--right {
+      background-color: var(--background-table-header) !important;
+    }
+  }
+
+  td {
+    background-color: var(--background-table-content);
+
+    &.el-table__cell {
+      .cell {
+        color: var(--background-table-text) !important;
+      }
+    }
+
+    &.el-table-fixed-column--right {
+      background-color: var(--background-table-content) !important;
+    }
+  }
+
+  tr {
+    background-color: var(--background-table-content);
+
+    &.hover-row > td.el-table__cell {
+      background: var(--background-table-content);
+    }
+  }
+}
+
+.el-table__empty-block {
+  //background: url('@/assets/images/resource/empty_tips.png') no-repeat;
+  background-color: var(--background-table-content);
+
+  .el-table__empty-text {
+    color: var(--background-table-text);
+  }
+}
+
+// 未使用fixed
+.el-table tbody tr:hover > td {
+  background-color: var(--background-table) !important;
+}
+
+// 未使用fixed当前行选中样式
+.el-table tbody tr.current-row > td {
+  background-color: var(--background-table) !important;
+}
+
+// 使用fixed
+.el-table__body .el-table__row.hover-row > td {
+  background-color: var(--background-table) !important;
+}

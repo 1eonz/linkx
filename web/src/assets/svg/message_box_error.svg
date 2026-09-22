@@ -1,0 +1,13 @@
+<svg width="16.000000" height="16.000000" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<desc>
+			Created with Pixso.
+	</desc>
+	<defs>
+		<clipPath id="clip988_34890">
+			<rect id="exclamation-circle-fill" width="16.000000" height="16.000000" fill="white" fill-opacity="0"/>
+		</clipPath>
+	</defs>
+	<g clip-path="url(#clip988_34890)">
+		<path id="减去顶层" d="M8 0.33C3.76 0.33 0.33 3.76 0.33 7.99C0.33 12.23 3.76 15.66 8 15.66C12.23 15.66 15.66 12.23 15.66 7.99C15.66 3.76 12.23 0.33 8 0.33ZM7.33 4.66C7.33 4.29 7.63 3.99 8 3.99C8.36 3.99 8.66 4.29 8.66 4.66L8.66 7.99C8.66 8.36 8.36 8.66 8 8.66C7.63 8.66 7.33 8.36 7.33 7.99L7.33 4.66ZM7 10.99C7 10.44 7.44 9.99 8 9.99C8.55 9.99 9 10.44 9 10.99C9 11.55 8.55 11.99 8 11.99C7.44 11.99 7 11.55 7 10.99Z" fill="#EB5255" fill-opacity="1.000000" fill-rule="evenodd"/>
+	</g>
+</svg>

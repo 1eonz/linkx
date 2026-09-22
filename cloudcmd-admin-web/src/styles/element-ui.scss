@@ -1,0 +1,69 @@
+// cover some element-ui styles
+
+.el-breadcrumb__inner,
+.el-breadcrumb__inner a {
+  font-weight: 400 !important;
+}
+
+.el-upload {
+  input[type='file'] {
+    display: none !important;
+  }
+}
+
+.el-upload__input {
+  display: none;
+}
+
+.el-dialog {
+  transform: none;
+  left: 0;
+  position: relative;
+  margin: 0 auto;
+}
+
+// refine element ui upload
+.el-upload-dragger {
+  height: 200px;
+  width: 460px;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+
+.upload-container {
+  .el-upload {
+    width: 100%;
+
+    .el-upload-dragger {
+      width: 100%;
+      height: 200px;
+    }
+  }
+}
+
+// dropdown
+.el-dropdown-menu {
+  a {
+    display: block;
+  }
+}
+
+// to fix el-date-picker css style
+.el-range-separator {
+  box-sizing: content-box;
+}
+
+.el-tooltip__popper {
+  max-width: 500px;
+}
+
+
+// 修复单选组选项位置跟label标题位置不在一条顺平线
+.el-form-item__content .el-radio-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  .el-radio {
+    line-height: normal !important;
+  }
+}

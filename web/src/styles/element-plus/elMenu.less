@@ -1,0 +1,109 @@
+// 选择器按 CSS 特异性升序排列（修复 SonarQube css:S4664）
+// 原 Less 嵌套拍平为显式选择器，因 .el-menu 块内 sub-menu__title 系列特异性
+// (0,2,0)~(0,4,1) 与顶层 .el-sub-menu.is-active (0,3,0)~(0,4,1) 交错，无法靠移块解决。
+
+.el-menu {
+  border-right: 0;
+}
+
+.el-menu-item {
+  color: #a6cefd;
+}
+
+.el-menu .el-sub-menu__title {
+  height: 40px;
+}
+
+.el-menu .el-menu-item-group__title {
+  padding: 0;
+}
+
+.el-menu .el-menu-item {
+  height: 40px;
+  font-size: 16px;
+}
+
+.el-menu-item:hover {
+  color: #fff;
+}
+
+.el-menu-item.is-active {
+  color: #fff;
+  background: var(--background-active);
+}
+
+.el-menu .el-menu-item span {
+  margin-left: 8px;
+  color: #a6cefd;
+}
+
+.el-menu-item.is-active span {
+  color: #fff;
+}
+
+.el-menu .el-menu-item .td-icon {
+  width: 18px;
+  height: 18px;
+  color: #a6cefd;
+}
+
+.el-menu .el-menu-item:hover {
+  background: var(--background-hover);
+}
+
+.el-menu .el-sub-menu .el-sub-menu__title {
+  height: 40px;
+  font-size: 16px;
+}
+
+.el-menu-item.is-active .td-icon {
+  fill: #fff;
+}
+
+.el-sub-menu.is-active .el-sub-menu__title {
+  color: #1afffb;
+}
+
+.el-menu .el-menu-item:hover span {
+  color: #fff;
+}
+
+.el-menu .el-sub-menu .el-sub-menu__title span {
+  margin-left: 8px;
+  color: #a6cefd;
+}
+
+.el-sub-menu.is-active .el-sub-menu__title span {
+  color: #1afffb;
+}
+
+.el-menu .el-menu-item:hover .td-icon {
+  fill: #fff;
+}
+
+.el-menu .el-sub-menu .el-sub-menu__title .td-icon {
+  width: 18px;
+  height: 18px;
+  color: #a6cefd;
+}
+
+.el-menu .el-sub-menu .el-sub-menu__title:hover {
+  color: #fff;
+  background: var(--background-hover);
+}
+
+.el-sub-menu.is-active .el-sub-menu__title .td-icon {
+  fill: #1afffb;
+}
+
+.el-menu .el-sub-menu .el-sub-menu__title:hover span {
+  color: #fff;
+}
+
+.el-menu .el-sub-menu .el-sub-menu__title:hover .td-icon {
+  fill: #fff;
+}
+
+.el-menu .el-sub-menu .el-menu .el-menu-item-group .el-menu-item {
+  padding-left: 46px;
+}

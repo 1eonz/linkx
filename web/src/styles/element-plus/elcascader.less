@@ -1,0 +1,31 @@
+.el-cascader {
+  width: 100%;
+  margin-right: 0;
+
+  .el-input__suffix {
+    position: absolute;
+    top: 0;
+    right: 10px;
+  }
+}
+
+.el-cascader-node.is-selectable.in-active-path {
+  background: var(--background-active) !important;
+}
+
+.el-cascader-node.in-active-path,
+.el-cascader-node.is-active {
+  background: var(--background-active);
+}
+
+.el-cascader-menu__list li&:hover {
+  background: var(--background-hover) !important;
+}
+
+.el-cascader-menu__list li&:focus {
+  background: var(--background-hover) !important;
+}
+
+.el-cascader-menu {
+  border-right: 1px solid rgb(65 107 145 / 100%);
+}

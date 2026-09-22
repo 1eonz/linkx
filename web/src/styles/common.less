@@ -1,0 +1,238 @@
+/**
+  减少全局样式污染!
+*/
+
+.common-card-default {
+  background: var(--background-simple);
+  border: 1px solid var(--border-color-simple);
+}
+
+.common-list {
+  &-item {
+    .common-card-default();
+
+    padding: 10px;
+    margin: 0 auto 8px;
+    color: var(--text-default);
+    cursor: pointer;
+
+    &:hover {
+      border: 1px solid var(--border-color-default);
+    }
+  }
+
+  &-item_active {
+    border: 1px solid var(--border-color-default);
+
+    div,
+    p,
+    span {
+      color: var(--icon-color-normal) !important;
+    }
+  }
+}
+
+.ground-glass {
+  background: linear-gradient(180deg, rgba(6 41 74 / 64%) 0%, rgba(6 41 74 / 26%) 100%);
+  // border: 1px solid transparent;
+  border-image: linear-gradient(180deg, rgba(26 255 251 / 20%) 0%, rgba(26 255 251 / 100%) 100%);
+  border-image-slice: 1;
+}
+
+.glass-light {
+  background: var(--glass-light-bg);
+  //border: 1px solid transparent;
+  //border-image: linear-gradient(180deg, rgba(26 255 251 / 20%) 0%, rgba(26 255 251 / 100%) 100%);
+  //border-image-slice: 1;
+  // border: 1px solid transparent;
+  border: 1px solid var(--glass-light-border);
+  border-radius: 2px;
+  // border-image: linear-gradient(180deg, rgba(26 255 251 / 20%) 0%, rgba(26 255 251 / 100%) 100%);
+  // border-image-slice: 1;
+}
+
+// 禁用backdrop-filter
+.disable-ground-glass {
+  .ground-glass {
+    backdrop-filter: none !important;
+  }
+}
+
+// 在线状态
+.status-color {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+}
+
+.status-icon {
+  display: inline-block;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.online {
+  &::after {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    content: '';
+    background: var(--icon-color-online);
+    border: 0.5px solid #fff;
+    border-radius: 50%;
+  }
+}
+
+.offline {
+  &::after {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    content: '';
+    background: var(--icon-color-offline);
+    border: 0.5px solid #fff;
+    border-radius: 50%;
+  }
+}
+
+.busy {
+  &::after {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 4px;
+    height: 4px;
+    content: '';
+    background: var(--icon-color-busy);
+    border: 0.5px solid #fff;
+    border-radius: 50%;
+  }
+}
+
+.available {
+  fill: var(--icon-color-available);
+}
+
+.unavailable {
+  fill: var(--icon-color-unavailable);
+}
+
+.underway {
+  &::after {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 4px;
+    height: 4px;
+    content: '';
+    background: var(--icon-color-underway);
+    border: 0.5px solid #fff;
+    border-radius: 50%;
+  }
+}
+
+// 小标题
+.subtitle {
+  padding-left: 6px;
+  font-size: 16px;
+  line-height: 16px;
+  border-left: 4px solid var(--border-color-blue);
+}
+
+// 小头像
+.avatar {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  .icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+
+// 大头像
+.img {
+  &-terminal {
+    background: url('@/assets/svg/tree/tree_terminal.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-recorder {
+    background: url('@/assets/svg/tree/tree_recorder.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-GBRecorder {
+    background: url('@/assets/svg/tree/tree_GBRecorder.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-pdt {
+    background: url('@/assets/svg/tree/tree_pdt.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-car {
+    background: url('@/assets/svg/tree/tree_car.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-monitor {
+    background: url('@/assets/svg/tree/tree_monitor.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-awareness {
+    background: url('@/assets/images/map/awareness.png') no-repeat center center;
+    background-color: #fff;
+    background-size: 50px, 50px;
+  }
+
+  &-uav {
+    background: url('@/assets/svg/tree/tree_uav.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-conference {
+    background: url('@/assets/svg/tree/tree_conference.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+
+  &-person {
+    background: url('@/assets/svg/tree/tree_person.svg') no-repeat center center;
+    background-size: 50px, 50px;
+  }
+}
+
+.ghost-class,
+.chosen-class {
+  z-index: 100;
+  display: flex !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow: hidden;
+}
+
+// 拖拽时的fixed定位受ground-glass的backdrop-filter的影响导致没有相对应浏览器视口定位
+.drag-class {
+  z-index: 100;
+  margin-top: -100px !important;
+}
+
+/* stylelint-disable-next-line selector-id-pattern */
+#toolPanel {
+  height: auto !important;
+}
+
+/* stylelint-disable-next-line selector-id-pattern */
+#optionPanel {
+  height: auto !important;
+}

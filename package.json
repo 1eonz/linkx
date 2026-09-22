@@ -1,0 +1,17 @@
+{
+  "name": "linkx-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Linkx AI Code Review hooks and scripts",
+  "scripts": {
+    "prepare": "husky",
+    "review": "node scripts/ai-code-review.mjs --staged",
+    "review:branch": "node scripts/ai-code-review.mjs --from main",
+    "review:no-block": "node scripts/ai-code-review.mjs --staged --no-block",
+    "review:pass": "node scripts/ai-code-review.mjs --mark-passed",
+    "review:clean": "node scripts/ai-code-review.mjs --clean"
+  },
+  "devDependencies": {
+    "husky": "^9.1.0"
+  }
+}

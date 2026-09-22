@@ -1,0 +1,654 @@
+{
+  "id": "43f36e14-e3f5-43",
+  "name": "离线地图",
+  "zoom": 10,
+  "pitch": 20,
+  "sprite": "https://10.28.54.176:30013/map/v1/api/sprites/streets/sprite",
+  "glyphs": "https://10.28.54.176:30013/map/v1/api/fonts/{fontstack}/{range}.pbf",
+  "center": [
+    103.65431710431244,
+    30.954120326746775
+  ],
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#00263D"
+      }
+    },
+    {
+      "id": "place_symbol",
+      "type": "symbol",
+      "paint": {
+        "fill-color": "#087ede"
+      },
+      "layout": {
+        "text-field": "{name}",
+        "visibility": "visible",
+        "symbol-placement": "line"
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "place"
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "paint": {
+        "fill-color": "#015179"
+      },
+      "layout": {
+        "visibility": "visible"
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "water"
+    },
+    {
+      "id": "water_name",
+      "type": "symbol",
+      "paint": {
+        "fill-color": "#FFF"
+      },
+      "layout": {
+        "text-field": "{name}",
+        "visibility": "visible",
+        "text-font": [
+          "12px Calibri,sans-serif"
+        ]
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "water_name"
+    },
+    {
+      "id": "waterway",
+      "type": "line",
+      "paint": {
+        "line-blur": 0.5,
+        "fill-color": "#015179",
+        "line-width": 5
+      },
+      "layout": {
+        "visibility": "visible"
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "minzoom": 2,
+      "source-layer": "waterway"
+    },
+    {
+      "id": "water_way",
+      "type": "symbol",
+      "paint": {
+        "text-color": "#1077B0"
+      },
+      "filter": [
+        "all"
+      ],
+      "layout": {
+        "text-field": "{name}",
+        "visibility": "visible",
+        "symbol-placement": "line"
+      },
+      "source": "maplibre",
+      "maxzoom": 14,
+      "minzoom": 0,
+      "source-layer": "water_way"
+    },
+    {
+      "id": "aeroway",
+      "type": "symbol",
+      "paint": {
+        "text-field": "#015179"
+      },
+      "filter": [
+        "all"
+      ],
+      "layout": {
+        "text-field": "{name}",
+        "visibility": "visible",
+        "symbol-placement": "line"
+      },
+      "source": "maplibre",
+      "maxzoom": 14,
+      "minzoom": 0,
+      "source-layer": "aeroway"
+    },
+    {
+      "id": "landuse",
+      "type": "fill",
+      "paint": {
+        "fill-color": "#524a43"
+      },
+      "layout": {
+        "visibility": "visible"
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "landuse"
+    },
+    {
+      "id": "transportation",
+      "type": "line",
+      "paint": {
+        "line-color": "#06789D",
+        "line-opacity": 1
+      },
+      "filter": [
+        "all",
+        [
+          "!=",
+          "name",
+          "International Date Line"
+        ]
+      ],
+      "layout": {
+        "visibility": "visible"
+      },
+      "source": "maplibre",
+      "maxzoom": 20,
+      "source-layer": "transportation"
+    },
+    {
+      "id": "transportation_name",
+      "type": "symbol",
+      "paint": {
+        "fill-color": "#FFF"
+      },
+      "layout": {
+        "text-field": "{name}",
+        "visibility": "visible",
+        "text-font": [
+          "12px Calibri,sans-serif"
+        ]
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "transportation_name"
+    },
+    {
+      "id": "aerodrome_label",
+      "type": "symbol",
+      "paint": {
+        "fill-color": "#FFF"
+      },
+      "layout": {
+        "text-field": "{name}",
+        "visibility": "visible",
+        "symbol-placement": "line"
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "aerodrome_label"
+    },
+    {
+      "id": "park",
+      "type": "fill",
+      "paint": {
+        "fill-color": "#FFF"
+      },
+      "layout": {
+        "visibility": "visible"
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "park"
+    },
+    {
+      "id": "mountain_peak",
+      "type": "symbol",
+      "paint": {
+        "text-color": "#5fabe8"
+      },
+      "filter": [
+        "all"
+      ],
+      "layout": {
+        "text-field": "{name}",
+        "visibility": "visible",
+        "symbol-placement": "line",
+        "text-font": [
+          "Open Sans Semibold"
+        ]
+      },
+      "source": "maplibre",
+      "maxzoom": 14,
+      "minzoom": 0,
+      "source-layer": "mountain_peak"
+    },
+    {
+      "id": "landcover",
+      "type": "fill",
+      "paint": {
+        "fill-color": "#43887f"
+      },
+      "layout": {
+        "visibility": "visible"
+      },
+      "filter": [
+        "all",
+        [
+          "==",
+          "subclass",
+          "wood"
+        ]
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "landcover"
+    },
+    {
+      "id": "boundary",
+      "type": "line",
+      "paint": {
+        "line-color": "#06789D",
+        "line-opacity": 1
+      },
+      "filter": [
+        "all",
+        [
+          "!=",
+          "name",
+          "International Date Line"
+        ]
+      ],
+      "layout": {
+        "visibility": "visible"
+      },
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "boundary"
+    },
+    {
+      "id": "building",
+      "type": "fill",
+      "paint": {
+        "fill-color": "#05A2F0"
+      },
+      "layout": {
+        "visibility": "visible"
+      },
+      "filter": [
+        "all"
+      ],
+      "source": "maplibre",
+      "maxzoom": 14,
+      "source-layer": "building"
+    },
+    {
+      "id": "building-extrusion",
+      "type": "fill-extrusion",
+      "source": "maplibre",
+      "source-layer": "building",
+      "minzoom": 13,
+      "paint": {
+        "fill-extrusion-color": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          "#05A2F0",
+          22,
+          "#077fbb"
+        ],
+        "fill-extrusion-height": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          15,
+          0,
+          16,
+          [
+            "get",
+            "render_height"
+          ]
+        ],
+        "fill-extrusion-base": [
+          "case",
+          [
+            ">=",
+            [
+              "get",
+              "zoom"
+            ],
+            16
+          ],
+          [
+            "get",
+            "render_min_height"
+          ],
+          0
+        ]
+      }
+    },
+    {
+      "id": "poi",
+      "type": "symbol",
+      "source": "maplibre",
+      "source-layer": "poi",
+      "layout": {
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-size": 12,
+        "text-offset": [
+          0,
+          1
+        ],
+        "text-allow-overlap": false,
+        "text-anchor": "center",
+        "text-justify": "center",
+        "text-font": [
+          "Arial Unicode MS Regular"
+        ],
+        "icon-image": [
+          "match",
+          [
+            "get",
+            "subclass"
+          ],
+          "school",
+          "school-11",
+          "hospital",
+          "hospital-11",
+          "parking",
+          "park-11",
+          "toilets",
+          "toilet-11",
+          "library",
+          "library-11",
+          "fuel",
+          "fuel 11",
+          "college",
+          "college-11",
+          "swimming_pool",
+          "swimming-11",
+          "cafe",
+          "cafe-11",
+          "tea",
+          "cafe-11",
+          "museum",
+          "museum-11",
+          "hotel",
+          "lodging-11",
+          "university",
+          "suitcase-11",
+          "arts_centre",
+          "art-gallery-11",
+          "gallery",
+          "art-gallery-11",
+          "artwork",
+          "art-gallery-11",
+          "marketplace",
+          "grocery-11",
+          "fire_station",
+          "fire-station-11",
+          "cinema",
+          "cinema-11",
+          "police",
+          "police-11",
+          "bank",
+          "bank-11",
+          "bus_station",
+          "bus-11",
+          "post_office",
+          "post-11",
+          "restaurant",
+          "restaurant-11",
+          "theatre",
+          "theatre-11",
+          "attraction",
+          "attraction-11",
+          "place_of_worship",
+          "place-of-worship-11",
+          ""
+        ],
+        "icon-size": 1.2,
+        "icon-offset": [
+          0,
+          -10
+        ],
+        "icon-allow-overlap": true
+      },
+      "paint": {
+        "text-halo-color": "#444444",
+        "text-halo-width": 1,
+        "text-color": "#FFFFFF"
+      }
+    }
+  ],
+  "bearing": 0,
+  "sources": {
+    "maplibre": {
+      "type": "vector",
+      "scheme": "tms",
+      "tiles": [
+        "https://10.28.54.176:30013/map/v1/api/tilesets/Chengdu.mbtiles/{z}/{x}/{y}.pbf"
+      ],
+      "tilejson": "2.0.0",
+      "name": "maplibre",
+      "bounds": [
+        -180,
+        -85.051129,
+        180,
+        85.05112900000002
+      ],
+      "extent": [
+        -180,
+        -85.0511,
+        180,
+        85.0511
+      ],
+      "format": "pbf",
+      "maxzoom": 14,
+      "minzoom": 0,
+      "profile": "mercator",
+      "version": "1",
+      "vector_layers": [
+        {
+          "id": "water",
+          "fields": {
+            "fid": "Number",
+            "NAME": "String",
+            "ABBREV": "String",
+            "ADM0_A3": "String",
+            "CONTINENT": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 1,
+          "description": "geographic lines"
+        },
+        {
+          "id": "place",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 1,
+          "description": "geographic lines"
+        },
+        {
+          "id": "waterway",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "geographic lines"
+        },
+        {
+          "id": "water_name",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "geographic lines"
+        },
+        {
+          "id": "water_way",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "water_way lines"
+        },
+        {
+          "id": "aeroway",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "aeroway lines"
+        },
+        {
+          "id": "landuse",
+          "fields": {
+            "fid": "Number",
+            "NAME": "String",
+            "ABBREV": "String",
+            "ADM0_A3": "String",
+            "CONTINENT": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 1,
+          "description": ""
+        },
+        {
+          "id": "transportation",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0
+        },
+        {
+          "id": "transportation_name",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "geographic lines"
+        },
+        {
+          "id": "aerodrome_label",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "geographic lines"
+        },
+        {
+          "id": "poi",
+          "fields": {
+            "name": "String",
+            "class": "String",
+            "rank": "Number",
+            "subclass": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "text"
+        },
+        {
+          "id": "park",
+          "fields": {
+            "fid": "Number",
+            "NAME": "String",
+            "ABBREV": "String",
+            "ADM0_A3": "String",
+            "CONTINENT": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 1,
+          "description": "park"
+        },
+        {
+          "id": "building",
+          "fields": {
+            "fid": "Number",
+            "NAME": "String",
+            "ABBREV": "String",
+            "ADM0_A3": "String",
+            "CONTINENT": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 1,
+          "description": "building"
+        },
+        {
+          "id": "mountain-peak",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "text"
+        },
+        {
+          "id": "landcover",
+          "fields": {
+            "fid": "Number",
+            "NAME": "String",
+            "ABBREV": "String",
+            "ADM0_A3": "String",
+            "CONTINENT": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 1,
+          "description": "landcover lines"
+        },
+        {
+          "id": "boundary",
+          "fields": {
+            "name": "String"
+          },
+          "maxzoom": 14,
+          "minzoom": 0,
+          "description": "boundary lines"
+        }
+      ]
+    }
+  },
+  "version": 8,
+  "server": "vector"
+}

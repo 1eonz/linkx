@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 32 32" fill="">
+<g filter="url(#filter_401_1471)">
+<path d="M13.073 6.30933L11.4268 8.19077L20.3517 16L11.4268 23.8093L13.073 25.6908L24.1481 16L13.073 6.30933Z"   fill="" >
+</path>
+<rect x="6" y="15" width="15" height="2.4"   fill="" >
+</rect>
+</g>
+<defs>
+<filter id="filter_401_1471" x="0" y="0" width="32" height="32" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="feFloodId_401_1471"/>
+<feGaussianBlur in="feFloodId_401_1471" stdDeviation_bg="10" type="BackgroundImage" />
+<feComposite in2="SourceAlpha" operator="in" result="background_Blur_401_1471"/>
+<feBlend mode="normal" in="SourceGraphic" in2="background_Blur_401_1471" result="shape_401_1471"/>
+</filter>
+</defs>
+</svg>

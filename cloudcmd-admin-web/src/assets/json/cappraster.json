@@ -1,0 +1,24 @@
+{
+  "server": "raster",
+  "version": 8,
+  "zoom": 10,
+  "sources": {
+    "satellite": {
+      "type": "raster",
+      "scheme": "tms",
+      "tiles": [
+        "https://10.28.54.176:30013/map/v1/api/tilesets/Hongkong-Mapbox-streets-satellite_zoom_13.mbtiles/{z}/{x}/{y}.png"
+      ],
+      "tileSize": 256
+    }
+  },
+  "layers": [
+    {
+      "id": "satellite_layer",
+      "type": "raster",
+      "source": "satellite",
+      "minzoom": 0,
+      "maxzoom": 22
+    }
+  ]
+}

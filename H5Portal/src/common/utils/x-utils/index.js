@@ -1,0 +1,53 @@
+import { initInterceptor } from './js/interceptor.js';
+import router from './js/router.js';
+import * as utils from './js/utils.js';
+import { id, version } from './package.json';
+
+import pages from '@/pages.json';
+
+export * from './js/index.js';
+
+export const homePath = '/' + pages.pages[0].path;
+
+const install = (Vue) => {
+  if (import.meta.env?.MODE === 'development') {
+    console.log(
+      `\n %c ${id} ${version} https://ext.dcloud.net.cn/plugin?id=15875 \n`,
+      'color: #ffffff; background: skyblue; padding:5px 0px; border-radius: 5px;',
+    );
+  }
+
+  initInterceptor();
+
+  let targetObj = {};
+  // #ifdef VUE2
+  targetObj = Vue.prototype;
+  // #endif
+  // #ifdef VUE3
+  targetObj = Vue.config.globalProperties;
+  // #endif
+
+  String.prototype.splice = function (start, deleteCount, ...args) {
+    const strArr = this.split('');
+    strArr.splice(start, deleteCount, ...args);
+    return strArr.join('');
+  };
+
+  targetObj.homePath = uni.homePath = homePath;
+
+  // 路由跳转
+  for (let key in router) {
+    if (!targetObj['$' + key]) targetObj['$' + key] = router[key];
+    else console.error(`${key} key clash, targetObj.${key}=${targetObj[key]}`);
+  }
+
+  // utils
+  for (let key in utils) {
+    if (!targetObj['$' + key]) targetObj['$' + key] = utils[key];
+    else console.error(`${key} key clash, targetObj.${key}=${targetObj[key]}`);
+  }
+};
+
+export default {
+  install,
+};

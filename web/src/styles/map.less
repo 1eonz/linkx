@@ -1,0 +1,171 @@
+// 地图上样式控制
+
+/** esri arcgis **/
+.esri-popup {
+  box-shadow: none;
+
+  .esri-popup__main-container {
+    width: 100px !important;
+    height: 100px !important;
+    max-height: none;
+    background: none;
+
+    .esri-feature__content-node {
+      align-items: center;
+    }
+
+    .esri-popup__header {
+      display: none;
+    }
+
+    .esri-popup__content {
+      position: absolute;
+      bottom: 0;
+      left: -50%;
+      padding: 0;
+      margin: 0;
+      overflow: visible;
+      box-shadow: 0 0.0625rem 0.25rem rgb(0 0 0 / 80%);
+
+      .esri-feature {
+        background: none !important;
+      }
+    }
+
+    .esri-popup__footer {
+      display: none;
+    }
+
+    .esri-popup__feature-menu {
+      display: none;
+    }
+  }
+
+  .esri-popup__pointer-direction {
+    background-color: var(--background-default);
+  }
+}
+// 版本标识隐藏
+.esri-ui .esri-attribution {
+  display: none;
+}
+
+.esri-ui-top-left {
+  inset: auto 0 0 auto;
+
+  .esri-zoom {
+    display: none;
+  }
+}
+
+.esri-view-surface {
+  &::after {
+    display: none;
+  }
+}
+
+/**  amap  **/
+.amap-overlays {
+  z-index: 1;
+}
+
+/**  openlayer  **/
+.ol-control,
+.ol-scale-line {
+  margin-top: 25px !important;
+}
+
+.ol-showZoomControl {
+  display: none;
+}
+
+.ol-zoom-out {
+  display: none !important;
+}
+
+.ol-zoom-in {
+  display: none !important;
+}
+
+.ol-scale-line-inner {
+  display: none !important;
+}
+
+.ol-mouse-position {
+  display: none !important;
+}
+
+/**  mapAbc  **/
+.mapabcgl-control-container {
+  display: none;
+}
+
+.mapabcgl-popup {
+  max-width: 310px !important;
+
+  .mapabcgl-popup-tip {
+    display: none;
+  }
+
+  .mapabcgl-popup-content {
+    padding: 0 !important;
+    background: none !important;
+  }
+}
+
+/**  minemap  **/
+.minemap-ctrl-logo {
+  display: none !important;
+}
+
+.minemap-popup-tip {
+  display: none;
+}
+
+.minemap-popup-content {
+  max-width: none !important;
+  padding: 0 !important;
+  overflow: inherit !important;
+  background: none !important;
+  border: 0 !important;
+}
+
+.minemap-popup-close-button {
+  display: none !important;
+}
+
+.minemap-ctrl-scale {
+  opacity: 0;
+}
+
+.minemap-marker-ranging-label {
+  background: rgb(6 41 74 / 60%) !important;
+  backdrop-filter: blur(8px) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  box-shadow: 0 1px 4px rgb(10 255 231/ 100%) !important;
+}
+
+.minemap-marker-ranging-endLabel {
+  background: rgb(6 41 74 / 60%) !important;
+  backdrop-filter: blur(8px) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  box-shadow: 0 1px 4px rgb(10 255 231/ 100%) !important;
+}
+
+.minemap-ctrl {
+  .minemap-ctrl-fullscreen .minemap-ctrl-icon {
+    background-image: url('@/assets/svg/map_full.svg') !important;
+    background-size: 25px, 25px !important;
+  }
+
+  .minemap-ctrl-shrink .minemap-ctrl-icon {
+    background-image: url('@/assets/svg/map_full.svg') !important;
+    background-size: 25px, 25px !important;
+  }
+}
+
+.minemap-ctrl-top-right .minemap-ctrl {
+  background: none !important;
+}

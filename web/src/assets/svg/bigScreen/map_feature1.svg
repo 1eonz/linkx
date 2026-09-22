@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24" viewBox="0 0 24 24" fill="none"><g opacity="1"  transform="translate(0 0)  rotate(0)"><g opacity="1"  transform="translate(0 0)  rotate(0)"><g filter="url(#filter_2)"><path id="并集" fill-rule="evenodd" fill="url(#linear_0)" opacity="1" d="M9.55983 1L9.55983 1.8399L15.4406 1.8399L15.4406 1L17.9603 1L17.9603 1.8399L22.1599 1.8399L22.1599 21.9999L1.99988 21.9999L1.99988 1.8399L7.04008 1.8399L7.04008 1L9.55983 1ZM9.55983 6.0395L7.04008 6.0395L7.04008 4.3599L4.51988 4.3599L4.51988 19.4799L19.6399 19.4799L19.6399 4.3599L17.9603 4.3599L17.9603 6.0395L15.4406 6.0395L15.4406 4.3599L9.55983 4.3599L9.55983 6.0395ZM17.1201 11.9207L7.04008 11.9207L7.04008 9.4007L17.1201 9.4007L17.1201 11.9207ZM17.1201 16.9609L7.04008 16.9609L7.04008 14.4409L17.1201 14.4409L17.1201 16.9609Z"></path></g></g></g><defs><linearGradient id="linear_0" x1="52.47982881155375%" y1="0%" x2="53.47982881155375%" y2="104.75804395571527%" gradientUnits="objectBoundingBox"><stop offset="0" stop-color="#D2F3F5" stop-opacity="1" /><stop offset="1" stop-color="#4BF9F7" stop-opacity="1" /></linearGradient><filter id="filter_2" x="0" y="0" width="23.1599" height="22.9999" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="feFloodId"/>
+        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+        
+        <feOffset dx="1" dy="1"/>
+        
+         <feComposite in2="hardAlpha" operator="out"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0.0196078431372549 0 0 0 0 0.1411764705882353 0 0 0 0 0.25882352941176473 0 0 0 1 0"/>
+        <feBlend mode="normal" in2="BackgroundImageFix" result="dropShadow_1"/>
+        <feBlend mode="normal" in="SourceGraphic" in2="dropShadow_2" result="shape"/></filter></defs></svg>

@@ -1,0 +1,18 @@
+.el-popper {
+  backdrop-filter: blur(8px);
+  border: none !important;
+  box-shadow: 0 1px 4px rgb(10 255 231/ 100%);
+
+  .el-popover__title {
+    color: var(--color-white);
+  }
+
+  .popper__arrow::after {
+    border-bottom-color: var(--background-default);
+  }
+}
+
+.el-popper.is-light .el-popper__arrow::before {
+  background: var(--border-color-blue);
+  border: 1px solid var(--border-color-blue);
+}

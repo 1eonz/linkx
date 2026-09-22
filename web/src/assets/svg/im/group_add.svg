@@ -1,0 +1,24 @@
+<svg width="40.000000" height="40.000000" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<desc>
+			Created with Pixso.
+	</desc>
+	<defs>
+		<clipPath id="clip324_16177">
+			<rect id="plus" width="16.000000" height="16.000000" transform="translate(12.000000 12.000000)" fill="white" fill-opacity="0"/>
+		</clipPath>
+		<linearGradient x1="-5.973368" y1="24.977957" x2="40.000008" y2="24.977957" id="paint_linear_324_16176_0" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#1F739F"/>
+			<stop stop-color="#159AFF"/>
+			<stop offset="1.000000" stop-color="#99CEFB"/>
+		</linearGradient>
+		<linearGradient x1="20.000000" y1="0.000000" x2="20.000000" y2="40.000000" id="paint_linear_324_16176_1" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#4D93C9" stop-opacity="0.568627"/>
+			<stop offset="1.000000" stop-color="#4D93C9"/>
+		</linearGradient>
+	</defs>
+	<rect id="画板 393" rx="19.500000" width="39.000000" height="39.000000" transform="translate(0.500000 0.500000)" fill="url(#paint_linear_324_16176_0)" fill-opacity="0.160000"/>
+	<g clip-path="url(#clip324_16177)">
+		<path id="矢量 120" d="M19.33 20.66L19.33 26.33C19.33 26.51 19.48 26.66 19.66 26.66L20.33 26.66C20.51 26.66 20.66 26.51 20.66 26.33L20.66 20.66L26.33 20.66C26.51 20.66 26.66 20.51 26.66 20.33L26.66 19.66C26.66 19.48 26.51 19.33 26.33 19.33L20.66 19.33L20.66 13.66C20.66 13.48 20.51 13.33 20.33 13.33L19.66 13.33C19.48 13.33 19.33 13.48 19.33 13.66L19.33 19.33L13.66 19.33C13.48 19.33 13.33 19.48 13.33 19.66L13.33 20.33C13.33 20.51 13.48 20.66 13.66 20.66L19.33 20.66Z" fill="#99CEFB" fill-opacity="1.000000" fill-rule="evenodd"/>
+	</g>
+	<rect id="画板 393" rx="19.500000" width="39.000000" height="39.000000" transform="translate(0.500000 0.500000)" stroke="url(#paint_linear_324_16176_1)" stroke-opacity="0.600000" stroke-width="1.000000" stroke-dasharray="0 0"/>
+</svg>

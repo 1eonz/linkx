@@ -1,0 +1,164 @@
+/**
+1.字体(颜色/大小)
+2.背景(颜色)
+
+定义规则：按照ui而非业务区分
+*/
+.theme-dark {
+  --main-1: #1598fb;
+  --main-2: #00c2ff;
+  --sub-1: #387eaf;
+  --sub-2: #78a8de;
+  --bg-1: #19293c;
+  --bg-2: #1f3453;
+  --color-danger: rgb(255 96 96);
+  --color-warning: rgb(252 167 1);
+  --color-success: rgb(0 199 145);
+  --color-info: rgb(215 215 215);
+
+  // 背景色
+  --background-normal: #3299e3; // 默认背景
+  --background-default: rgb(6 74 119 / 40%); // 主要背景
+  --background-secondary: #1f3453; // 次要背景
+  --background-frame: rgb(6 41 74 / 100%); // 框体背景
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-simple: linear-gradient(
+    270deg,
+    rgb(4 64 105 / 38%) 0%,
+    rgb(15 112 186 / 38%) 100%
+  ); // 单个列表背景
+
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-active: linear-gradient(
+    90deg,
+    rgb(41 233 194 / 80%) 0%,
+    rgb(41 233 194 / 28%) 100%
+  ); // 卡片选中背景
+
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-hover: linear-gradient(
+    90deg,
+    rgb(41 233 194 / 80%) 0%,
+    rgb(41 233 194 / 28%) 100%
+  ); //卡片hover背景
+
+  --background-search: #3c4f56; // 搜索结果
+  --background-dark-map: #111e2a; // 深色地图颜色
+  --background-input: var(--background-frame); //输入框颜色
+  --background-monitor: #222a31; // 摄像头节点
+  --background-scrollbar: var(--background-scrollbar-color); // 滚动条背景
+  --background-tooltip: #333e4c; // 文字提示背景
+  --background-warning: #ff8f0a; // 告警
+  --background-header: rgba(16 29 62 / 100%);
+  --background-content: #080c11;
+  --background-table-border: rgb(235 235 235 / 100%);
+  --background-table: rgb(235 235 235 / 100%);
+  --background-table-header: rgb(235 235 235 / 100%);
+  --background-table-content: rgb(255 255 255 / 100%);
+  --background-table-text: rgb(26 26 26 / 100%);
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-table-hover: linear-gradient(
+    90deg,
+    rgba(41 233 194 / 80%) 0%,
+    rgba(55 219 157 / 28%) 100%
+  );
+
+  // 文字
+  --text-default: #daecf9; // 默认文字
+  --text-color-normal: #fff; // 白色文字
+  --text-title-first: #fff; // 一级标题
+  --text-title-second: #99cefb; // 二级标题
+  --text-color-input: #fff; // 输入框文字
+  --text-color-red: #ff3b55; // 红字
+  --text-color-green: #1afffb; // 红字
+  --text-color-button: #fff; // 按钮文字
+  --text-color-minor: #6c6c6c; // 次要文字
+  --text-color-light: #ffa800; // 高亮文字
+  --text-color-hover: #fff; // (文字)文字列表，下拉框，纯文字按钮 悬浮颜色
+  --text-color-active: #fff; // (文字)文字列表，下拉框，纯文字按钮 有效颜色
+  --text-color-disabled: #c9c9c9; // 禁用 置灰
+  --text-color-success: #14b58d; // 成功
+  --text-color-error: #ff6060; // 出错
+  --text-color-warning: #ffc047; // 告警
+  --text-color-prompt: #264ed1; // 提示
+
+  // 边框或线
+  --border-color-default: rgb(26 255 251); // 边框颜色
+  --border-color-simple: rgba(77 147 201); // 列表边框颜色
+  --border-color-pop: rgb(26 255 251); // 弹窗边框颜色
+  --cut-line: 1px solid #1f3453; // 分割线
+  --line-color: #78a8de; // 线的颜色
+  --shadow-default: rgb(52 118 166); // 默认阴影颜色
+  --shadow-active: #f4d550; // 高亮阴影颜色
+  --window-border: 1px solid var(--line-color);
+  --border-radius: 4px;
+  --voice-runway-color: #5d6568;
+  --voice-bar-color: #a2a8a8;
+  --border-color-red: rgb(255 96 96);
+  --border-color-yellow: rgb(255 195 0);
+  --border-color-gray: rgb(201 201 201);
+  --border-color-green: rgb(0 199 145);
+  --border-color-blue: rgb(50 152 226);
+  --border-color-orange: rgb(252 155 84);
+
+  // 按钮
+  --button-color-normal-default: #264ed1; // 一般 按钮一般态
+  --button-color-normal-hover: #264ed1; // 一般 按钮悬浮态
+  --button-color-normal-click: #264ed1; // 一般 按钮点击态
+  --button-color-guide-default: #264ed1; // 引导 按钮一般态
+  --button-color-guide-hover: #264ed1; // 引导 按钮悬浮态
+  --button-color-guide-click: #264ed1; // 引导 按钮点击态
+  --button-color-warn-default: rgba(255 96 96 / 100%); // 警示删除 按钮一般态
+  --button-color-warn-hover: #ff3b55; // 警示删除 按钮悬浮态
+  --button-color-warn-click: #c14040; // 警示删除 按钮点击态
+  --button-color-disable: #787878; // 禁用 置灰
+  --button-color-success: #00c791; // 来电按钮 按钮一般态
+  --button-color-success-hover: #14b58d; // 来电按钮 按钮悬浮态
+  --button-link: #01cdfd; // 链接、无边框按钮
+  --button-color-radio: rgb(56 126 175 / 40%); //  圆形按钮一般态
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --button-color-special-active: linear-gradient(
+    54deg,
+    rgb(0 189 189) 0%,
+    rgb(36 255 200) 0%,
+    rgb(97 179 87) 100%
+  ); //特殊 按钮点击活跃态
+
+  // icon
+  --icon-color-default: #a6cefd; // 默认图标颜色
+  --icon-color-normal: #fff; // 没有定义颜色的图标
+  --icon-color-hover: #1598fb; // 图标悬停颜色
+  --icon-color-click: #fff; // 图标点击颜色
+  --icon-color-light: #3299e3; // 图标高亮颜色
+  --icon-color-frame-control: #808f9c; // 弹出所有框的控制关闭  放大缩小的图标颜色
+  --icon-color-error: #f15050; // 异常提示图标颜色
+  --icon-color-tree-open: #daecf9; // 未展开图标颜色
+  --icon-color-tree-close: #78a8de; // 展开图标颜色
+  --icon-color-drop-down: #8699ac; // 下拉框图标颜色
+  --icon-color-down-active: #1f3453; // 点击状态下拉框描边颜色
+  --icon-color-search-tip: #78a8de; // 搜索图标 提示类用提示
+  --icon-color-online: #35c759; // 在线
+  --icon-color-offline: #a6a9ab; // 离线
+  --icon-color-busy: #f15050; // 忙碌pe
+  --icon-color-underway: #ffa800; //进行中
+  --icon-color-available: #35c759; // 可提供
+  --icon-color-unavailable: #a6a9ab; // 不可提供
+  --icon-color-idle: #35c759; // 空闲
+  --icon-color-leaving: #a6a9ab; // 离开
+
+  // tag or status
+  --background-red: rgb(255 96 96 / 60%);
+  --background-yellow: rgb(255 195 0 / 60%);
+  --background-green: rgb(0 199 145 / 60%);
+  --background-gray: rgb(201 201 201 / 60%);
+  --background-blue: rgb(0 144 255 / 60%);
+  --background-orange: rgb(255 155 84/ 60%);
+
+  // 字体(大小/行高)
+  // 使用 --font-scale 做“小屏托底”，只影响字体 token，不影响布局 rem
+  --font-size-default: calc(1rem * var(--font-scale, 1)); // 16px 适用于单行文字，标签文字，弹窗内容文字
+  --font-size-small: calc(0.875rem * var(--font-scale, 1)); // 14px 文字较多页面,正文内容,段落
+  --font-size-x-small: calc(0.75rem * var(--font-scale, 1)); // 12px 辅助信息文字，悬浮解释等
+  --font-size-medium: calc(1.125rem * var(--font-scale, 1)); // 18px 页面二级标题，弹窗标题
+  --font-size-large: calc(1.25rem * var(--font-scale, 1)); // 20px 页面一级标题,提示
+}

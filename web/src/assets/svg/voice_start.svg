@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="72" height="72" viewBox="0 0 72 72" fill="none">
+<g opacity="0.23">
+<circle cx="36" cy="36" r="36"   fill="url(#linear_fill_360_5472)" >
+</circle>
+</g>
+<g opacity="0.7">
+<circle cx="36" cy="36" r="29"   fill="url(#linear_fill_360_5473)" >
+</circle>
+</g>
+<ellipse cx="36.1249942779541" cy="36.124996185302734" rx="26.1249942779541" ry="26.124996185302734"   fill="url(#linear_fill_360_5478)" >
+</ellipse>
+<g  clip-path="url(#clip-path-376_438)">
+<rect  x="30.0029296875" y="19.9842529296875" width="12" height="23.00014877319336" rx="6"    fill="#FFFFFF" >
+</rect>
+<path d="M45.8733 37.6115C45.8733 43.0622 41.4537 47.4809 36.0036 47.4809C30.6443 47.4809 26.2839 43.2102 26.1378 37.888L26.1339 37.6115L26.1339 35.4995C26.1339 34.9478 26.582 34.5 27.1347 34.5C27.6459 34.5 28.0703 34.8855 28.1276 35.384L28.1335 35.4995L28.1335 37.6115C28.1335 41.9575 31.657 45.4805 36.0036 45.4805C40.2673 45.4805 43.7395 42.0886 43.8698 37.8569L43.8737 37.6115L43.8737 35.4995C43.8737 34.9478 44.3218 34.5 44.8725 34.5C45.3858 34.5 45.8082 34.8855 45.8674 35.384L45.8733 35.4995L45.8733 37.6115Z" fill-rule="evenodd"  fill="#FFFFFF" >
+</path>
+<path     fill="#FFFFFF"  d="M32.0029 49.9843L40.0029 49.9843C41.1075 49.9843 42.0029 50.8797 42.0029 51.9843L42.0029 51.9843L30.0029 51.9843L30.0029 51.9843C30.0029 50.8797 30.8984 49.9843 32.0029 49.9843Z">
+</path>
+<rect x="35.0029296875" y="46.9842529296875" width="2" height="3.0000195503234863"   fill="#FFFFFF" >
+</rect>
+</g>
+<defs>
+<linearGradient id="linear_fill_360_5472" x1="63.0072" y1="36" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#159AFF"  />
+<stop offset="1" stop-color="#00EAFF"  />
+</linearGradient>
+<linearGradient id="linear_fill_360_5473" x1="57.75579999999999" y1="36" x2="7" y2="36" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#159AFF"  />
+<stop offset="1" stop-color="#00EAFF"  />
+</linearGradient>
+<linearGradient id="linear_fill_360_5478" x1="55.723964985275266" y1="36.124996185302734" x2="10" y2="36.124996185302734" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#159AFF"  />
+<stop offset="1" stop-color="#00EAFF"  />
+</linearGradient>
+<clipPath id="clip-path-376_438">
+<path d="M20 52L51.9999 52L51.9999 20L20 20L20 52Z" fill="white"/>
+</clipPath>
+</defs>
+</svg>

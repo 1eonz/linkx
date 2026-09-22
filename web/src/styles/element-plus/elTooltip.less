@@ -1,0 +1,32 @@
+.el-tooltip__popper {
+  position: absolute;
+  max-width: 210px;
+  height: auto;
+  word-break: break-all;
+  word-wrap: break-word;
+  filter: alpha(opacity=70);
+}
+
+.el-tooltip__popper[x-placement^='bottom'] .popper__arrow {
+  // 底层箭头，底层箭头会被上层箭头覆盖，底层箭头显示效果为上层箭头的边框线
+  border-bottom-color: var(--background-default);
+}
+
+.el-tooltip__popper[x-placement^='bottom'] .popper__arrow::after {
+  // 上层箭头
+  border-bottom-color: var(--background-default);
+}
+
+.el-popper.is-light {
+  padding: 8px;
+  font-size: var(--font-size-x-small);
+  // 悬浮框字体颜色
+  color: var(--text-default) !important;
+  // 悬浮框背景颜色
+  background: var(--background-default);
+}
+
+.el-popper.is-light .el-popper__arrow::before {
+  right: 0;
+  background: var(--border-color-blue);
+}

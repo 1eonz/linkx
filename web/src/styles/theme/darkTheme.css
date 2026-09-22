@@ -1,0 +1,129 @@
+/**
+1.字体(颜色/大小)
+2.背景(颜色)
+
+定义规则：按照ui而非业务区分
+*/
+.theme-dark {
+  --main-1: #1598fb;
+  --main-2: #00c2ff;
+  --sub-1: #387eaf;
+  --sub-2: #78a8de;
+  --bg-1: #19293c;
+  --bg-2: #1f3453;
+  --color-danger: #ff6060;
+  --color-warning: #fca701;
+  --color-success: #00c791;
+  --color-info: #d7d7d7;
+  --background-normal: #3299e3;
+  --background-default: rgb(6 74 119 / 40%);
+  --background-secondary: #1f3453;
+  --background-frame: #06294a;
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-simple: linear-gradient(270deg, rgb(4 64 105 / 38%) 0%, rgb(15 112 186 / 38%) 100%);
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-active: linear-gradient(90deg, rgb(41 233 194 / 80%) 0%, rgb(41 233 194 / 28%) 100%);
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-hover: linear-gradient(90deg, rgb(41 233 194 / 80%) 0%, rgb(41 233 194 / 28%) 100%);
+  --background-search: #3c4f56;
+  --background-dark-map: #111e2a;
+  --background-input: var(--background-frame);
+  --background-monitor: #222a31;
+  --background-scrollbar: #3299e3;
+  --background-tooltip: #333e4c;
+  --background-warning: #ff8f0a;
+  --background-header: rgba(16 29 62 / 100%);
+  --background-content: #080c11;
+  --background-table-border: #ebebeb;
+  --background-table: #ebebeb;
+  --background-table-header: #ebebeb;
+  --background-table-content: #fff;
+  --background-table-text: #1a1a1a;
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --background-table-hover: linear-gradient(
+    90deg,
+    rgba(41 233 194 / 80%) 0%,
+    rgba(55 219 157 / 28%) 100%
+  );
+  --text-default: #daecf9;
+  --text-color-normal: #fff;
+  --text-title-first: #fff;
+  --text-title-second: #99cefb;
+  --text-color-input: #fff;
+  --text-color-red: #ff3b55;
+  --text-color-green: #1afffb;
+  --text-color-button: #fff;
+  --text-color-minor: #6c6c6c;
+  --text-color-light: #ffa800;
+  --text-color-hover: #fff;
+  --text-color-active: #fff;
+  --text-color-disabled: #c9c9c9;
+  --text-color-success: #14b58d;
+  --text-color-error: #ff6060;
+  --text-color-warning: #ffc047;
+  --text-color-prompt: #264ed1;
+  --border-color-default: #1afffb;
+  --border-color-simple: rgba(77 147 201);
+  --border-color-pop: #1afffb;
+  --cut-line: 1px solid #1f3453;
+  --line-color: #78a8de;
+  --shadow-default: #3476a6;
+  --shadow-active: #f4d550;
+  --window-border: 1px solid var(--line-color);
+  --border-radius: 4px;
+  --voice-runway-color: #5d6568;
+  --voice-bar-color: #a2a8a8;
+  --border-color-red: #ff6060;
+  --border-color-yellow: #ffc300;
+  --border-color-gray: #c9c9c9;
+  --border-color-green: #00c791;
+  --border-color-blue: #3298e2;
+  --border-color-orange: #fc9b54;
+  --button-color-normal-default: #264ed1;
+  --button-color-normal-hover: #264ed1;
+  --button-color-normal-click: #264ed1;
+  --button-color-guide-default: #264ed1;
+  --button-color-guide-hover: #264ed1;
+  --button-color-guide-click: #264ed1;
+  --button-color-warn-default: rgba(255 96 96 / 100%);
+  --button-color-warn-hover: #ff3b55;
+  --button-color-warn-click: #c14040;
+  --button-color-disable: #787878;
+  --button-color-success: #00c791;
+  --button-color-success-hover: #14b58d;
+  --button-link: #01cdfd;
+  --button-color-radio: rgb(56 126 175 / 40%);
+  /* stylelint-disable-next-line declaration-colon-newline-after */
+  --button-color-special-active: linear-gradient(54deg, #00bdbd 0%, #24ffc8 0%, #61b357 100%);
+  --icon-color-default: #a6cefd;
+  --icon-color-normal: #fff;
+  --icon-color-hover: #1598fb;
+  --icon-color-click: #fff;
+  --icon-color-light: #3299e3;
+  --icon-color-frame-control: #808f9c;
+  --icon-color-error: #f15050;
+  --icon-color-tree-open: #daecf9;
+  --icon-color-tree-close: #78a8de;
+  --icon-color-drop-down: #8699ac;
+  --icon-color-down-active: #1f3453;
+  --icon-color-search-tip: #78a8de;
+  --icon-color-online: #35c759;
+  --icon-color-offline: #a6a9ab;
+  --icon-color-busy: #f15050;
+  --icon-color-underway: #ffa800;
+  --icon-color-available: #35c759;
+  --icon-color-unavailable: #a6a9ab;
+  --icon-color-idle: #35c759;
+  --icon-color-leaving: #a6a9ab;
+  --background-red: rgb(255 96 96 / 60%);
+  --background-yellow: rgb(255 195 0 / 60%);
+  --background-green: rgb(0 199 145 / 60%);
+  --background-gray: rgb(201 201 201 / 60%);
+  --background-blue: rgb(0 144 255 / 60%);
+  --background-orange: rgb(255 155 84 / 60%);
+  --font-size-default: calc(1rem * var(--font-scale, 1));
+  --font-size-small: calc(0.875rem * var(--font-scale, 1));
+  --font-size-x-small: calc(0.75rem * var(--font-scale, 1));
+  --font-size-medium: calc(1.125rem * var(--font-scale, 1));
+  --font-size-large: calc(1.25rem * var(--font-scale, 1));
+}

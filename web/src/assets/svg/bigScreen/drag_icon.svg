@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24" viewBox="0 0 24 24" fill="none"><g opacity="1"  transform="translate(0 0)  rotate(0)"><mask id="bg-mask-0" fill="white"><use transform="translate(0 0)  rotate(0)" xlink:href="#path_0"></use></mask><g mask="url(#bg-mask-0)" ><g id="并集" filter="url(#filter_1)"><path id="并集" fill-rule="evenodd" style="fill:#FFFFFF" opacity="1" d="M7.77,4.36h-2.73v-1.36h2.73zM11.85,4.36h-2.72v-1.36h2.72zM15.26,5.04h-1.37v-0.68h-0.68v-1.36h2.05zM3,3.68h1.36v2.72h-1.36zM20.6213,8.3643v6.13h-1.54v-4.6h-9.19v9.19h4.6v1.54h-6.13v-12.26h5.5287v-1.9643h1.37v1.9643zM3,7.77h1.36v2.72h-1.36zM3,11.85h1.36v2.73h-1.36zM18.7821,17.5946l1.3158,2.5411l-1.359,0.7036l-1.3078,-2.5258l-2.1748,1.1574l0.38,-6.51l5.37,3.45zM5.04,15.26v-1.37h2.73v1.37z"></path></g></g></g><defs><rect id="path_0" x="0" y="0" width="15.999999999999996" height="15.999999999999996" /><filter id="filter_1" x="1.4679396905209918" y="0.9572529206946556" width="15.064243642944831" height="15.97833168302475" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="feFloodId"/>
+          <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+
+          <feOffset dx="0" dy="0.5106867698263361"/>
+          <feComposite in2="hardAlpha" operator="out"/>
+          <feGaussianBlur stdDeviation="0.7660301547395041"/>
+          <feColorMatrix type="matrix" values="0 0 0 0 0.1411764705882353 0 0 0 0 0.984313725490196 0 0 0 0 1 0 0 0 0.6 0"/>
+          <feBlend mode="normal" in2="filter_feFlood" result="filter_feFlood_1"/>
+          <feBlend mode="normal" in="SourceGraphic" in2="filter_1" result="shape"/></filter></defs></svg>

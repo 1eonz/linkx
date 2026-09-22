@@ -1,0 +1,19 @@
+{
+  "name": "@cs/prettier-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./index.mjs",
+  "module": "./index.mjs",
+  "exports": {
+    ".": {
+      "default": "./index.mjs"
+    }
+  },
+  "devDependencies": {
+    "prettier": "catalog:"
+  }
+}

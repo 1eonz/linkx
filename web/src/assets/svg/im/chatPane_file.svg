@@ -1,0 +1,9 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" fill="none" clip-path="url(#clipPath_2)" customFrame="url(#clipPath_2)">
+	<defs>
+		<clipPath id="clipPath_2">
+			<rect width="32" height="32" x="0" y="0" rx="2" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="文件夹" width="32" height="32" x="0" y="0" rx="2" />
+	<path id="矢量 387" d="M11.5 7L5 7L5 25L27 25L27 9L13.5 9L11.5 7ZM7.3 22.7L7.3 11.3L24.7 11.3L24.7 22.7L7.3 22.7ZM17 18L22 18L22 20.3L17 20.3L17 18Z" fill="rgb(91,96,114)" fill-rule="evenodd" />
+</svg>

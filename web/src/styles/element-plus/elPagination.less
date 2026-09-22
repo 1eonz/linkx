@@ -1,0 +1,53 @@
+.el-pagination {
+  .el-input__inner {
+    width: 50px;
+    height: 26px !important;
+  }
+}
+
+.el-pager li {
+  color: rgb(26 26 26);
+  background: rgb(173 204 240 / 7%) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgb(255 255 255 / 20%);
+}
+
+.el-pagination.is-background .el-pager li.is-active {
+  background: rgb(38 78 209) !important;
+  border: none;
+}
+
+.el-pagination button {
+  color: rgb(26 26 26);
+  background: rgb(173 204 240 / 7%) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgb(255 255 255 / 20%);
+}
+
+.el-pagination__total {
+  color: #99cefb;
+}
+
+// WebView2 环境下分页器下拉框样式修复
+// 确保下拉菜单能够正常显示和响应点击事件
+.el-pagination__sizes {
+  .el-select-dropdown {
+    // 确保下拉菜单定位正确
+    position: fixed !important;
+
+    .el-select-dropdown__item {
+      // 确保选项可点击
+      pointer-events: auto !important;
+      cursor: pointer !important;
+
+      &:hover {
+        background-color: var(--hover-color, #f5f7fa);
+      }
+
+      &.selected {
+        color: var(--el-color-primary);
+        font-weight: bold;
+      }
+    }
+  }
+}

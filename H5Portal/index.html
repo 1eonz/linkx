@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- 动态设置 base 标签 - 必须在所有其他内容之前 -->
+    <script>
+      (function () {
+        try {
+          var pathname = location.pathname || '';
+          var basePath = '/linkx/h5portal';
+          var linkxIndex = pathname.indexOf('/linkx/h5portal');
+          if (linkxIndex !== -1) {
+            basePath = pathname.substring(0, linkxIndex + '/linkx/h5portal'.length);
+          }
+          if (!basePath.endsWith('/')) {
+            basePath += '/';
+          }
+          document.write('<base href="' + basePath + '">');
+          if (typeof console !== 'undefined' && console.log) {
+            console.log('[dynamic-base] 设置 base 路径:', basePath, '当前路径:', pathname);
+          }
+        } catch (e) {
+          console.error('[dynamic-base] 设置 base 标签失败:', e);
+          try {
+            document.write('<base href="/linkx/h5portal/">');
+          } catch (e2) {
+            console.error('[dynamic-base] 写入默认 base 失败:', e2);
+          }
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <script>
+      var coverSupport =
+        'CSS' in window &&
+        typeof CSS.supports === 'function' &&
+        (CSS.supports('top: env(a)') || CSS.supports('top: constant(a)'));
+      document.write(
+        '<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' +
+          (coverSupport ? ', viewport-fit=cover' : '') +
+          '" />',
+      );
+    </script>
+    <title></title>
+    <!-- 引入WeSpaceSDK -->
+    <!-- <script src="/src/static/js/WeSpaceSDK.js" type="module"></script>
+    <script src="/src/static/js/modal.js" type="module"></script> -->
+    <!--preload-links-->
+    <!--app-context-->
+    <script src="/static/linkx-sdk.js"></script>
+  </head>
+  <body>
+    <div id="app"><!--app-html--></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

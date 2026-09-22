@@ -1,0 +1,55 @@
+{
+    "CI_TOOL": {
+        "FTP": {
+            "FTP_ADDRESS": "xxxx",
+            "FTP_PASSWD": "xxxx",
+            "FTP_REPO": "xxx",
+            "FTP_USER": "xxx"
+        }
+    },
+    "CodeHub": {
+        "CodeEmail": "xxxx",
+        "CodeToken": "xxxx",
+        "CodeUser": "xxxx",
+        "CodeUserName": "xxx",
+        "CodeUserPass": "xxx"
+    },
+    "DockerHub": {
+        "CloudDragon": {
+            "DOCKER_REPO": "xxxx",
+            "REPO_PASSWD": "xxx",
+            "REPO_USER": "xxx"
+        }
+    },
+    "MavenHub": {
+        "MavenTDTech": {
+            "MAVEN_ADDRESS": "xxxxx",
+            "MAVEN_REPO": "xxxxx",
+            "REPO_PASSWD": "xxxxx",
+            "REPO_USER": "xxxxx"
+        }
+    },
+    "SingedConf": {
+        "JENKINS_ADDRESS": "xxxxx",
+        "JENKINS_PASSWD": "xxxxx",
+        "JENKINS_REPO": "xxxxx",
+        "JENKINS_USER": "xxxxx",
+        "SSH_PASSWD": "xxxxx",
+        "SSH_USER": "xxxxx"
+    },
+    "VERSION_PACKAGE": {
+        "Linkx": {
+            "TYPE":"Gitee",
+            "Gitee": {
+                "GiteeBackUP": "TRUE",
+                "GiteeREPO": "http://repo.rd.td-tech.com/repo/api/packageDownload?repoKey=linkx&path=LINKX%20V100R001C00/LINKX%20V100R001C00SPC000/LINKX%20V100R001C00SPC000B000/Software",
+                "GiteeAPIToken": "xxx"
+            },
+            "CMC": {
+                "CMCREPO": "xxxx",
+                "CMCUserName": "xxx",
+                "CMCUserPasswd": "xxx"
+            }
+        }
+    }
+}

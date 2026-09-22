@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" />
+    <title></title>
+
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+
+      /* 默认样式 */
+      html,
+      body,
+      #app,
+      .loading {
+        background: #f2f2f3 !important;
+      }
+
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+        padding: 0;
+        color: #fff;
+      }
+
+      .center {
+        position: relative;
+        top: 30%;
+        height: 200px;
+        background: url('/src/assets/images/common/reactangle.gif') no-repeat;
+        background-position: top;
+        background-size: 300px 300px;
+      }
+    </style>
+
+    <script>
+      // 在页面加载前立即设置主题，避免闪烁
+      (function () {
+        // WebView2 环境检测
+        var isWebView2 = !!(window.chrome && window.chrome.webview);
+        
+        // WebView2 环境下强制使用 light 主题
+        var savedTheme = isWebView2 ? 'light' : (localStorage.getItem('theme') || 'light');
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // 根据主题立即设置背景色
+        var backgroundColor =
+          savedTheme === 'dark'
+            ? 'linear-gradient(90deg, rgb(6 41 74 / 100%) 0%, rgb(15 92 102 / 100%) 50%, rgb(6 41 74 / 100%) 100%)'
+            : '#f2f2f3';
+
+        // 设置背景样式
+        var setBackground = function (element) {
+          if (!element) return;
+          if (savedTheme === 'dark') {
+            element.style.background =
+              'linear-gradient(90deg, rgb(6 41 74 / 100%) 0%, rgb(15 92 102 / 100%) 50%, rgb(6 41 74 / 100%) 100%)';
+            element.style.backgroundSize = '200% 200%';
+          } else {
+            element.style.background = '#f2f2f3';
+          }
+        };
+
+        // 应用到所有相关元素
+        setBackground(document.documentElement);
+        setBackground(document.body);
+
+        var appElement = document.getElementById('app');
+        if (appElement) {
+          setBackground(appElement);
+        }
+
+        var loadingElements = document.querySelectorAll('.loading');
+        loadingElements.forEach(function (el) {
+          setBackground(el);
+        });
+      })();
+    </script>
+
+    <!-- 引入主题样式 -->
+    <link rel="stylesheet" href="/src/styles/themes.less" />
+  </head>
+  <body>
+    <div id="app">
+      <div class="loading">
+        <div class="center"></div>
+      </div>
+    </div>
+
+    <!-- <script src="/pollink.js"></script> -->
+    <script type="module" src="/src/main.ts"></script>
+    <script src="/libs/jquery-1.11.1/jquery.min.js"></script>
+
+    <!-- built files will be auto injected -->
+    <!-- <%- injectScript %> -->
+    <!-- injectScript end -->
+  </body>
+</html>
