@@ -42,12 +42,56 @@ alwaysApply: false
 - `src/data/xxx.ts` → `tests/unit/xxx.spec.ts`
 - 若无对应测试文件，跳过（提示用户可用 frontend-unit-test-writer 生成）
 
-### Step 2: 检查前置条件
+### Step 2: 依赖自检与自动安装（跑测试前必须执行）
 
-1. 项目是否安装 vitest 依赖（检查 `node_modules/.bin/vitest` 是否存在）
-2. 是否存在 `vitest.config.ts`
-3. 是否存在 `tests/unit/` 目录与测试文件
-4. 若缺失，提示用户先运行 frontend-unit-test-writer 或手动初始化
+依赖缺失或安装失败时**不要中断询问用户**（本 Skill 常被 git-commit-push 无人值守调用），按以下顺序自愈：
+
+**2a. 判定包管理器**（以主 lockfile 为准，忽略异构残留 lockfile）：
+
+| 项目 | 主 lockfile | 包管理器 | ⚠️ 残留异构 lockfile（必须忽略） |
+|------|------------|---------|------------------------------|
+| web | `pnpm-lock.yaml` | pnpm | 无 |
+| agent/web | `pnpm-lock.yaml` | pnpm | 无 |
+| H5Portal | `pnpm-lock.yaml` | pnpm | 存在残留 `package-lock.json`，**禁止用 npm 安装** |
+| cloudcmd-admin-web | `package-lock.json` | npm | 存在残留 `yarn.lock`，**禁止用 yarn 安装** |
+
+**禁止混用包管理器**：用错包管理器安装会生成双套 node_modules 结构，导致依赖解析错乱。
+
+**2b. 环境自检**：
+
+1. `<project>/node_modules/.bin/vitest` 是否存在 → 存在则跳到 Step 3
+2. 包管理器可用性：`pnpm -v`（pnpm 项目）/ `npm -v`（npm 项目）→ 命令不存在时先报告并给出安装指引（`npm i -g pnpm@9` 或启用 corepack），不擅自全局安装
+3. Node 版本对照 `package.json` 的 `engines`（web 要求 node≥22.11/pnpm≥9.12.3；cloudcmd-admin-web 要求 node≥16/npm≥8）→ 不满足时报告所需版本并建议 nvm-windows 切换，**不要带病安装**
+
+**2c. 自动安装**（在项目根目录执行，缺失 vitest 二进制或 node_modules 时触发）：
+
+```bash
+# pnpm 项目（web / agent/web / H5Portal）
+pnpm install --prefer-offline
+# npm 项目（cloudcmd-admin-web）
+npm install --prefer-offline --no-audit --no-fund
+```
+
+- 安装命令预期可能 > 1 分钟，按 agent-discipline B6 **后台执行 + 轮询**，不阻塞终端
+- registry 使用项目 `.npmrc` 已配置的华为云源，不额外传 `--registry` 覆盖
+
+**2d. 安装后复核**：安装成功后**重新检查** `node_modules/.bin/vitest` 是否存在；仍缺失说明安装未真正完成（半安装状态），按下方诊断表处置，**不要直接跑测试命令**。
+
+**2e. 安装失败诊断表**（按错误特征命中即停）：
+
+| 错误特征 | 原因 | 处置 |
+|---------|------|------|
+| `ERR_PNPM_IGNORED_BUILDS` | `pnpm-workspace.yaml` 的 `allowBuilds` 未批准依赖构建脚本（见 agent-discipline B5） | 把对应依赖值改为 `true`（一次性修复）；批准前的临时绕行：直调 `node_modules/.bin/vitest` |
+| `ERR_PNPM_OUTDATED_LOCKFILE` / npm 提示 lockfile 失同步 | lockfile 与 package.json 不一致 | `pnpm install --no-frozen-lockfile`；npm 项目确认 `package-lock.json` 后重试 |
+| `ERESOLVE`（npm peer deps 冲突） | 依赖树 peer 冲突 | npm 项目加 `--legacy-peer-deps`；pnpm 项目的 `.npmrc` 已配 `strict-peer-dependencies=false`，出现时检查是否误用了 npm |
+| `ETIMEDOUT` / `ECONNRESET` / registry 404 | 华为云源网络不通 | **换镜像源重试一次**：追加 `--registry=https://registry.npmmirror.com`；仍失败才报告用户（说明已尝试两个源），**不改写项目 `.npmrc`** |
+| `ENOTENGINE` / `Unsupported engine` | Node/包管理器版本不满足 engines | 报告实际版本与要求版本，建议 nvm-windows 切换；不降级凑合 |
+| `EPERM` / `EBUSY` / rename 报错 | Windows 文件被占用（编辑器/dev server 锁定 node_modules） | 提示关闭占用进程（如运行中的 vite dev）后重试一次 |
+| node_modules 存在但 vitest 二进制缺失 | 半安装残留（安装被中断） | 告知用户后删除 `node_modules` 重装；删除被拒则停止并报告 |
+
+**重试纪律**：同一安装命令同参数重试**不超过一次**；网络类失败换源重试一次后仍失败即停止报告，不得无限循环。
+
+**2f. 其余前置条件**（依赖 OK 后检查）：是否存在 `vitest.config.ts`、`tests/unit/` 目录与测试文件；若缺失，提示用户先运行 frontend-unit-test-writer 或手动初始化。
 
 ### Step 3: 执行测试命令
 
@@ -322,5 +366,6 @@ cd d:\code\Linkx\Linkx-B\cloudcmd-admin-web && npm run test:coverage
 4. **覆盖率不达标时必须列出未覆盖文件**，并建议调用 frontend-unit-test-writer 补充
 5. **不要自动修复源码 bug**，仅标注 ⚠️ 疑似 Bug 并建议用户确认
 6. **被 git-commit-push 调用时只返回决策结果**（全绿/失败），不输出完整报告
-7. **运行测试前检查 `node_modules` 是否存在**，若不存在提示用户先 `pnpm install`
-8. **happy-dom 环境差异不是失败**，测试应反映实际运行时行为
+7. **运行测试前必须执行 Step 2 依赖自检**：vitest 二进制缺失时按判定表自动安装（不中断询问），安装失败按诊断表处置，安装后复核二进制再跑测试
+8. **禁止混用包管理器**（H5Portal 只用 pnpm、cloudcmd-admin-web 只用 npm），忽略异构残留 lockfile；同一安装命令同参数重试不超过一次，网络失败换镜像源重试一次后仍失败即报告
+9. **happy-dom 环境差异不是失败**，测试应反映实际运行时行为
