@@ -72,10 +72,11 @@ alwaysApply: false
 
 ### Step 5: 自检与提示
 
-1. 运行该测试文件验证通过（调用 frontend-unit-test-runner 或直接 `pnpm vitest run <file>`）
-2. 若发现疑似 bug，用 `it.skip` 标注并注释说明期望行为与实际行为差异
-3. 输出覆盖率摘要（该文件）
-4. 向用户返回结构化摘要（见输出格式）
+1. 运行测试前先执行 frontend-unit-test-runner 的 **Step 2 依赖自检与自动安装**（包管理器判定 → 自动安装 → 失败诊断 → 安装后复核），依赖就绪再跑测试
+2. 运行该测试文件验证通过（调用 frontend-unit-test-runner 或直接 `pnpm vitest run <file>`）
+3. 若发现疑似 bug，用 `it.skip` 标注并注释说明期望行为与实际行为差异
+4. 输出覆盖率摘要（该文件）
+5. 向用户返回结构化摘要（见输出格式）
 
 ## 测试代码生成规范
 
