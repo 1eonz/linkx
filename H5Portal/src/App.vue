@@ -65,6 +65,15 @@
     // 初始化 WeSpaceSDK
     window.WeSpaceSDK = WeSpaceSDK;
 
+    // Provider mode is explicit and development-only. It starts after the real
+    // SDK is assigned so the bridge never replaces the host SDK in the app.
+    if (import.meta.env.DEV) {
+      const bridge = new URLSearchParams(window.location.search).get('bridge');
+      if (bridge === 'provider') {
+        await import('@dev-bridge/h5portal/provider.js');
+      }
+    }
+
     try {
       // 首先初始化pageUrl，确保httpBaseUrl在后续请求前已准备好
       await pageUrlStore.initPageUrl();

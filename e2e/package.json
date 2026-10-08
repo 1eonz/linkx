@@ -3,15 +3,20 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Linkx Playwright 自动化测试工程 —— SDK 代理桥（dev-bridge/）的自动化消费者",
+  "description": "Three-host offline regression and live bridge integration",
   "scripts": {
-    "test:h5portal": "playwright test -c h5portal/playwright.config.js",
-    "test:all": "pnpm test:h5portal",
-    "test:h5portal:ui": "playwright test -c h5portal/playwright.config.js --ui",
-    "test:h5portal:headed": "playwright test -c h5portal/playwright.config.js --headed",
-    "report:h5portal": "playwright show-report h5portal/playwright-report"
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:contracts": "playwright test -c configs/contracts.config.ts",
+    "test:offline": "playwright test -c configs/offline.config.ts",
+    "test:live": "playwright test -c configs/live.config.ts",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report reports/html",
+    "install:browsers": "playwright install chromium"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0"
+    "@playwright/test": "1.58.2",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
   }
 }

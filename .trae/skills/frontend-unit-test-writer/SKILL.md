@@ -8,6 +8,14 @@ alwaysApply: false
 
 为前端工具函数、业务函数、hooks 生成符合 Vitest 规范的单元测试代码。
 
+## E2E 分流
+
+用户要验证真实页面交互、登录启动链、业务 API 与宿主 SDK 调用/事件闭环时，使用仓库根目录 `e2e/` 的 Playwright 工程，不要把这类目标写成 Vitest 单元测试。先读 `e2e/README.md` 和 [覆盖矩阵](../../../e2e/coverage-matrix.md)，按 `h5portal`、`web-bspc`、`web-cspc` 选择目标。默认离线模式要使用真实前端和原始 SDK，通过 Scenario mock 业务 HTTP/WS、OfflineHost 模拟 SDK 下层宿主传输；live 模式只用于已连接真实宿主的内网集成。
+
+E2E 用例必须操作真实路由/控件并断言业务请求、宿主方法/事件及用户可见结果。用例同目录新增同名 `.spec.md`，记录前置数据、步骤、断言、SDK/业务接口证据和需人工确认的原生行为。模拟数据从源码接口契约推导并使用合成身份；不得用 `test.skip` 隐藏产品失败或用假 UI 替代页面。
+
+当用户只要求纯函数或组件内逻辑时，继续按本 Skill 编写 Vitest；两类目标都明确时，分别补充合适层级的测试。
+
 **本 Skill 覆盖四个前端项目**：`web`、`agent/web`、`H5Portal`、`cloudcmd-admin-web`。
 
 ## 触发条件

@@ -2,6 +2,12 @@ export {};
 
 declare global {
   interface Window {
+    __DEV_BRIDGE__?: {
+      getStatus: () => Record<string, unknown>;
+      dispose?: () => void;
+    };
+    __bridgeReady?: boolean;
+    WeSpaceSDK?: Record<string, any>;
     chrome?: {
       webview?: unknown;
     };

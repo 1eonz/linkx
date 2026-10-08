@@ -1,0 +1,15 @@
+export const BRIDGE_EVENTS = [
+  { method: 'onIntentExecutor', handlerField: 'onIntentExecutorHandler' },
+  { method: 'onUserStatusChange', handlerField: 'statusChangeHandler' },
+  { method: 'onIcpUserStatusChange', handlerField: 'statusIcpChangeHandler' },
+  { method: 'onPushTokenChange', handlerField: 'pushTokenChangeHandler' },
+  { method: 'onLogout', handlerField: 'logoutHandler' },
+  { method: 'subscribeMessage', handlerField: 'messageHandler' },
+  { method: 'onRemotePushMessage', handlerField: 'pushMessageHandler' },
+  { method: 'onAtCooperationUser', handlerField: 'onAtCooperationUserHandler' },
+  { method: 'onCooperationUserSendMsg', handlerField: 'onCooperationUserSendMsgHandler' },
+  { method: 'subscribeFileShare', handlerField: 'shareFileHandler' },
+  { method: 'onThemeChanged', handlerField: 'onThemeChangeHandler' },
+  { method: 'onVisibleChange', handlerField: 'visibleChangeHandler' },
+  { method: 'onSelectedMembers', handlerField: 'selectedMembersHandler' },
+];

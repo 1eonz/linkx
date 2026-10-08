@@ -11,7 +11,6 @@ import {
   spoofChromeWebview,
   spoofFlutterNativeBridge,
   spoofJsBridge,
-  spoofPimGetPlatform,
 } from '../page-scripts/env-spoofs.js';
 
 export const EVENT_REGISTER_METHODS = new Set([
@@ -69,6 +68,5 @@ export const EVENT_REGISTER_METHODS = new Set([
 export const envSpoofs = [
   spoofChromeWebview,
   spoofFlutterNativeBridge,
-  spoofPimGetPlatform,
   spoofJsBridge,
 ];

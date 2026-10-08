@@ -4,8 +4,8 @@
 >
 > 桥对"谁在驱动浏览器"无感知 —— 本地联调与自动化测试使用**同一套桩模式入口（`?bridge=stub`）**，Playwright 只是桥的消费者之一（见 `e2e/`）。
 >
-> 当前已接入端：**H5Portal**。其他端（如 web）接入方法见第八节"新端接入指南"。
-> 方案原理与完整使用手册：[docs/Playwright-SDK 代理桥模式.md](../docs/Playwright-SDK%20代理桥模式.md)
+> 当前已接入端：**H5Portal、web-bspc、web-cspc**。三端共用 relay 协议，分别保留各自 SDK 的传输和事件适配。
+> 方案原理与完整使用手册：[前端自动化测试使用指南](../docs/前端自动化测试使用指南.md)。
 
 ## 一、两个使用场景
 
@@ -33,10 +33,12 @@ dev-bridge/
 │   ├── provider-core.js           #   createProvider(config)
 │   ├── stub-core.js               #   createSdkStub(config)
 │   └── env-spoofs.js              #   环境伪造钩子（chrome.webview 等）
-├── h5portal/                      # H5Portal 端适配层（经 vite alias 进入其构建）
+├── h5portal/                      # H5Portal 端适配层（flutterNativeBridge）
 │   ├── provider.js / stub.js
 │   ├── bridge-events.js           #   事件桥清单
 │   └── stub-config.js             #   事件白名单 + 环境伪造
+├── web-bspc/                      # BSPC（SETUP_CHANNEL + MessagePort）
+├── web-cspc/                      # CSPC（chrome.webview + WebView2 环境）
 ├── package.json                   # 独立包（ws + proxy 启动脚本）
 └── README.md
 ```
@@ -47,18 +49,24 @@ dev-bridge/
 # ① 安装依赖（仅首次）
 cd dev-bridge; pnpm install
 
-# ② 启动代理（终端1）
-pnpm proxy            # WS 8787 / 健康检查 8788
+# ② 选择一个目标启动代理（终端1）
+pnpm run proxy:h5portal       # H5:   WS 8787 / 健康检查 8788
+pnpm run proxy:web-bspc       # BSPC: WS 8887 / 健康检查 8888
+pnpm run proxy:web-cspc       # CSPC: WS 8987 / 健康检查 8988
 
 # ③ 启动前端 dev（终端2）
 cd ../H5Portal; pnpm dev     # http://localhost:8001
 
-# ④ 宿主 App 配置业务 URL（provider 模式，无需参数）
-#    H5Portal 宿主: http://<本机IP>:8001/
-#    宿主控制台出现 "[bridge provider] connected to proxy" 即就绪
+# ④ 宿主 App 配置业务 URL（provider 模式）
+#    H5Portal 宿主: http://<本机IP>:8001/linkx/h5portal/?bridge=provider
+#    BSPC 宿主:     https://<本机IP>:3100/?bridge=provider
+#    CSPC 宿主:     https://<本机IP>:3100/?bridge=provider&clientType=CSPC
+#    宿主控制台出现 provider connected 即就绪
 
-# ⑤ 开发者本地浏览器打开桩模式页面（联调入口）
-#    http://localhost:8001/?bridge=stub
+# ⑤ 开发者本地浏览器打开对应桩模式页面（联调入口）
+#    H5:   http://localhost:8001/linkx/h5portal/?bridge=stub
+#    BSPC: https://localhost:3100/?bridge=stub
+#    CSPC: https://localhost:3100/?bridge=stub&clientType=CSPC
 #    （可再加 &debug=true 开启 vConsole）
 ```
 
@@ -108,10 +116,12 @@ curl http://localhost:8788
 | 用途 | 端口 |
 |------|------|
 | H5Portal dev server | 8001（http） |
-| 代理 WS | 8787 |
-| 代理 HTTP 健康检查 | 8788 |
+| web dev server | 3100（https） |
+| H5 relay WS / HTTP | 8787 / 8788 |
+| BSPC relay WS / HTTP | 8887 / 8888 |
+| CSPC relay WS / HTTP | 8987 / 8988 |
 
-> 支持 `BRIDGE_WS_PORT` / `BRIDGE_HTTP_PORT` 环境变量覆盖。多端接入时按 8x87/8x88 规律错开端口段（如 web 可用 8797/8798）。
+> 支持 `BRIDGE_WS_PORT` / `BRIDGE_HTTP_PORT` 环境变量覆盖。多目标并行时建议保持默认端口段，或为每个目标配置独立端口。
 
 ## 六、常见问题
 
@@ -138,9 +148,9 @@ curl http://localhost:8788
 
 ## 八、新端接入指南（四步）
 
-1. **建适配目录**：`dev-bridge/<新端>/`（provider.js / stub.js / stub-config.js）
+1. **建适配目录**：`dev-bridge/<新端>/`（provider.js / stub.js / bridge-events.js）
 2. **写端配置**：确定 SDK 定位与桩安装方式（全局变量型 → 默认 defineProperty 锁定；模块单例型 → 覆写 `installStub`/`getSDK`）、事件白名单、环境伪造、端口（错开端口段）
 3. **业务仓库接入**：vite 增加 `'@dev-bridge'` alias 与 `server.fs.allow`（放行仓库根）；main 入口顶部静态 import `stub.js`、DEV 分支动态 import `provider.js`
 4. **（可选）接入自动化**：在 `e2e/<新端>/` 建 config/fixture/用例
 
-> 历史说明：曾接入过 web 端（WebView2/Browser 双宿主，模块单例型 SDK 桩点），后按当前阶段规划移除；重新接入时参考本节 + [docs 方案文档](../docs/Playwright-SDK%20代理桥模式.md)中"模块单例型 SDK"设计点。
+> 三端当前都已接入。新增目标时参考本节和 `e2e/` 的 target/config/fixture 约定；不要修改宿主提供的原始 SDK 文件。

@@ -1,3 +1,5 @@
+// Evaluated before App.vue imports the immutable host SDK; activation is query and DEV gated.
+import '@dev-bridge/h5portal/stub.js';
 import * as Pinia from 'pinia';
 import { createApp } from 'vue';
 

@@ -34,16 +34,31 @@ import 'dayjs/locale/zh-cn';
 import { themeService } from './data/useTheme';
 
 const bootstrap = async () => {
+  const bridgeMode = new URLSearchParams(window.location.search).get('bridge');
+  if (import.meta.env.DEV && bridgeMode === 'stub') {
+    // CSPC needs host globals before its vendor SDK module evaluates.
+    await import('@dev-bridge/web-cspc/stub.js');
+  }
   // Browser 宿主：必须最早挂载 message 监听，避免错过 SETUP_CHANNEL
   if (!isWebView2()) {
-    await import('./bridge/index-browser.js');
+    const browserBridge = await import('./bridge/index-browser.js');
+    if (import.meta.env.DEV && bridgeMode === 'provider') window.WeSpaceSDK = browserBridge.default;
+    if (import.meta.env.DEV && bridgeMode === 'stub') await import('@dev-bridge/web-bspc/stub.js');
+    if (import.meta.env.DEV && bridgeMode === 'provider') await import('@dev-bridge/web-bspc/provider.js');
   } else {
     // WebView2 宿主：debug 下先确保 vConsole 就绪
     await enableVConsoleByQuery();
 
     // WebView2 走统一入口并等待 ready
-    const { bridgeReady } = await import('./bridge/index.js');
-    await bridgeReady;
+    const bridgeModule = await import('./bridge/index.js');
+    await bridgeModule.bridgeReady;
+    if (import.meta.env.DEV && bridgeMode === 'provider') window.WeSpaceSDK = await bridgeModule.bridgeReady;
+    if (import.meta.env.DEV && bridgeMode === 'stub') {
+      const { attachCspcTransport } = await import('@dev-bridge/web-cspc/stub.js');
+      attachCspcTransport();
+    } else if (import.meta.env.DEV && bridgeMode === 'provider') {
+      await import('@dev-bridge/web-cspc/provider.js');
+    }
   }
 
   // 全局异常捕获

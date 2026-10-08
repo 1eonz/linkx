@@ -22,8 +22,7 @@ if (import.meta.env && import.meta.env.DEV) {
   ).get('bridge');
   if (__bridgeRole === 'stub') {
     createSdkStub({
-      sdkName: 'WeSpaceSDK',
-      proxyPort: 8787,
+      target: 'h5portal',
       eventRegisterMethods: EVENT_REGISTER_METHODS,
       hasStorageChangeEvent: true,
       envSpoofs,

@@ -9,6 +9,7 @@ import { createVitePlugins } from './options';
 import { createProxy } from './proxy';
 import { wrapperEnv } from './utils';
 import basicSsl from '@vitejs/plugin-basic-ssl'; // 导入插件
+import { createBridgeProxy } from '../../../../dev-bridge/vite-proxy.js';
 
 // eslint-disable-next-line n/prefer-global/process
 const pathResolve = (dir: string) => resolve(process.cwd(), '.', dir);
@@ -86,6 +87,7 @@ const defineConfig = ({ command, mode }: ConfigEnv): UserConfig => {
           find: /@\//,
           replacement: `${pathResolve('src')}/`,
         },
+        { find: '@dev-bridge', replacement: resolve(process.cwd(), '../dev-bridge') },
         // #/xxxx => types/xxxx
         {
           find: /#\//,
@@ -102,7 +104,7 @@ const defineConfig = ({ command, mode }: ConfigEnv): UserConfig => {
       host: true,
       port: VITE_PORT,
       // Load proxy configuration from .env
-      proxy: createProxy(VITE_PROXY),
+      proxy: { ...createProxy(VITE_PROXY), ...createBridgeProxy() },
     },
   };
 

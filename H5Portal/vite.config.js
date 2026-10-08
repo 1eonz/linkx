@@ -13,6 +13,7 @@ import { dynamicBase } from './vite-plugin-dynamic-base.js';
 
 // gzip 压缩插件 (使用 vite-plugin-compression2 兼容 Vite 7.x)
 import { compression } from 'vite-plugin-compression2';
+import { createBridgeProxy } from '../dev-bridge/vite-proxy.js';
 
 // console 前缀插件
 import { consolePrefixPlugin } from './vite-plugin-console-prefix.js';
@@ -63,6 +64,7 @@ export default defineConfig({
     alias: {
       // 设置 @ 指向 src 目录
       '@': resolve(__dirname, 'src'),
+      '@dev-bridge': resolve(__dirname, '../dev-bridge'),
     },
   },
   server: {
@@ -104,6 +106,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      ...createBridgeProxy(['h5portal']),
       '/cagent': {
         target: `http://10.28.15.61:30280`,
         ws: true,

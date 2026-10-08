@@ -8,6 +8,22 @@ alwaysApply: false
 
 运行前端 Vitest 单元测试，分析测试结果，定位失败用例，校验覆盖率，并给出修复建议。
 
+## E2E 分流
+
+如果用户要验证页面工作流、业务接口与宿主 SDK 闭环，目标是 Playwright `e2e/`，不是 Vitest。先查看 `e2e/README.md` 和 `e2e/coverage-matrix.md`，再按目标/模式运行：
+
+```powershell
+cd e2e
+pnpm run typecheck
+pnpm run test:contracts
+$env:E2E_TARGET='h5portal' # 或 web-bspc / web-cspc
+pnpm run test:offline
+```
+
+本地安装了 Chrome/Edge、但 Playwright Chromium 尚未安装时，可以设置 `$env:E2E_BROWSER_CHANNEL='chrome'` 或 `msedge`。真正的 live 测试需要内网前端地址、对应宿主 Provider 和业务后端；缺少这些环境应作为环境未就绪失败记录，不能改成 skip 或报告为通过。报告目录为 `e2e/reports/<模式>/html`，失败附件含 trace、截图、视频及宿主/API 证据。offline 只能证明页面和模拟契约，不证明真实宿主原生弹窗、导航或内网数据。
+
+Vitest 的路径映射与覆盖率规则仅对单元测试生效；不要用 Vitest 覆盖率代替 Playwright 业务覆盖清单。
+
 **本 Skill 覆盖四个前端项目**：`web`、`agent/web`、`H5Portal`、`cloudcmd-admin-web`。
 
 **可被 `git-commit-push` Skill 编排调用**，在提交代码前运行受影响的测试作为守卫。
